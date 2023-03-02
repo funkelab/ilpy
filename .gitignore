@@ -5,3 +5,4 @@ ilpy/wrapper.cpp
 *.sw[po]
 *.pyc
 .coverage
+*.egg-info

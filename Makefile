@@ -11,3 +11,8 @@ install-dev:
 tests:
 	pytest -v --cov=ilpy -s ilpy
 	flake8 ilpy
+
+clean:
+	rm -rf build dist
+	rm -rf ilpy/*.cpp
+	rm -rf ilpy/*.so
