@@ -1,4 +1,4 @@
-// somewhat optimistic (better would be to create this file in setup.py, based 
-// on local installation):
-//#define HAVE_GUROBI
-#define HAVE_SCIP
+// These are now set in setup.py ... but the submodule includes this config.h
+// So we can't delete this file?
+// #define HAVE_GUROBI
+// #define HAVE_SCIP

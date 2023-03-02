@@ -43,3 +43,11 @@ class TestSolvers(unittest.TestCase):
 
     def test_gurobi(self):
         self.simple_solver_test(ilpy.Preference.Gurobi)
+
+
+# XFAIL gurobi if not installed
+# this is the best way I could find to determine this so far
+try:
+    ilpy.LinearSolver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+except RuntimeError:
+    unittest.expectedFailure(TestSolvers.test_gurobi)
