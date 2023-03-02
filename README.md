@@ -22,5 +22,5 @@ Then clone the repo and install in editable mode.
 ```bash
 git clone <your-fork>
 cd ilpy
-pip install -e .
+pip install -e .[dev]
 ```
