@@ -17,9 +17,11 @@ requirements:
    - cython
    - python {{python}}
    - scip
+   - gurobi
  run:
    - python {{python}}
    - scip
+   - gurobi
 
 test: 
   imports:
