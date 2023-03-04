@@ -1,0 +1,4 @@
+include Makefile
+recursive-exclude conda *
+recursive-exclude tests *
+recursive-include ilpy *.cpp, *.h, *.pxd, *.py, *.pyx, *.txt
