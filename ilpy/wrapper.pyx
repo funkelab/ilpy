@@ -1,11 +1,11 @@
 # distutils: language = c++
 
-from libc.stdint cimport uint32_t
-from libcpp.memory cimport shared_ptr
-from libcpp.map cimport map as cppmap
-from libcpp.string cimport string
-from cython.operator cimport dereference as deref
 cimport decl
+from cython.operator cimport dereference as deref
+from libc.stdint cimport uint32_t
+from libcpp.map cimport map as cppmap
+from libcpp.memory cimport shared_ptr
+from libcpp.string cimport string
 
 ####################################
 # Enums                            #

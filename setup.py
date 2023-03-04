@@ -1,7 +1,7 @@
 from ctypes import util
 
 from Cython.Build import cythonize
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 from setuptools.extension import Extension
 
 libraries = ["scip"]
