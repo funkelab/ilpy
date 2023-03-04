@@ -1,4 +1,7 @@
 include Makefile
 recursive-exclude conda *
 recursive-exclude tests *
-recursive-include ilpy *.cpp, *.h, *.pxd, *.py, *.pyx, *.txt
+recursive-include ilpy *.cpp *.h *.pxd *.py *.pyx *.txt
+
+exclude .gitmodules
+exclude ilpy/wrapper.cpp
