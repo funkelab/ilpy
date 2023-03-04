@@ -1,7 +1,6 @@
-import logging
-import unittest
-
 import ilpy
+import unittest
+import logging
 
 logging.basicConfig(level=logging.INFO)
 

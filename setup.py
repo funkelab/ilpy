@@ -1,7 +1,7 @@
 from ctypes import util
 
 from Cython.Build import cythonize
-from setuptools import find_packages, setup
+from setuptools import setup
 from setuptools.extension import Extension
 
 libraries = ["scip"]
@@ -21,27 +21,31 @@ else:
 
 
 setup(
-    name='ilpy',
-    version='0.2',
-    description='Python wrappers for popular MIP solvers.',
-    url='https://github.com/funkelab/ilpy',
-    author='Jan Funke',
-    author_email='funkej@janelia.hhmi.org',
-    license='MIT',
-    packages=find_packages(),
-    ext_modules=cythonize([
-        Extension(
-            'ilpy.wrapper',
-            sources=['ilpy/wrapper.pyx'],
-            extra_compile_args=compile_args,
-            include_dirs=['ilpy/impl'],
-            libraries=libraries,
-            language='c++')
-    ]),
-    package_data={
-        "ilpy": ["py.typed", "*.pyi"]
-    },
-    extras_require={
-        "dev": ["flake8", "pytest", "pytest-cov"],
-    },
+        name='ilpy',
+        version='0.2',
+        description='Python wrappers for popular MIP solvers.',
+        url='https://github.com/funkelab/ilpy',
+        author='Jan Funke',
+        author_email='funkej@janelia.hhmi.org',
+        license='MIT',
+        packages=[
+            'ilpy'
+        ],
+        ext_modules=cythonize([
+            Extension(
+                'ilpy.wrapper',
+                sources=[
+                    'ilpy/wrapper.pyx',
+                ],
+                extra_compile_args=compile_args,
+                include_dirs=['ilpy/impl'],
+                libraries=libraries,
+                language='c++')
+        ]),
+        extras_require={
+          "dev": ["flake8", "pytest", "pytest-cov"],
+        },
+        package_data={
+            "ilpy": ["py.typed", "*.pyi"]
+        },
 )

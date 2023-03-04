@@ -1,9 +1,8 @@
 from libcpp cimport bool
-from libcpp.map cimport map
-from libcpp.memory cimport shared_ptr
 from libcpp.string cimport string
+from libcpp.memory cimport shared_ptr
+from libcpp.map cimport map
 from libcpp.vector cimport vector
-
 
 cdef extern from 'impl/solvers/Relation.h':
     cdef enum Relation:
