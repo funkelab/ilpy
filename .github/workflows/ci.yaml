@@ -34,7 +34,7 @@ jobs:
           channels: conda-forge,gurobi,defaults
           channel-priority: true
       - name: install build deps
-        run: mamba install scip gurobi
+        run: mamba install -n test scip gurobi
       - name: list
         if: matrix.platform == 'windows-latest'
         run: |
