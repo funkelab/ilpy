@@ -38,8 +38,8 @@ jobs:
       - name: list
         if: matrix.platform == 'windows-latest'
         run: |
-          dir C:\Miniconda\envs\test\Include
-          dir C:\Miniconda\envs\test\Include\scip
+          dir C:/Miniconda/envs/test/Include
+          dir C:/Miniconda/envs/test/Include/scip
 
       - name: install package
         run: |
