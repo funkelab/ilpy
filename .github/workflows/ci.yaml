@@ -54,7 +54,8 @@ jobs:
           python-version: "3.x"
       - name: Build an sdist
         run: | 
-          python -m pip install build
+          python -m pip install build check-manifest
+          check-manifest
           python -m build --sdist
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
