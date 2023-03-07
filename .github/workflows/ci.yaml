@@ -28,18 +28,16 @@ jobs:
           submodules: true
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-          mamba-version: "*"
           channels: conda-forge,gurobi,defaults
           channel-priority: true
       - name: install build deps
-        run: mamba install -n test scip gurobi
+        run: conda install -n test scip gurobi
       - name: list
         if: matrix.platform == 'windows-latest'
         run: |
-          dir C:/Miniconda/envs/test/Include
-          dir C:/Miniconda/envs/test/Include/scip
+          dir C:/Miniconda/envs/test/Library/include
+          dir C:/Miniconda/envs/test/Library/include/scip
 
       - name: install package
         run: |
