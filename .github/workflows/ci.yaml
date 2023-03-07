@@ -46,6 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
       # this test ensures that the sdist contains all necessary files
       # if it fails, you need to either update MANIFEST.in,
       # or add an explicit "ignore" rule to pyproject.toml
@@ -60,6 +62,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
       - uses: actions/setup-python@v4
         with:
           python-version: "3.x"
