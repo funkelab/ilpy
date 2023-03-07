@@ -45,4 +45,7 @@ setup(
         extras_require={
           "dev": ["flake8", "pytest", "pytest-cov"],
         },
+        package_data={
+            "ilpy": ["py.typed", "*.pyi"]
+        },
 )

@@ -6,3 +6,6 @@ ilpy/wrapper.cpp
 *.pyc
 .coverage
 *.egg-info
+
+build
+dist
