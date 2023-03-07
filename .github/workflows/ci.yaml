@@ -42,7 +42,6 @@ jobs:
         run: pytest --color yes -v
 
   check-manifest:
-    name: Check that the sdist contains all necessary files
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
