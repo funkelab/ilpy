@@ -1,3 +1,5 @@
+import os
+
 from ctypes import util
 
 from Cython.Build import cythonize
@@ -5,7 +7,17 @@ from setuptools import setup
 from setuptools.extension import Extension
 
 libraries = ["scip"]
+include_dirs = ['ilpy/impl']
 compile_args = ["-O3", "-std=c++11", "-DHAVE_SCIP"]
+
+# include conda environment windows include if it exists
+# this will be done automatically by conda build, but is useful if someone
+# tries to build this directly with pip install in a conda environment
+if 'CONDA_PREFIX' in os.environ:
+    win_include = os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'include')
+    if os.path.exists(win_include):
+        include_dirs.append(win_include)
+    
 
 # look for various gurobi versions, which are annoyingly
 # suffixed with the version number, and wildcards don't work
@@ -38,7 +50,7 @@ setup(
                     'ilpy/wrapper.pyx',
                 ],
                 extra_compile_args=compile_args,
-                include_dirs=['ilpy/impl'],
+                include_dirs=include_dirs,
                 libraries=libraries,
                 language='c++')
         ]),
