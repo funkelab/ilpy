@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    tags: ["*"]
     branches:
       - master
       - main
@@ -32,11 +33,47 @@ jobs:
           channels: conda-forge,gurobi,defaults
           channel-priority: true
       - name: install build deps
-        run: |
-          mamba install scip gurobi
+        run: mamba install scip gurobi
       - name: install package
-        run: |  
+        run: |
           python -m pip install -U pip
           python -m pip install -e .[dev]
       - name: run tests
         run: pytest --color yes -v
+
+  check-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      # this test ensures that the sdist contains all necessary files
+      # if it fails, you need to either update MANIFEST.in,
+      # or add an explicit "ignore" rule to pyproject.toml
+      - name: Run check-manifest
+        run: pipx run check-manifest
+
+  # we only deploy the sdist to PyPI, the wheel is still complicated
+  deploy-sdist:
+    if: startsWith(github.ref, 'refs/tags')
+    needs: [test, check-manifest]
+    name: Build sdist, Publish to PyPI on tagged versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+      - name: Build an sdist
+        run: |
+          python -m pip install build
+          python -m build --sdist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+      - uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
