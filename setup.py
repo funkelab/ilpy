@@ -14,14 +14,10 @@ compile_args = ["-O3", "-std=c++11", "-DHAVE_SCIP"]
 # include conda environment windows include/lib if it exists
 # this will be done automatically by conda build, but is useful if someone
 # tries to build this directly with pip install in a conda environment
-if 'CONDA_PREFIX' in os.environ:
-    win_include = os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'include')
-    if os.path.exists(win_include):
-        include_dirs.append(win_include)
-    win_lib = os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'bin')
-    if os.path.exists(win_lib):
-        library_dirs.append(win_lib)
-    
+if os.name == 'nt' and 'CONDA_PREFIX' in os.environ:
+    include_dirs.append(os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'include'))
+    library_dirs.append(os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'bin'))
+
 
 # look for various gurobi versions, which are annoyingly
 # suffixed with the version number, and wildcards don't work
