@@ -18,7 +18,7 @@ if 'CONDA_PREFIX' in os.environ:
     win_include = os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'include')
     if os.path.exists(win_include):
         include_dirs.append(win_include)
-    win_lib = os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'lib')
+    win_lib = os.path.join(os.environ['CONDA_PREFIX'], 'Library', 'bin')
     if os.path.exists(win_lib):
         library_dirs.append(win_lib)
     
