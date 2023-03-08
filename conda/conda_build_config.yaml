@@ -2,3 +2,7 @@ python:
   - 3.9
   - 3.10
   - 3.11
+channel_targets:
+  - funkelab main
+channel_sources:
+  - gurobi,conda-forge,defaults
