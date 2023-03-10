@@ -16,7 +16,7 @@ compile_args = ["-O3", "-std=c++11", "-DHAVE_SCIP"]
 # tries to build this directly with pip install in a conda environment
 if os.name == "nt" and "CONDA_PREFIX" in os.environ:
     include_dirs.append(os.path.join(os.environ["CONDA_PREFIX"], "Library", "include"))
-    library_dirs.append(os.path.join(os.environ["CONDA_PREFIX"], "Library", "bin"))
+    library_dirs.append(os.path.join(os.environ["CONDA_PREFIX"], "Library", "lib"))
 
 # look for various gurobi versions, which are annoyingly
 # suffixed with the version number, and wildcards don't work
