@@ -20,6 +20,21 @@ class Relation(IntEnum):
     Equal = auto()
     GreaterEqual = auto()
 
+# cython appears to make these available as module-level constants as well
+Any = Preference.Any
+Scip = Preference.Scip
+Gurobi = Preference.Gurobi
+Cplex = Preference.Cplex
+Continuous = VariableType.Continuous
+Integer = VariableType.Integer
+Binary = VariableType.Binary
+Minimize = Sense.Minimize
+Maximize = Sense.Maximize
+Equal = Relation.Equal
+GreaterEqual = Relation.GreaterEqual
+LessEqual = Relation.LessEqual
+
+
 class Solution:
     def __init__(self, size: int) -> None: ...
     def __len__(self) -> int: ...
