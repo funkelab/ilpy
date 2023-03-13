@@ -41,4 +41,7 @@ wrapper = Extension(
     language="c++",
 )
 
-setup(ext_modules=cythonize([wrapper]))
+setup(
+    ext_modules=cythonize([wrapper]),
+    package_data={"ilpy": ["py.typed", "*.pyi"]},
+)
