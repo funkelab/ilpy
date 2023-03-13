@@ -22,6 +22,10 @@ dev = ["flake8", "pytest", "pytest-cov"]
 homepage = "https://github.com/funkelab/ilpy"
 repository = "https://github.com/funkelab/ilpy"
 
+[tool.setuptools]
+packages = ["ilpy"]
+package-data = { "ilpy" = ["py.typed", "*.pyi"] }
+
 [tool.setuptools.dynamic]
-version = {attr = "ilpy.__version__"}
-readme = {file = ["README.md"]}
+version = { attr = "ilpy.__version__" }
+readme = { file = ["README.md"] }
