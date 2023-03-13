@@ -33,7 +33,7 @@ else:
 
 setup(
         name='ilpy',
-        version='0.2.2',
+        version='0.2.3',
         description='Python wrappers for popular MIP solvers.',
         url='https://github.com/funkelab/ilpy',
         author='Jan Funke',
