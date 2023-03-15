@@ -138,9 +138,6 @@ cdef class LinearObjective:
     def __len__(self):
         return self.p.size()
 
-cdef class Expression:
-    def __mul__(self, other):
-        return Product(self, other)
 
 cdef class LinearConstraint:
 

@@ -8,7 +8,7 @@ from ilpy import LinearConstraint, Relation
 
 class Expression(ast.AST):
     def constraint(self) -> LinearConstraint:
-        """Return a linear constraint from this expression."""
+        """Create a linear constraint from this expression."""
         return _expression_to_constraint(self)
 
     @staticmethod
@@ -136,53 +136,70 @@ class Index(Expression, ast.Name):
         super().__init__(str(index), ctx=ast.Load())
 
 
-op_map: dict[type[ast.cmpop], Relation] = {
+# conversion between ast comparison operators and ilpy relations
+# TODO: support more less/greater than operators
+OPERATOR_MAP: dict[type[ast.cmpop], Relation] = {
     ast.LtE: Relation.LessEqual,
     ast.Eq: Relation.Equal,
     ast.Gt: Relation.GreaterEqual,
 }
 
+def _get_relation(expr: Expression) -> Relation:
+    seen_compare = False
+    for sub in ast.walk(expr):
+        if isinstance(sub, Compare):
+            if seen_compare:
+                raise ValueError("Only single comparisons are supported")
+
+            op_type = type(sub.ops[0])
+            try:
+                relation = OPERATOR_MAP[op_type]
+            except KeyError as e:
+                raise ValueError(f"Unsupported comparison operator: {op_type}") from e
+            seen_compare = True
+    return relation
+
 
 def _expression_to_constraint(expr: Expression) -> LinearConstraint:
     """Convert an expression to a `LinearConstraint`."""
     constraint = LinearConstraint()
-
-    seen_compare = False
-    for sub in ast.walk(expr):
-        if not isinstance(sub, Compare):
-            continue
-        if seen_compare:
-            raise ValueError("Only single comparisons are supported")
-
-        op_type = type(sub.ops[0])
-        try:
-            constraint.set_relation(op_map[op_type])
-        except KeyError as e:
-            raise ValueError(f"Unsupported comparison operator: {op_type}") from e
-
-        seen_compare = True
-
-    for index, coeff in get_coefficients(expr).items():
+    constraint.set_relation(_get_relation(expr))
+    for index, coefficient in _get_coefficients(expr).items():
         if index is None:
-            constraint.set_value(-coeff)
+            # None is the constant term, which is the right hand side of the
+            # comparison.
+            constraint.set_value(-coefficient)
         else:
-            constraint.set_coefficient(index, coeff)
+            constraint.set_coefficient(index, coefficient)
     return constraint
 
 
-def get_coefficients(
+def _get_coefficients(
     expr: Expression | ast.expr,
     coeffs: dict[int | None, float] | None = None,
     scale: int = 1,
 ) -> dict[int | None, float]:
+    """Get the coefficients of a linear expression.
+
+    The coefficients are returned as a dictionary mapping index to coefficient.
+    The index is `None` for the constant term.
+
+    Note also that expressions on the right side of a comparison are negated,
+    (so that the comparison is effectively against zero.)
+
+    Example:
+    >>> _get_coefficients(2 * Index(0) - 5 * Index(1) <= 7)
+    {0: 2, 1: -5, None: -7}
+    """
+
     if coeffs is None:
         coeffs = {}
 
     if isinstance(expr, Compare):
         if len(expr.ops) != 1:
             raise ValueError("Only single comparisons are supported")
-        get_coefficients(expr.left, coeffs)
-        get_coefficients(expr.comparators[0], coeffs, -1)
+        _get_coefficients(expr.left, coeffs)
+        _get_coefficients(expr.comparators[0], coeffs, -1)
 
     elif isinstance(expr, BinOp):
         if isinstance(expr.op, (ast.Mult, ast.Div)):
@@ -196,17 +213,17 @@ def get_coefficients(
                 raise ValueError("Multiplication must be by a constant")
             assert isinstance(e, Index)
             scale *= 1 / v if isinstance(expr.op, ast.Div) else v
-            get_coefficients(e, coeffs, scale)
+            _get_coefficients(e, coeffs, scale)
 
         else:
-            get_coefficients(expr.left, coeffs, scale)
+            _get_coefficients(expr.left, coeffs, scale)
             if isinstance(expr.op, (ast.USub, ast.Sub)):
                 scale = -scale
-            get_coefficients(expr.right, coeffs, scale)
+            _get_coefficients(expr.right, coeffs, scale)
     elif isinstance(expr, UnaryOp):
         if isinstance(expr.op, ast.USub):
             scale = -scale
-        get_coefficients(expr.operand, coeffs, scale)
+        _get_coefficients(expr.operand, coeffs, scale)
     elif isinstance(expr, Constant):
         coeffs[None] = expr.value * scale
     elif isinstance(expr, Index):
