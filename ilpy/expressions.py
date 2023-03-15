@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ast
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 
 from ilpy import LinearConstraint, Relation
 
@@ -15,6 +15,14 @@ class Expression(ast.AST):
     def _cast(obj: Any) -> Expression:
         """Cast object into an Expression."""
         return obj if isinstance(obj, Expression) else Constant(obj)
+
+    def __str__(self) -> str:
+        """Serialize this expression to string form."""
+        return self._serialize()
+
+    def _serialize(self) -> str:
+        """Serialize this expression to string form."""
+        return str(_ExprSerializer(self))
 
     # comparisons
 
@@ -49,7 +57,7 @@ class Expression(ast.AST):
         return BinOp(self, ast.Sub(), other)
 
     def __rmul__(self, other: float) -> BinOp:
-        return BinOp(self, ast.Mult(), other)
+        return BinOp(other, ast.Mult(), self)
 
     def __mul__(self, other: float) -> BinOp:
         return BinOp(self, ast.Mult(), other)
@@ -97,7 +105,11 @@ class BinOp(Expression, ast.BinOp):
     """
 
     def __init__(
-        self, left: Expression, op: ast.operator, right: Expression | float, **k: Any
+        self,
+        left: Expression | float,
+        op: ast.operator,
+        right: Expression | float,
+        **k: Any,
     ) -> None:
         super().__init__(Expression._cast(left), op, Expression._cast(right), **k)
 
@@ -131,7 +143,7 @@ class Index(Expression, ast.Name):
     `id` holds the index as a string (becuase ast.Name requires a string).
     """
 
-    def __init__(self, index: int) -> None:
+    def __init__(self, index: int | str) -> None:
         self.index = index
         super().__init__(str(index), ctx=ast.Load())
 
@@ -143,6 +155,7 @@ OPERATOR_MAP: dict[type[ast.cmpop], Relation] = {
     ast.Eq: Relation.Equal,
     ast.Gt: Relation.GreaterEqual,
 }
+
 
 def _get_relation(expr: Expression) -> Relation:
     seen_compare = False
@@ -211,10 +224,8 @@ def _get_coefficients(
                 v = expr.left.value
             else:
                 raise ValueError("Multiplication must be by a constant")
-            assert isinstance(e, Index)
             scale *= 1 / v if isinstance(expr.op, ast.Div) else v
             _get_coefficients(e, coeffs, scale)
-
         else:
             _get_coefficients(expr.left, coeffs, scale)
             if isinstance(expr.op, (ast.USub, ast.Sub)):
@@ -235,4 +246,83 @@ def _get_coefficients(
     return coeffs
 
 
-# -u + 2*e - (v + 4 - u)
+class _ExprSerializer(ast.NodeVisitor):
+    """Serializes an :class:`Expression` into a string.
+
+    Examples
+    --------
+    >>> expr = Expr.parse('a + b == c')
+    >>> print(expr)
+    'a + b == c'
+
+    or ... using this visitor directly:
+
+    >>> serializer = ExprSerializer()
+    >>> serializer.visit(expr)
+    >>> out = "".join(serializer.result)
+    """
+
+    def __init__(self, node: Expression | None = None) -> None:
+        self._result: list[str] = []
+
+        def write(*params: ast.AST | str) -> None:
+            for item in params:
+                if isinstance(item, ast.AST):
+                    self.visit(item)
+                elif item:
+                    self._result.append(item)
+
+        self.write = write
+
+        if node is not None:
+            self.visit(node)
+
+    def __str__(self) -> str:
+        return "".join(self._result)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        self.write(node.id)
+
+    def visit_Index(self, node: Index) -> None:  # type: ignore
+        self.write(node.id)
+
+    def visit_Constant(self, node: ast.Constant) -> None:
+        self.write(repr(node.value))
+
+    def visit_Compare(self, node: ast.Compare) -> None:
+        self.visit(node.left)
+        for op, right in zip(node.ops, node.comparators):
+            self.write(f" {_OPS[type(op)]} ", right)
+
+    def visit_BinOp(self, node: ast.BinOp) -> None:
+        args = [node.left, f" {_OPS[type(node.op)]} ", node.right]
+        if isinstance(node.op, ast.Mult):
+            if isinstance(node.left, ast.BinOp):
+                args[:1] = ["(", node.left, ")"]
+            if isinstance(node.right, ast.BinOp):
+                args[2:] = ["(", node.right, ")"]
+        self.write(*args)
+
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
+        sym = _OPS[type(node.op)]
+        self.write(sym, " " if sym.isalpha() else "", node.operand)
+
+
+OpType = Union[type[ast.operator], type[ast.cmpop], type[ast.boolop], type[ast.unaryop]]
+_OPS: dict[OpType, str] = {
+    # ast.cmpop
+    ast.Eq: "==",
+    ast.Gt: ">",
+    ast.GtE: ">=",
+    ast.NotEq: "!=",
+    ast.Lt: "<",
+    ast.LtE: "<=",
+    # ast.operator
+    ast.Add: "+",
+    ast.Sub: "-",
+    ast.Mult: "*",
+    ast.Div: "/",
+    # ast.unaryop
+    ast.UAdd: "+",
+    ast.USub: "-",
+}
