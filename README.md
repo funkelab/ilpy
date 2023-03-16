@@ -29,8 +29,9 @@ pip install -e .[dev]
 
 > Only for maintainers
 
-bump the version in both `setup.py` and `__init__.py` (unless you later
-setup auto versioning), and commit it.  Then create an annotated tag with:
+Bump the version in `__init__.py` and commit it.
+
+Then create an annotated tag with:
 
 ```bash
 git tag -a vX.Y.Z -m "vX.Y.Z"
