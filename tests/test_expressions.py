@@ -35,7 +35,7 @@ def test_comparisons(compop: str):
 
 @pytest.mark.parametrize("binop", ["add", "sub", "mul", "truediv"])
 def test_binops(binop: str):
-    """smoke test for all comparison types."""
+    """smoke test for all binary operations."""
     operate = getattr(operator, binop)
     operate(Variable("u"), 1)
     operate(1, Variable("u"))

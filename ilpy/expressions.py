@@ -211,15 +211,29 @@ def _get_coefficients(
 ) -> dict[Variable | None, float]:
     """Get the coefficients of a linear expression.
 
-    The coefficients are returned as a dictionary mapping index to coefficient.
-    The index is `None` for the constant term.
+    The coefficients are returned as a dictionary mapping Variable to coefficient.
+    The key `None` is used for the constant term.
 
     Note also that expressions on the right side of a comparison are negated,
     (so that the comparison is effectively against zero.)
 
+    Args:
+        expr: The expression to get the coefficients of.
+        coeffs: The dictionary to add the coefficients to. If not given, a new
+            dictionary is created.
+        scale: The scale to apply to the coefficients. This is used to negate
+            expressions on the right side of a comparison or scale for multiplication.
+
     Example:
-    >>> _get_coefficients(2 * Index(0) - 5 * Index(1) <= 7)
-    {0: 2, 1: -5, None: -7}
+
+        >>> u = Variable('u')
+        >>> v = Variable('v')
+        >>> _get_coefficients(2 * u - 5 * v <= 7)
+        {u: 2, v: -5, None: -7}
+
+        coefficients are simplified in the process:
+        >>> _get_coefficients(2 * u - (u + 2 * u) <= 7)
+        {u: -1, None: -7}
     """
     if coeffs is None:
         coeffs = {}
@@ -228,6 +242,7 @@ def _get_coefficients(
         if len(expr.ops) != 1:
             raise ValueError("Only single comparisons are supported")
         _get_coefficients(expr.left, coeffs)
+        # negate the right hand side of the comparison
         _get_coefficients(expr.comparators[0], coeffs, -1)
 
     elif isinstance(expr, BinOp):
@@ -239,6 +254,7 @@ def _get_coefficients(
                 e = expr.right
                 v = expr.left.value
             else:
+                # XXX: will we ever need multiplication by a variable?
                 raise ValueError("Multiplication must be by a constant")
             scale *= 1 / v if isinstance(expr.op, ast.Div) else v
             _get_coefficients(e, coeffs, scale)
