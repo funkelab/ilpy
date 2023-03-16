@@ -13,8 +13,8 @@ class Expression(ast.AST):
     intuitive syntax, and then convert to a native Constraint object.
 
     This class provides all of the operators and methods needed to build
-    expressions. For example, to create the expression ``x + y``, you can
-    write ``Variable('x') + Variable('y')``.
+    expressions. For example, to create the expression ``2 * x - y >= 0``, you can
+    write ``2 * Variable('x') - Variable('y') >= 0``.
 
     Tip: you can use ``ast.dump`` to see the AST representation of an expression.
     Or, use ``print(expr)` to see the string representation of an expression.
