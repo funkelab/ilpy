@@ -52,6 +52,11 @@ def test_to_constraint():
     assert constraint.get_relation() == Relation.GreaterEqual
     assert constraint.get_coefficients() == {0: 2.0, 1: -5.0, 2: 0.5}
 
+    expr = u == v
+    constraint = expr.constraint()
+    assert constraint.get_value() == 0
+    assert constraint.get_relation() == Relation.Equal
+    assert constraint.get_coefficients() == {0: 1.0, 1: -1.0}
 
 def test_expression_errors():
     # constant terms must be numeric

@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 from typing import Any, Sequence
 
-from ilpy import LinearConstraint, Relation
+from ilpy.wrapper import LinearConstraint, Relation
 
 
 class Expression(ast.AST):
