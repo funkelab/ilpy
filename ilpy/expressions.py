@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ast
-from typing import Any, Sequence, Union
+from typing import Any, Sequence
 
 from ilpy import LinearConstraint, Relation
 
@@ -17,10 +17,6 @@ class Expression(ast.AST):
         return obj if isinstance(obj, Expression) else Constant(obj)
 
     def __str__(self) -> str:
-        """Serialize this expression to string form."""
-        return self._serialize()
-
-    def _serialize(self) -> str:
         """Serialize this expression to string form."""
         return str(_ExprSerializer(self))
 
@@ -51,19 +47,25 @@ class Expression(ast.AST):
         return BinOp(self, ast.Add(), other)
 
     def __radd__(self, other: Expression) -> BinOp:
-        return BinOp(self, ast.Add(), other)
+        return BinOp(other, ast.Add(), self)
 
     def __sub__(self, other: Expression) -> BinOp:
         return BinOp(self, ast.Sub(), other)
 
-    def __rmul__(self, other: float) -> BinOp:
-        return BinOp(other, ast.Mult(), self)
+    def __rsub__(self, other: Expression) -> BinOp:
+        return BinOp(other, ast.Sub(), self)
 
     def __mul__(self, other: float) -> BinOp:
         return BinOp(self, ast.Mult(), other)
 
+    def __rmul__(self, other: float) -> BinOp:
+        return BinOp(other, ast.Mult(), self)
+
     def __truediv__(self, other: float) -> BinOp:
         return BinOp(self, ast.Div(), other)
+
+    def __rtruediv__(self, other: float) -> BinOp:
+        return BinOp(other, ast.Div(), self)
 
     # unary operators
 
@@ -109,9 +111,9 @@ class BinOp(Expression, ast.BinOp):
         left: Expression | float,
         op: ast.operator,
         right: Expression | float,
-        **k: Any,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(Expression._cast(left), op, Expression._cast(right), **k)
+        super().__init__(Expression._cast(left), op, Expression._cast(right), **kwargs)
 
 
 class UnaryOp(Expression, ast.UnaryOp):
@@ -128,24 +130,33 @@ class Constant(Expression, ast.Constant):
     """A constant value.
 
     The `value` attribute contains the Python object it represents.
-    types supported: NoneType, str, bytes, bool, int, float
+    types supported: int, float
     """
 
-    def __init__(self, value: float, kind: str | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self, value: float | int, kind: str | None = None, **kwargs: Any
+    ) -> None:
         if not isinstance(value, (float, int)):
             raise TypeError("Constants must be numbers")
         super().__init__(value, kind, **kwargs)
 
 
-class Index(Expression, ast.Name):
-    """A solution index.
+class Variable(Expression, ast.Name):
+    """A variable.
 
     `id` holds the index as a string (becuase ast.Name requires a string).
+
+    The special attribute `index` is added here for the purpose of storing
+    the index of a variable in a solver's variable list: ``Variable('u', index=0)``
     """
 
-    def __init__(self, index: int | str) -> None:
+    def __init__(self, id: str, index: int | None = None) -> None:
         self.index = index
-        super().__init__(str(index), ctx=ast.Load())
+        super().__init__(str(id), ctx=ast.Load())
+
+    def __hash__(self) -> int:
+        # allow use as dict key
+        return id(self)
 
 
 # conversion between ast comparison operators and ilpy relations
@@ -153,12 +164,13 @@ class Index(Expression, ast.Name):
 OPERATOR_MAP: dict[type[ast.cmpop], Relation] = {
     ast.LtE: Relation.LessEqual,
     ast.Eq: Relation.Equal,
-    ast.Gt: Relation.GreaterEqual,
+    ast.GtE: Relation.GreaterEqual,
 }
 
 
-def _get_relation(expr: Expression) -> Relation:
+def _get_relation(expr: Expression) -> Relation | None:
     seen_compare = False
+    relation: Relation | None = None
     for sub in ast.walk(expr):
         if isinstance(sub, Compare):
             if seen_compare:
@@ -176,22 +188,27 @@ def _get_relation(expr: Expression) -> Relation:
 def _expression_to_constraint(expr: Expression) -> LinearConstraint:
     """Convert an expression to a `LinearConstraint`."""
     constraint = LinearConstraint()
-    constraint.set_relation(_get_relation(expr))
-    for index, coefficient in _get_coefficients(expr).items():
-        if index is None:
+    if relation := _get_relation(expr):
+        constraint.set_relation(relation)
+    for var, coefficient in _get_coefficients(expr).items():
+        if var is None:
             # None is the constant term, which is the right hand side of the
             # comparison.
             constraint.set_value(-coefficient)
-        else:
-            constraint.set_coefficient(index, coefficient)
+        elif coefficient != 0:
+            if var.index is None:
+                raise ValueError(
+                    "All variables in a constraint expression must have an index"
+                )
+            constraint.set_coefficient(var.index, coefficient)
     return constraint
 
 
 def _get_coefficients(
     expr: Expression | ast.expr,
-    coeffs: dict[int | None, float] | None = None,
+    coeffs: dict[Variable | None, float] | None = None,
     scale: int = 1,
-) -> dict[int | None, float]:
+) -> dict[Variable | None, float]:
     """Get the coefficients of a linear expression.
 
     The coefficients are returned as a dictionary mapping index to coefficient.
@@ -204,7 +221,6 @@ def _get_coefficients(
     >>> _get_coefficients(2 * Index(0) - 5 * Index(1) <= 7)
     {0: 2, 1: -5, None: -7}
     """
-
     if coeffs is None:
         coeffs = {}
 
@@ -236,12 +252,13 @@ def _get_coefficients(
             scale = -scale
         _get_coefficients(expr.operand, coeffs, scale)
     elif isinstance(expr, Constant):
-        coeffs[None] = expr.value * scale
-    elif isinstance(expr, Index):
-        coeffs.setdefault(expr.index, 0)
-        coeffs[expr.index] += scale
+        coeffs.setdefault(None, 0)
+        coeffs[None] += expr.value * scale
+    elif isinstance(expr, Variable):
+        coeffs.setdefault(expr, 0)
+        coeffs[expr] += scale
     else:
-        raise ValueError("Unsupported expression")
+        raise ValueError(f"Unsupported expression type: {type(expr)}")
 
     return coeffs
 
@@ -249,18 +266,26 @@ def _get_coefficients(
 class _ExprSerializer(ast.NodeVisitor):
     """Serializes an :class:`Expression` into a string.
 
-    Examples
-    --------
-    >>> expr = Expr.parse('a + b == c')
-    >>> print(expr)
-    'a + b == c'
-
-    or ... using this visitor directly:
-
-    >>> serializer = ExprSerializer()
-    >>> serializer.visit(expr)
-    >>> out = "".join(serializer.result)
+    Used above in `Expression.__str__`.
     """
+
+    OP_MAP: dict[type[ast.operator] | type[ast.cmpop] | type[ast.unaryop], str] = {
+        # ast.cmpop
+        ast.Eq: "==",
+        ast.Gt: ">",
+        ast.GtE: ">=",
+        ast.NotEq: "!=",
+        ast.Lt: "<",
+        ast.LtE: "<=",
+        # ast.operator
+        ast.Add: "+",
+        ast.Sub: "-",
+        ast.Mult: "*",
+        ast.Div: "/",
+        # ast.unaryop
+        ast.UAdd: "+",
+        ast.USub: "-",
+    }
 
     def __init__(self, node: Expression | None = None) -> None:
         self._result: list[str] = []
@@ -280,10 +305,7 @@ class _ExprSerializer(ast.NodeVisitor):
     def __str__(self) -> str:
         return "".join(self._result)
 
-    def visit_Name(self, node: ast.Name) -> None:
-        self.write(node.id)
-
-    def visit_Index(self, node: Index) -> None:  # type: ignore
+    def visit_Variable(self, node: Variable) -> None:  # type: ignore
         self.write(node.id)
 
     def visit_Constant(self, node: ast.Constant) -> None:
@@ -292,10 +314,11 @@ class _ExprSerializer(ast.NodeVisitor):
     def visit_Compare(self, node: ast.Compare) -> None:
         self.visit(node.left)
         for op, right in zip(node.ops, node.comparators):
-            self.write(f" {_OPS[type(op)]} ", right)
+            self.write(f" {self.OP_MAP[type(op)]} ", right)
 
     def visit_BinOp(self, node: ast.BinOp) -> None:
-        args = [node.left, f" {_OPS[type(node.op)]} ", node.right]
+        opstring = f" {self.OP_MAP[type(node.op)]} "
+        args: list[ast.AST | str] = [node.left, opstring, node.right]
         if isinstance(node.op, ast.Mult):
             if isinstance(node.left, ast.BinOp):
                 args[:1] = ["(", node.left, ")"]
@@ -304,25 +327,5 @@ class _ExprSerializer(ast.NodeVisitor):
         self.write(*args)
 
     def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
-        sym = _OPS[type(node.op)]
+        sym = self.OP_MAP[type(node.op)]
         self.write(sym, " " if sym.isalpha() else "", node.operand)
-
-
-OpType = Union[type[ast.operator], type[ast.cmpop], type[ast.boolop], type[ast.unaryop]]
-_OPS: dict[OpType, str] = {
-    # ast.cmpop
-    ast.Eq: "==",
-    ast.Gt: ">",
-    ast.GtE: ">=",
-    ast.NotEq: "!=",
-    ast.Lt: "<",
-    ast.LtE: "<=",
-    # ast.operator
-    ast.Add: "+",
-    ast.Sub: "-",
-    ast.Mult: "*",
-    ast.Div: "/",
-    # ast.unaryop
-    ast.UAdd: "+",
-    ast.USub: "-",
-}
