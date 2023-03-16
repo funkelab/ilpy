@@ -7,6 +7,19 @@ from ilpy import LinearConstraint, Relation
 
 
 class Expression(ast.AST):
+    """Base class for all expression nodes.
+
+    Expressions allow ilpy to represent mathematical expressions in an
+    intuitive syntax, and then convert to a native Constraint object.
+
+    This class provides all of the operators and methods needed to build
+    expressions. For example, to create the expression ``x + y``, you can
+    write ``Variable('x') + Variable('y')``.
+
+    Tip: you can use ``ast.dump`` to see the AST representation of an expression.
+    Or, use ``print(expr)` to see the string representation of an expression.
+    """
+
     def constraint(self) -> LinearConstraint:
         """Create a linear constraint from this expression."""
         return _expression_to_constraint(self)
