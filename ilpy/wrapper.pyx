@@ -138,7 +138,6 @@ cdef class LinearObjective:
     def __len__(self):
         return self.p.size()
 
-
 cdef class LinearConstraint:
 
     cdef decl.LinearConstraint* p
