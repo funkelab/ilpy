@@ -42,6 +42,7 @@ def test_binops(binop: str):
 
 
 def test_to_constraint():
+    """Test a couple of expressions that can be converted to constraints."""
     u = Variable("u", index=0)
     v = Variable("v", index=1)
     e = Variable("e", index=2)
@@ -57,6 +58,17 @@ def test_to_constraint():
     assert constraint.get_value() == 0
     assert constraint.get_relation() == Relation.Equal
     assert constraint.get_coefficients() == {0: 1.0, 1: -1.0}
+
+
+def test_sum():
+    """Check that sum works (mimics some of the expressions in motile)"""
+    n = 10
+    expr1 = (n * Variable("a", 0) - sum(Variable(x, x) for x in range(1, 4))) <= n - 1
+    constraint1 = expr1.constraint()
+    assert constraint1.get_value() == 9
+    assert constraint1.get_relation() == Relation.LessEqual
+    assert constraint1.get_coefficients() == {0: 10.0, 1: -1.0, 2: -1.0, 3: -1.0}
+
 
 def test_expression_errors():
     # constant terms must be numeric

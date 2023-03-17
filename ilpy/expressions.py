@@ -5,6 +5,8 @@ from typing import Any, Sequence
 
 from ilpy.wrapper import LinearConstraint, Relation
 
+Number = float | int
+
 
 class Expression(ast.AST):
     """Base class for all expression nodes.
@@ -56,28 +58,28 @@ class Expression(ast.AST):
     # binary operators
     # (note that __and__ and __or__ are reserved for boolean operators.)
 
-    def __add__(self, other: Expression) -> BinOp:
+    def __add__(self, other: Expression | Number) -> BinOp:
         return BinOp(self, ast.Add(), other)
 
-    def __radd__(self, other: Expression) -> BinOp:
+    def __radd__(self, other: Expression | Number) -> BinOp:
         return BinOp(other, ast.Add(), self)
 
-    def __sub__(self, other: Expression) -> BinOp:
+    def __sub__(self, other: Expression | Number) -> BinOp:
         return BinOp(self, ast.Sub(), other)
 
-    def __rsub__(self, other: Expression) -> BinOp:
+    def __rsub__(self, other: Expression | Number) -> BinOp:
         return BinOp(other, ast.Sub(), self)
 
-    def __mul__(self, other: float) -> BinOp:
+    def __mul__(self, other: Number) -> BinOp:
         return BinOp(self, ast.Mult(), other)
 
-    def __rmul__(self, other: float) -> BinOp:
+    def __rmul__(self, other: Number) -> BinOp:
         return BinOp(other, ast.Mult(), self)
 
-    def __truediv__(self, other: float) -> BinOp:
+    def __truediv__(self, other: Number) -> BinOp:
         return BinOp(self, ast.Div(), other)
 
-    def __rtruediv__(self, other: float) -> BinOp:
+    def __rtruediv__(self, other: Number) -> BinOp:
         return BinOp(other, ast.Div(), self)
 
     # unary operators
@@ -102,7 +104,7 @@ class Compare(Expression, ast.Compare):
         self,
         left: Expression,
         ops: Sequence[ast.cmpop],
-        comparators: Sequence[Expression | float],
+        comparators: Sequence[Expression | Number],
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -121,9 +123,9 @@ class BinOp(Expression, ast.BinOp):
 
     def __init__(
         self,
-        left: Expression | float,
+        left: Expression | Number,
         op: ast.operator,
-        right: Expression | float,
+        right: Expression | Number,
         **kwargs: Any,
     ) -> None:
         super().__init__(Expression._cast(left), op, Expression._cast(right), **kwargs)
@@ -146,9 +148,7 @@ class Constant(Expression, ast.Constant):
     types supported: int, float
     """
 
-    def __init__(
-        self, value: float | int, kind: str | None = None, **kwargs: Any
-    ) -> None:
+    def __init__(self, value: Number, kind: str | None = None, **kwargs: Any) -> None:
         if not isinstance(value, (float, int)):
             raise TypeError("Constants must be numbers")
         super().__init__(value, kind, **kwargs)
