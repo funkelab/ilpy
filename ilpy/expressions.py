@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import ast
-from typing import Any, Sequence
+from typing import Any, Sequence, Union
 
 from ilpy.wrapper import LinearConstraint, Relation
 
-Number = float | int
+Number = Union[float, int]
 
 
 class Expression(ast.AST):
@@ -334,7 +334,7 @@ class _ExprSerializer(ast.NodeVisitor):
     def __str__(self) -> str:
         return "".join(self._result)
 
-    def visit_Variable(self, node: Variable) -> None:  # type: ignore
+    def visit_Variable(self, node: Variable) -> None:
         self.write(node.id)
 
     def visit_Constant(self, node: ast.Constant) -> None:
