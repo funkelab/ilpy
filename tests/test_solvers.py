@@ -1,53 +1,52 @@
 import ilpy
-import unittest
-import logging
+from ilpy.expressions import Variable
+import pytest
 
-logging.basicConfig(level=logging.INFO)
+# XFAIL if no gurobi not installed or no license found
+# (this is the best way I could find to determine this so far)
+marks = []
+try:
+    ilpy.LinearSolver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+except RuntimeError:
+    marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
 
 
-class TestSolvers(unittest.TestCase):
+@pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
+@pytest.mark.parametrize(
+    "preference",
+    [ilpy.Preference.Any, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+)
+def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
+    num_vars = 10
+    special_var = 5
 
-    def simple_solver_test(self, preference):
+    solver = ilpy.LinearSolver(
+        num_vars,
+        ilpy.VariableType.Binary,
+        {special_var: ilpy.VariableType.Continuous},
+        preference,
+    )
 
-        num_vars = 10
-        special_var = 5
+    # objective function
+    objective = ilpy.LinearObjective()
+    for i in range(num_vars):
+        objective.set_coefficient(i, 1.0)
+    objective.set_coefficient(special_var, 0.5)
+    solver.set_objective(objective)
 
-        solver = ilpy.LinearSolver(
-            num_vars,
-            ilpy.VariableType.Binary,
-            {
-                special_var: ilpy.VariableType.Continuous
-            },
-            preference)
-
-        objective = ilpy.LinearObjective()
-        for i in range(num_vars):
-            objective.set_coefficient(i, 1.0)
-        objective.set_coefficient(special_var, 0.5)
-
+    # constraints
+    if as_expression:
+        s = sum(Variable(str(i), index=i) for i in range(num_vars))
+        constraint = (s == 1).constraint()  # type: ignore
+    else:
         constraint = ilpy.LinearConstraint()
         for i in range(num_vars):
             constraint.set_coefficient(i, 1.0)
         constraint.set_relation(ilpy.Relation.Equal)
         constraint.set_value(1.0)
 
-        solver.set_objective(objective)
-        solver.add_constraint(constraint)
+    solver.add_constraint(constraint)
 
-        solution, msg = solver.solve()
+    solution, _ = solver.solve()
 
-        self.assertEqual(solution[5], 1)
-
-    def test_any(self):
-        self.simple_solver_test(ilpy.Preference.Any)
-
-    def test_gurobi(self):
-        self.simple_solver_test(ilpy.Preference.Gurobi)
-
-
-# XFAIL gurobi if not installed
-# this is the best way I could find to determine this so far
-try:
-    ilpy.LinearSolver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
-except RuntimeError:
-    unittest.expectedFailure(TestSolvers.test_gurobi)
+    assert solution[5] == 1
