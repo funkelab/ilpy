@@ -63,7 +63,9 @@ def test_to_constraint():
 def test_sum():
     """Check that sum works (mimics some of the expressions in motile)"""
     n = 10
-    expr1 = (n * Variable("a", 0) - sum(Variable(x, x) for x in range(1, 4))) <= n - 1
+    expr1 = (
+        n * Variable("a", 0) - sum(Variable(str(x), x) for x in range(1, 4))
+    ) <= n - 1
     constraint1 = expr1.constraint()
     assert constraint1.get_value() == 9
     assert constraint1.get_relation() == Relation.LessEqual
