@@ -203,7 +203,12 @@ def _expression_to_constraint(expr: Expression) -> LinearConstraint:
     constraint = LinearConstraint()
     if relation := _get_relation(expr):
         constraint.set_relation(relation)
-    for var, coefficient in _get_coefficients(expr).items():
+
+    coeffs = _get_coefficients(expr)
+    # this appears to be necessary to avoid a rounding error in the C++ code
+    # when set_value() is never called
+    coeffs.setdefault(None, 0)
+    for var, coefficient in coeffs.items():
         if var is None:
             # None is the constant term, which is the right hand side of the
             # comparison.

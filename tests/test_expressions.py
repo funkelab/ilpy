@@ -49,13 +49,13 @@ def test_to_constraint():
 
     expr = 2 * u - 5 * v + e / 2 >= -3
     constraint = expr.constraint()
-    assert math.isclose(constraint.get_value(), -3)
+    assert constraint.get_value() == -3
     assert constraint.get_relation() == Relation.GreaterEqual
     assert constraint.get_coefficients() == {0: 2.0, 1: -5.0, 2: 0.5}
 
-    expr = u + 1 == v
+    expr = u == v
     constraint = expr.constraint()
-    assert math.isclose(constraint.get_value(), -1)
+    assert constraint.get_value() == 0
     assert constraint.get_relation() == Relation.Equal
     assert constraint.get_coefficients() == {0: 1.0, 1: -1.0}
 
@@ -65,7 +65,7 @@ def test_sum():
     n = 10
     expr1 = (n * Variable("a", 0) - sum(Variable(x, x) for x in range(1, 4))) <= n - 1
     constraint1 = expr1.constraint()
-    assert math.isclose(constraint1.get_value(), 9)
+    assert constraint1.get_value() == 9
     assert constraint1.get_relation() == Relation.LessEqual
     assert constraint1.get_coefficients() == {0: 10.0, 1: -1.0, 2: -1.0, 3: -1.0}
 
