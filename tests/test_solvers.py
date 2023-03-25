@@ -14,7 +14,7 @@ except RuntimeError:
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
 @pytest.mark.parametrize(
     "preference",
-    [ilpy.Preference.Any, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
 )
 def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
@@ -55,7 +55,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
 @pytest.mark.parametrize(
     "preference",
-    [ilpy.Preference.Any, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
 )
 def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
