@@ -1,5 +1,5 @@
 import ilpy
-from ilpy.expressions import Variable
+from ilpy.expressions import Constant, Expression, Variable
 import pytest
 
 # XFAIL if no gurobi not installed or no license found
@@ -14,7 +14,7 @@ except RuntimeError:
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
 @pytest.mark.parametrize(
     "preference",
-    [ilpy.Preference.Any, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
 )
 def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
@@ -27,17 +27,23 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
         preference,
     )
 
+    _e: Expression
     # objective function
-    objective = ilpy.LinearObjective()
-    for i in range(num_vars):
-        objective.set_coefficient(i, 1.0)
-    objective.set_coefficient(special_var, 0.5)
-    solver.set_objective(objective)
+    if as_expression:
+        # note: the Constant(0) here is only to satisfy mypy... it would work without
+        _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
+        _e += 0.5 * Variable(str(special_var), index=special_var)
+        objective = _e.as_objective()
+    else:
+        objective = ilpy.LinearObjective()
+        for i in range(num_vars):
+            objective.set_coefficient(i, 1.0)
+        objective.set_coefficient(special_var, 0.5)
 
     # constraints
     if as_expression:
-        s = sum(Variable(str(i), index=i) for i in range(num_vars))
-        constraint = (s == 1).constraint()  # type: ignore
+        _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
+        constraint = (_e == 1).as_constraint()
     else:
         constraint = ilpy.LinearConstraint()
         for i in range(num_vars):
@@ -45,6 +51,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
         constraint.set_relation(ilpy.Relation.Equal)
         constraint.set_value(1.0)
 
+    solver.set_objective(objective)
     solver.add_constraint(constraint)
 
     solution, _ = solver.solve()

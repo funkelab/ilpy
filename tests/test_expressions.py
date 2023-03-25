@@ -1,7 +1,7 @@
 from ilpy.expressions import Expression, Variable, _get_coefficients
 import pytest
 import math
-from ilpy.wrapper import Relation
+from ilpy.wrapper import LinearConstraint, LinearObjective, Relation, Sense
 import operator
 
 u = Variable("u")
@@ -48,16 +48,39 @@ def test_to_constraint():
     e = Variable("e", index=2)
 
     expr = 2 * u - 5 * v + e / 2 >= -3
-    constraint = expr.constraint()
+    constraint = expr.as_constraint()
+    assert isinstance(constraint, LinearConstraint)
     assert constraint.get_value() == -3
     assert constraint.get_relation() == Relation.GreaterEqual
     assert constraint.get_coefficients() == {0: 2.0, 1: -5.0, 2: 0.5}
 
     expr = u == v
-    constraint = expr.constraint()
+    constraint = expr.as_constraint()
+    assert isinstance(constraint, LinearConstraint)
     assert constraint.get_value() == 0
     assert constraint.get_relation() == Relation.Equal
     assert constraint.get_coefficients() == {0: 1.0, 1: -1.0}
+
+
+def test_to_objective():
+    """Test a couple of expressions that can be converted to objective."""
+    u = Variable("u", index=0)
+    v = Variable("v", index=1)
+    e = Variable("v", index=3)
+
+    expr = u - 2 * v + 3
+    constraint = expr.as_objective(Sense.Maximize)
+    assert isinstance(constraint, LinearObjective)
+    assert constraint.get_constant() == 3
+    assert constraint.get_sense() == Sense.Maximize
+    assert constraint.get_coefficients() == [1.0, -2.0]
+
+    expr = 4 * e - 2 * u
+    constraint = expr.as_objective()
+    assert isinstance(constraint, LinearObjective)
+    assert constraint.get_constant() == 0
+    assert constraint.get_sense() == Sense.Minimize
+    assert constraint.get_coefficients() == [-2.0, 0, 0, 4]
 
 
 def test_sum():
@@ -66,7 +89,7 @@ def test_sum():
     expr1 = (
         n * Variable("a", 0) - sum(Variable(str(x), x) for x in range(1, 4))
     ) <= n - 1
-    constraint1 = expr1.constraint()
+    constraint1 = expr1.as_constraint()
     assert constraint1.get_value() == 9
     assert constraint1.get_relation() == Relation.LessEqual
     assert constraint1.get_coefficients() == {0: 10.0, 1: -1.0, 2: -1.0, 3: -1.0}
@@ -81,14 +104,14 @@ def test_expression_errors():
 
     # linear constraints may not multiply variables by each other
     with pytest.raises(ValueError, match="Multiplication must be by a constant"):
-        (Variable("u", index=0) * Variable("v", index=1)).constraint()
+        (Variable("u", index=0) * Variable("v", index=1)).as_constraint()
 
     # linear constraints may not multiply variables by each other
     with pytest.raises(ValueError, match="Unsupported comparison"):
-        (Variable("v", index=0) != 1).constraint()
+        (Variable("v", index=0) != 1).as_constraint()
 
     # cannot cast to a constraint without a variable index
     with pytest.raises(
         ValueError, match="All variables in a constraint expression must have an index"
     ):
-        (Variable("u") <= 0).constraint()
+        (Variable("u") <= 0).as_constraint()
