@@ -2,6 +2,7 @@ from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.memory cimport shared_ptr
 from libcpp.map cimport map
+from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
 cdef extern from 'impl/solvers/Relation.h':
@@ -70,8 +71,21 @@ cdef extern from 'impl/solvers/LinearObjective.h':
         void resize(unsigned int)
         unsigned int size()
 
-cdef extern from 'impl/solvers/LinearConstraint.cpp':
+cdef extern from 'impl/solvers/QuadraticConstraint.cpp':
     pass
+
+cdef extern from 'impl/solvers/QuadraticConstraint.h':
+    cdef cppclass LinearConstraint:
+        LinearConstraint() except +
+        void setCoefficient(unsigned int, double)
+        const map[unsigned int, double]& getCoefficients()
+        void setQuadraticCoefficient(unsigned int, unsigned int, double)
+        const map[pair[unsigned int, unsigned int], double]& getQuadraticCoefficients()
+        void setRelation(Relation)
+        void setValue(double)
+        Relation getRelation()
+        double getValue()
+        bool isViolated(const Solution&)
 
 cdef extern from 'impl/solvers/LinearConstraint.h':
     cdef cppclass LinearConstraint:
