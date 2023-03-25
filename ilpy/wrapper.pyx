@@ -138,6 +138,43 @@ cdef class LinearObjective:
     def __len__(self):
         return self.p.size()
 
+cdef class QuadraticConstraint:
+
+    cdef decl.QuadraticConstraint* p
+
+    def __cinit__(self):
+        self.p = new decl.QuadraticConstraint()
+
+    def __dealloc__(self):
+        del self.p
+
+    def set_coefficient(self, i, value):
+        self.p.setCoefficient(i, value)
+
+    def get_coefficients(self):
+        return self.p.getCoefficients()
+
+    def set_quadratic_coefficient(self, i, j, value):
+        self.p.setQuadraticCoefficient(i, j, value)
+
+    def get_quadratic_coefficients(self):
+        return self.p.getQuadraticCoefficients()
+
+    def set_relation(self, relation):
+        self.p.setRelation(relation)
+
+    def set_value(self, value):
+        self.p.setValue(value)
+
+    def get_relation(self):
+        return Relation(self.p.getRelation())
+
+    def get_value(self):
+        return self.p.getValue()
+
+    def is_violated(self, Solution solution):
+        return self.p.isViolated(solution.p[0])
+
 cdef class LinearConstraint:
 
     cdef decl.LinearConstraint* p
@@ -264,7 +301,7 @@ cdef class QuadraticSolver:
     def set_constraints(self, LinearConstraints constraints):
         deref(self.p).setConstraints(constraints.p[0])
 
-    def add_constraint(self, LinearConstraint constraint):
+    def add_constraint(self, QuadraticConstraint constraint):
         deref(self.p).addConstraint(constraint.p[0])
 
     def set_timeout(self, timeout):
@@ -275,6 +312,9 @@ cdef class QuadraticSolver:
 
     def set_num_threads(self, num_threads):
         deref(self.p).setNumThreads(num_threads)
+
+    def set_verbose(self, verbose):
+        deref(self.p).setVerbose(verbose)
 
     def solve(self):
         solution = Solution(self.num_variables)
