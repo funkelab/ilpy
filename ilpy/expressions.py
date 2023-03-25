@@ -299,8 +299,10 @@ def _get_coefficients(
                 e = expr.right
                 v = expr.left.value
             else:
-                # XXX: will we ever need multiplication by a variable?
-                raise ValueError("Multiplication must be by a constant")
+                raise NotImplementedError(
+                    "Only linear expressions currently supported, "
+                    "multiplication must be by a constant"
+                )
             scale *= 1 / v if isinstance(expr.op, ast.Div) else v
             _get_coefficients(e, coeffs, scale)
         else:
