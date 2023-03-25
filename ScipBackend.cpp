@@ -148,6 +148,12 @@ ScipBackend::setConstraints(const LinearConstraints& constraints) {
 void
 ScipBackend::addConstraint(const LinearConstraint& constraint) {
 
+	addConstraint((QuadraticConstraint)constraint);
+}
+
+void
+ScipBackend::addConstraint(const QuadraticConstraint& constraint) {
+
 	// create a list of variables and their coefficients
 	std::vector<SCIP_VAR*> vars;
 	std::vector<SCIP_Real> coefs;

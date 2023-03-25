@@ -56,6 +56,8 @@ public:
 
 	void addConstraint(const LinearConstraint& constraint);
 
+	void addConstraint(const QuadraticConstraint& constraint);
+
 	void setTimeout(double timeout);
 
 	void setOptimalityGap(double gap, bool absolute=false);

@@ -196,6 +196,61 @@ GurobiBackend::addConstraint(const LinearConstraint& constraint) {
 	delete[] vals;
 }
 
+void
+GurobiBackend::addConstraint(const QuadraticConstraint& constraint) {
+
+	// set the linear coefficients
+	int numlNz = constraint.getCoefficients().size();
+
+	int*    linds = new int[numlNz];
+	double* lvals = new double[numlNz];
+
+	int i = 0;
+	for (auto& pair : constraint.getCoefficients()) {
+
+		linds[i] = pair.first;
+		lvals[i] = pair.second;
+		i++;
+	}
+
+	// set the quadratic coefficients
+	int numqNz = constraint.getQuadraticCoefficients().size();
+
+	int*    qrows = new int[numqNz];
+	int*    qcols = new int[numqNz];
+	double* qvals = new double[numqNz];
+
+	int qi = 0;
+	for (auto& pair : constraint.getQuadraticCoefficients()) {
+
+		qrows[qi] = pair.first.first;
+		qcols[qi] = pair.first.second;
+		qvals[qi] = pair.second;
+		qi++;
+	}
+
+	GRB_CHECK(GRBaddqconstr(
+			_model,
+			numlNz,
+			linds,
+			lvals,
+			numqNz,
+			qrows,
+			qcols,
+			qvals,
+			(constraint.getRelation() == LessEqual ? GRB_LESS_EQUAL :
+					(constraint.getRelation() == GreaterEqual ? GRB_GREATER_EQUAL :
+							GRB_EQUAL)),
+			constraint.getValue(),
+			NULL /* optional name */));
+
+	delete[] linds;
+	delete[] lvals;
+	delete[] qrows;
+	delete[] qcols;
+	delete[] qvals;
+}
+
 bool
 GurobiBackend::solve(Solution& x, std::string& msg) {
 
