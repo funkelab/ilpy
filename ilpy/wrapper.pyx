@@ -92,6 +92,9 @@ cdef class QuadraticObjective:
     def set_quadratic_coefficient(self, i, j, value):
         self.p.setQuadraticCoefficient(i, j, value)
 
+    def get_quadratic_coefficients(self):
+        return self.p.getQuadraticCoefficients()
+
     def set_sense(self, sense):
         self.p.setSense(sense)
 
@@ -204,6 +207,9 @@ cdef class LinearConstraint:
         return self.p.getValue()
 
     def is_violated(self, Solution solution):
+        # avoid segfault in some cases of wrong type
+        if not isinstance(solution, Solution):
+            raise TypeError('solution must be of type Solution')
         return self.p.isViolated(solution.p[0])
 
 cdef class LinearConstraints:

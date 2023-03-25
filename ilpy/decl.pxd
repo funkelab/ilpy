@@ -53,6 +53,7 @@ cdef extern from 'impl/solvers/QuadraticObjective.h':
         void setCoefficient(unsigned int, double)
         const vector[double]& getCoefficients()
         void setQuadraticCoefficient(unsigned int, unsigned int, double)
+        const map[pair[unsigned int, unsigned int], double]& getQuadraticCoefficients()
         void setSense(Sense)
         Sense getSense()
         void resize(unsigned int)
