@@ -104,7 +104,7 @@ def test_expression_errors():
         Variable("u") + "not a number"
 
     # linear constraints may not multiply variables by each other
-    with pytest.raises(ValueError, match="Multiplication must be by a constant"):
+    with pytest.raises(NotImplementedError, match="Only linear expressions currently"):
         (Variable("u", index=0) * Variable("v", index=1)).as_constraint()
 
     # linear constraints may not multiply variables by each other
