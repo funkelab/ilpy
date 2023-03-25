@@ -1,8 +1,9 @@
-from ilpy.expressions import Expression, Variable, _get_coefficients
-import pytest
-import math
-from ilpy.wrapper import LinearConstraint, LinearObjective, Relation, Sense
 import operator
+
+import pytest
+
+from ilpy.expressions import Expression, Variable, _get_coefficients
+from ilpy.wrapper import LinearConstraint, LinearObjective, Relation, Sense
 
 u = Variable("u")
 v = Variable("v")

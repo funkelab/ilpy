@@ -1,6 +1,7 @@
+import pytest
+
 import ilpy
 from ilpy.expressions import Constant, Expression, Variable
-import pytest
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)
