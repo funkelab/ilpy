@@ -2,6 +2,7 @@ from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.memory cimport shared_ptr
 from libcpp.map cimport map
+from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
 cdef extern from 'impl/solvers/Relation.h':
@@ -52,6 +53,7 @@ cdef extern from 'impl/solvers/QuadraticObjective.h':
         void setCoefficient(unsigned int, double)
         const vector[double]& getCoefficients()
         void setQuadraticCoefficient(unsigned int, unsigned int, double)
+        const map[pair[unsigned int, unsigned int], double]& getQuadraticCoefficients()
         void setSense(Sense)
         Sense getSense()
         void resize(unsigned int)
