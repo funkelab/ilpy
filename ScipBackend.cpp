@@ -6,6 +6,7 @@
 
 #include <scip/scipdefplugins.h>
 #include <scip/cons_linear.h>
+#include <scip/cons_quadratic.h>
 
 #include "ScipBackend.h"
 
@@ -148,12 +149,6 @@ ScipBackend::setConstraints(const LinearConstraints& constraints) {
 void
 ScipBackend::addConstraint(const LinearConstraint& constraint) {
 
-	addConstraint((QuadraticConstraint)constraint);
-}
-
-void
-ScipBackend::addConstraint(const QuadraticConstraint& constraint) {
-
 	// create a list of variables and their coefficients
 	std::vector<SCIP_VAR*> vars;
 	std::vector<SCIP_Real> coefs;
@@ -182,6 +177,61 @@ ScipBackend::addConstraint(const QuadraticConstraint& constraint) {
 			vars.size(),
 			&vars[0],
 			&coefs[0],
+			lhs,
+			rhs));
+
+	_constraints.push_back(c);
+
+	SCIP_CALL_ABORT(SCIPaddCons(_scip, c));
+	SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &c));
+
+}
+
+void
+ScipBackend::addConstraint(const QuadraticConstraint& constraint) {
+
+	// FIXME: code duplication with addConstraint(LinearConstraint) 
+
+	// create a list of variables and their coefficients
+	std::vector<SCIP_VAR*> linvars;
+	std::vector<SCIP_Real> lincoefs;
+	std::vector<SCIP_VAR*> quadvars1;
+	std::vector<SCIP_VAR*> quadvars2;
+	std::vector<SCIP_Real> quadcoefs;
+	for (auto& p : constraint.getCoefficients()) {
+		linvars.push_back(_variables[p.first]);
+		lincoefs.push_back(p.second);
+	}
+	for (auto& pq : constraint.getQuadraticCoefficients()) {
+		quadvars1.push_back(_variables[pq.first.first]);
+		quadvars2.push_back(_variables[pq.first.second]);
+		quadcoefs.push_back(pq.second);
+	}
+
+	// create the SCIP constraint lhs <= linear expr <= rhs
+	SCIP_CONS* c;
+	std::string name("c");
+	name += std::to_string(_constraints.size());
+
+	// set lhs and rhs according to constraint relation
+	SCIP_Real lhs = constraint.getValue();
+	SCIP_Real rhs = constraint.getValue();
+	if (constraint.getRelation() == LessEqual)
+		lhs = -SCIPinfinity(_scip);
+	if (constraint.getRelation() == GreaterEqual)
+		rhs = SCIPinfinity(_scip);
+
+	SCIP_CALL_ABORT(SCIPcreateConsBasicQuadratic(
+			_scip,
+			&c,
+			name.c_str(),
+			linvars.size(),
+			&linvars[0],
+			&lincoefs[0],
+			quadvars1.size(),
+			&quadvars1[0],
+			&quadvars2[0],
+			&quadcoefs[0],
 			lhs,
 			rhs));
 

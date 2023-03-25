@@ -199,6 +199,8 @@ GurobiBackend::addConstraint(const LinearConstraint& constraint) {
 void
 GurobiBackend::addConstraint(const QuadraticConstraint& constraint) {
 
+	// FIXME: code duplication with addConstraint(LinearConstraint) 
+
 	// set the linear coefficients
 	int numlNz = constraint.getCoefficients().size();
 
