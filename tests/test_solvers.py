@@ -1,3 +1,4 @@
+from typing import cast
 import pytest
 
 import ilpy
@@ -34,7 +35,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
         # note: the Constant(0) here is only to satisfy mypy... it would work without
         _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
         _e += 0.5 * Variable(str(special_var), index=special_var)
-        objective = _e.as_objective()
+        objective = cast(ilpy.LinearObjective, _e.as_objective())
     else:
         objective = ilpy.LinearObjective()
         for i in range(num_vars):

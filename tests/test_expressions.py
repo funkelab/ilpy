@@ -3,7 +3,13 @@ import operator
 import pytest
 
 from ilpy.expressions import Expression, Variable, _get_coefficients
-from ilpy.wrapper import LinearConstraint, LinearObjective, Relation, Sense
+from ilpy.wrapper import (
+    LinearConstraint,
+    LinearObjective,
+    QuadraticObjective,
+    Relation,
+    Sense,
+)
 
 u = Variable("u")
 v = Variable("v")
@@ -22,6 +28,9 @@ ns = {"u": u, "v": v, "e": e}
 )
 def test_expressions(expr_str, expected):
     expr = eval(expr_str, ns)
+    # Note: this string assertion precludes the future possibility of immediately
+    # simplify expressions as they are created... so we may want to remove it.
+    # (or test it independently with already-simplified expressions)
     assert str(expr) == expr_str
     assert _get_coefficients(expr) == expected
 
@@ -63,13 +72,13 @@ def test_to_constraint():
     assert constraint.get_coefficients() == {0: 1.0, 1: -1.0}
 
 
-def test_to_objective():
+def test_to_objective() -> None:
     """Test a couple of expressions that can be converted to objective."""
     u = Variable("u", index=0)
     v = Variable("v", index=1)
-    e = Variable("v", index=3)
+    e = Variable("e", index=3)
 
-    expr = u - 2 * v + 3
+    expr: Expression = u - 2 * v + 3
     constraint = expr.as_objective(Sense.Maximize)
     assert isinstance(constraint, LinearObjective)
     assert constraint.get_constant() == 3
@@ -83,8 +92,29 @@ def test_to_objective():
     assert constraint.get_sense() == Sense.Minimize
     assert constraint.get_coefficients() == [-2.0, 0, 0, 4]
 
+    expr = -2 * u**2 - 3 * v * e + 4 * v + 5
+    constraint = expr.as_objective()
+    assert isinstance(constraint, QuadraticObjective)
+    assert constraint.get_constant() == 5
+    assert constraint.get_sense() == Sense.Minimize
+    assert constraint.get_quadratic_coefficients() == {
+        (u.index, u.index): -2,
+        (v.index, e.index): -3.0,
+    }
+    assert constraint.get_coefficients()[v.index] == 4
 
-def test_sum():
+    expr = u * (v - 2 * 6 * e)
+    constraint = expr.as_objective()
+    assert isinstance(constraint, QuadraticObjective)
+    assert constraint.get_constant() == 0
+    assert constraint.get_sense() == Sense.Minimize
+    assert constraint.get_quadratic_coefficients() == {
+        (u.index, v.index): 1,
+        (u.index, e.index): -12,
+    }
+
+
+def test_sum() -> None:
     """Check that sum works (mimics some of the expressions in motile)"""
     n = 10
     expr1 = (
@@ -104,12 +134,13 @@ def test_expression_errors():
         Variable("u") + "not a number"
 
     # linear constraints may not multiply variables by each other
-    with pytest.raises(NotImplementedError, match="Only linear expressions currently"):
-        (Variable("u", index=0) * Variable("v", index=1)).as_constraint()
-
-    # linear constraints may not multiply variables by each other
     with pytest.raises(ValueError, match="Unsupported comparison"):
         (Variable("v", index=0) != 1).as_constraint()
+
+    # linear constraints may not multiply variables by each other
+    with pytest.raises(TypeError, match="Cannot multiply by more than two"):
+        e = Variable("u", index=0) * Variable("v", index=1) * Variable("x", index=2)
+        e.as_objective()
 
     # cannot cast to a constraint without a variable index
     with pytest.raises(

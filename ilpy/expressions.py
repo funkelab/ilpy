@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import ast
-from typing import Any, Sequence, Union
+from typing import Any, Sequence, Union, cast
 
-from ilpy.wrapper import LinearConstraint, LinearObjective, Relation, Sense
+from ilpy.wrapper import (
+    LinearConstraint,
+    LinearObjective,
+    QuadraticObjective,
+    Relation,
+    Sense,
+)
 
 Number = Union[float, int]
 
@@ -26,7 +32,9 @@ class Expression(ast.AST):
         """Create a linear constraint from this expression."""
         return _expression_to_constraint(self)
 
-    def as_objective(self, sense: Sense = Sense.Minimize) -> LinearObjective:
+    def as_objective(
+        self, sense: Sense = Sense.Minimize
+    ) -> LinearObjective | QuadraticObjective:
         """Create a linear objective from this expression."""
         return _expression_to_objective(self, sense=sense)
 
@@ -74,11 +82,13 @@ class Expression(ast.AST):
     def __rsub__(self, other: Expression | Number) -> BinOp:
         return BinOp(other, ast.Sub(), self)
 
-    def __mul__(self, other: Number) -> BinOp:
+    def __mul__(self, other: Any) -> BinOp | Constant:
         return BinOp(self, ast.Mult(), other)
 
-    def __rmul__(self, other: Number) -> BinOp:
-        return BinOp(other, ast.Mult(), self)
+    def __rmul__(self, other: Number) -> BinOp | Constant:
+        if not isinstance(other, (int, float)):
+            raise TypeError("Right multiplication must be with a number")
+        return Constant(other) * self
 
     def __truediv__(self, other: Number) -> BinOp:
         return BinOp(self, ast.Div(), other)
@@ -94,6 +104,14 @@ class Expression(ast.AST):
     def __pos__(self) -> UnaryOp:
         # usually a no-op
         return UnaryOp(ast.UAdd(), self)
+
+    # specifically not implemented on Expression for now.
+    # We don't want to reimplement a full CAS like sympy.
+    # (But we could support sympy expressions!)
+    # Implemented below only on Constant and Variable.
+
+    # def __pow__(self, other: Number) -> BinOp:
+    # return BinOp(self, ast.Pow(), other)
 
 
 class Compare(Expression, ast.Compare):
@@ -157,6 +175,18 @@ class Constant(Expression, ast.Constant):
             raise TypeError("Constants must be numbers")
         super().__init__(value, kind, **kwargs)
 
+    def __mul__(self, other: Any) -> BinOp | Constant:
+        if isinstance(other, Constant):
+            return Constant(self.value**other.value)
+        if isinstance(other, (float, int)):
+            return Constant(self.value * other)
+        return super().__mul__(other)
+
+    def __pow__(self, other: Number) -> Expression:
+        if not isinstance(other, (int, float)):
+            raise TypeError("Exponent must be a number")
+        return Constant(self.value**other)
+
 
 class Variable(Expression, ast.Name):
     """A variable.
@@ -170,6 +200,15 @@ class Variable(Expression, ast.Name):
     def __init__(self, id: str, index: int | None = None) -> None:
         self.index = index
         super().__init__(str(id), ctx=ast.Load())
+
+    def __pow__(self, other: Number) -> Expression:
+        if not isinstance(other, (int, float)):
+            raise TypeError("Exponent must be a number")
+        if other == 2:
+            return BinOp(self, ast.Mult(), self)
+        elif other == 1:
+            return self
+        raise ValueError("Only quadratic variables are supported")
 
     def __hash__(self) -> int:
         # allow use as dict key
@@ -217,6 +256,8 @@ def _expression_to_constraint(expr: Expression) -> LinearConstraint:
             # None is the constant term, which is the right hand side of the
             # comparison.
             constraint.set_value(-coefficient)
+        elif isinstance(var, tuple):
+            raise NotImplementedError("Quadratic constraints are not yet supported")
         elif coefficient != 0:
             if var.index is None:
                 raise ValueError(
@@ -225,25 +266,39 @@ def _expression_to_constraint(expr: Expression) -> LinearConstraint:
             constraint.set_coefficient(var.index, coefficient)
     return constraint
 
+def _enure_index(var: Variable) -> int:
+    if var.index is None:
+        raise ValueError("All variables must have an index")
+    return var.index
 
 def _expression_to_objective(
     expr: Expression, sense: Sense = Sense.Minimize
-) -> LinearObjective:
+) -> LinearObjective | QuadraticObjective:
     """Convert an expression to a `LinearObjective`."""
-    objective = LinearObjective()
     if _get_relation(expr) is not None:
         # TODO: may be supported in the future, eg. for piecewise objectives?
         raise ValueError(f"Objective function cannot have comparisons: {expr}")
 
-    for var, coef in _get_coefficients(expr).items():
+    objective: LinearObjective | QuadraticObjective
+    coeffs = _get_coefficients(expr)
+    if any(isinstance(var, tuple) for var in coeffs):
+        objective = QuadraticObjective()
+    else:
+        objective = LinearObjective()
+
+    for var, coef in coeffs.items():
         if var is None:
             objective.set_constant(coef)
+        elif isinstance(var, tuple):
+            objective.set_quadratic_coefficient( # type: ignore
+                _enure_index(var[0]), _enure_index(var[1]), coef
+            )
         elif coef != 0:
             if var.index is None:
                 raise ValueError(
                     "All variables in a objective expression must have an index"
                 )
-            objective.set_coefficient(var.index, coef)
+            objective.set_coefficient(_enure_index(var), coef)
 
     objective.set_sense(sense)
     return objective
@@ -251,9 +306,10 @@ def _expression_to_objective(
 
 def _get_coefficients(
     expr: Expression | ast.expr,
-    coeffs: dict[Variable | None, float] | None = None,
+    coeffs: dict[Variable | None | tuple[Variable, Variable], float] | None = None,
     scale: int = 1,
-) -> dict[Variable | None, float]:
+    var_scale: Variable | None = None,
+) -> dict[Variable | None | tuple[Variable, Variable], float]:
     """Get the coefficients of a linear expression.
 
     The coefficients are returned as a dictionary mapping Variable to coefficient.
@@ -283,47 +339,91 @@ def _get_coefficients(
     if coeffs is None:
         coeffs = {}
 
-    if isinstance(expr, Compare):
+    if isinstance(expr, Constant):
+        if var_scale is not None:
+            breakpoint()
+        coeffs.setdefault(None, 0)
+        coeffs[None] += expr.value * scale
+
+    elif isinstance(expr, UnaryOp):
+        if var_scale is not None:
+            breakpoint()
+        if isinstance(expr.op, ast.USub):
+            scale = -scale
+        _get_coefficients(expr.operand, coeffs, scale, var_scale)
+
+    elif isinstance(expr, Variable):
+        if var_scale is not None:
+            # multiplication or division between two variables
+            key = _sort_vars(expr, var_scale)
+            coeffs.setdefault(key, 0)
+            coeffs[key] += scale
+        else:
+            coeffs.setdefault(expr, 0)
+            coeffs[expr] += scale
+
+    elif isinstance(expr, Compare):
         if len(expr.ops) != 1:
             raise ValueError("Only single comparisons are supported")
-        _get_coefficients(expr.left, coeffs)
+        _get_coefficients(expr.left, coeffs, scale, var_scale)
         # negate the right hand side of the comparison
-        _get_coefficients(expr.comparators[0], coeffs, -1)
+        _get_coefficients(expr.comparators[0], coeffs, scale * -1, var_scale)
 
     elif isinstance(expr, BinOp):
         if isinstance(expr.op, (ast.Mult, ast.Div)):
-            if isinstance(expr.right, Constant):
-                e = expr.left
-                v = expr.right.value
-            elif isinstance(expr.left, Constant):
-                e = expr.right
-                v = expr.left.value
-            else:
-                raise NotImplementedError(
-                    "Only linear expressions currently supported, "
-                    "multiplication must be by a constant"
-                )
-            scale *= 1 / v if isinstance(expr.op, ast.Div) else v
-            _get_coefficients(e, coeffs, scale)
-        else:
-            _get_coefficients(expr.left, coeffs, scale)
+            _process_mult_op(expr, coeffs, scale, var_scale)
+        elif isinstance(expr.op, (ast.Add, ast.UAdd, ast.USub, ast.Sub)):
+            _get_coefficients(expr.left, coeffs, scale, var_scale)
             if isinstance(expr.op, (ast.USub, ast.Sub)):
                 scale = -scale
-            _get_coefficients(expr.right, coeffs, scale)
-    elif isinstance(expr, UnaryOp):
-        if isinstance(expr.op, ast.USub):
-            scale = -scale
-        _get_coefficients(expr.operand, coeffs, scale)
-    elif isinstance(expr, Constant):
-        coeffs.setdefault(None, 0)
-        coeffs[None] += expr.value * scale
-    elif isinstance(expr, Variable):
-        coeffs.setdefault(expr, 0)
-        coeffs[expr] += scale
+            _get_coefficients(expr.right, coeffs, scale, var_scale)
+        else:
+            raise ValueError(f"Unsupported binary operator: {type(expr.op)}")
+
     else:
         raise ValueError(f"Unsupported expression type: {type(expr)}")
 
     return coeffs
+
+
+def _sort_vars(v1: Variable, v2: Variable) -> tuple[Variable, Variable]:
+    """Sort variables by index, or by id if index is None.
+
+    This is so that a pair of variables can be used as a dictionary key.
+    Without worrying about the order of the variables (and without using a set,
+    which would exclude the possibility of having the same variable twice).
+    """
+    _v1, _v2 = sorted((v1, v2), key=lambda v: getattr(v, "index", id(v)))
+    return _v1, _v2
+
+
+def _process_mult_op(
+    expr: BinOp,
+    coeffs: dict[Variable | None | tuple[Variable, Variable], float],
+    scale: int,
+    var_scale: Variable | None = None,
+) -> None:
+    if isinstance(expr.right, Constant):
+        v = expr.right.value
+        scale *= 1 / v if isinstance(expr.op, ast.Div) else v
+        _get_coefficients(expr.left, coeffs, scale, var_scale)
+    elif isinstance(expr.left, Constant):
+        v = expr.left.value
+        scale *= 1 / v if isinstance(expr.op, ast.Div) else v
+        _get_coefficients(expr.right, coeffs, scale, var_scale)
+    elif isinstance(expr.left, Variable):
+        if var_scale is not None:
+            raise TypeError("Cannot multiply by more than two variables.")
+        _get_coefficients(expr.right, coeffs, scale, expr.left)
+    elif isinstance(expr.right, Variable):
+        if var_scale is not None:
+            raise TypeError("Cannot multiply by more than two variables.")
+        _get_coefficients(expr.left, coeffs, scale, expr.right)
+    else:
+        raise TypeError(
+            "Unexpected multiplcation or division between "
+            f"{type(expr.left)} and {type(expr.right)}"
+        )
 
 
 class _ExprSerializer(ast.NodeVisitor):
