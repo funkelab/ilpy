@@ -72,8 +72,21 @@ cdef extern from 'impl/solvers/LinearObjective.h':
         void resize(unsigned int)
         unsigned int size()
 
-cdef extern from 'impl/solvers/LinearConstraint.cpp':
+cdef extern from 'impl/solvers/QuadraticConstraint.cpp':
     pass
+
+cdef extern from 'impl/solvers/QuadraticConstraint.h':
+    cdef cppclass QuadraticConstraint:
+        QuadraticConstraint() except +
+        void setCoefficient(unsigned int, double)
+        const map[unsigned int, double]& getCoefficients()
+        void setQuadraticCoefficient(unsigned int, unsigned int, double)
+        const map[pair[unsigned int, unsigned int], double]& getQuadraticCoefficients()
+        void setRelation(Relation)
+        void setValue(double)
+        Relation getRelation()
+        double getValue()
+        bool isViolated(const Solution&)
 
 cdef extern from 'impl/solvers/LinearConstraint.h':
     cdef cppclass LinearConstraint:
@@ -114,10 +127,11 @@ cdef extern from 'impl/solvers/QuadraticSolverBackend.h':
         void initialize(unsigned int, VariableType, map[unsigned int, VariableType]&) except +
         void setObjective(QuadraticObjective&)
         void setConstraints(LinearConstraints&)
-        void addConstraint(LinearConstraint&)
+        void addConstraint(QuadraticConstraint&)
         void setTimeout(double)
         void setOptimalityGap(double, bool)
         void setNumThreads(unsigned int)
+        void setVerbose(bool)
         bool solve(Solution& solution, string& message)
 
 cdef extern from 'impl/solvers/ScipBackend.cpp':

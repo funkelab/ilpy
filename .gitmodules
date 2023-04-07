@@ -1,3 +1,0 @@
-[submodule "solver"]
-	path = ilpy/impl/solvers
-	url = https://github.com/funkey/solvers
