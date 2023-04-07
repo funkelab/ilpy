@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 from typing import Any, Sequence, Union
 
-from ilpy.wrapper import LinearConstraint, Relation
+from ilpy.wrapper import Constraint, Relation
 
 Number = Union[float, int]
 
@@ -22,7 +22,7 @@ class Expression(ast.AST):
     Or, use ``print(expr)` to see the string representation of an expression.
     """
 
-    def constraint(self) -> LinearConstraint:
+    def constraint(self) -> Constraint:
         """Create a linear constraint from this expression."""
         return _expression_to_constraint(self)
 
@@ -198,9 +198,9 @@ def _get_relation(expr: Expression) -> Relation | None:
     return relation
 
 
-def _expression_to_constraint(expr: Expression) -> LinearConstraint:
-    """Convert an expression to a `LinearConstraint`."""
-    constraint = LinearConstraint()
+def _expression_to_constraint(expr: Expression) -> Constraint:
+    """Convert an expression to a `Constraint`."""
+    constraint = Constraint()
     if relation := _get_relation(expr):
         constraint.set_relation(relation)
 
