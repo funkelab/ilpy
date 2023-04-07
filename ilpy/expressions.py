@@ -299,10 +299,11 @@ def _get_coefficients(
     scale: int = 1,
     var_scale: Variable | None = None,
 ) -> dict[Variable | None | tuple[Variable, Variable], float]:
-    """Get the coefficients of a linear expression.
+    """Get the coefficients of an expression.
 
     The coefficients are returned as a dictionary mapping Variable to coefficient.
-    The key `None` is used for the constant term.
+    The key `None` is used for the constant term.  Quadratic coefficients are
+    represented with a two-tuple of variables.
 
     Note also that expressions on the right side of a comparison are negated,
     (so that the comparison is effectively against zero.)
@@ -382,6 +383,7 @@ def _sort_vars(v1: Variable, v2: Variable) -> tuple[Variable, Variable]:
     Without worrying about the order of the variables (and without using a set,
     which would exclude the possibility of having the same variable twice).
     """
+    # two lines are used to tell mypy it's a length 2 tuple
     _v1, _v2 = sorted((v1, v2), key=lambda v: getattr(v, "index", id(v)))
     return _v1, _v2
 
@@ -392,6 +394,7 @@ def _process_mult_op(
     scale: int,
     var_scale: Variable | None = None,
 ) -> None:
+    """Helper function for _get_coefficients to process multiplication and division."""
     if isinstance(expr.right, Constant):
         v = expr.right.value
         scale *= 1 / v if isinstance(expr.op, ast.Div) else v
@@ -471,6 +474,7 @@ class _ExprSerializer(ast.NodeVisitor):
     def visit_BinOp(self, node: ast.BinOp) -> None:
         opstring = f" {self.OP_MAP[type(node.op)]} "
         args: list[ast.AST | str] = [node.left, opstring, node.right]
+        # wrap in parentheses if the left or right side is a binary operation
         if isinstance(node.op, ast.Mult):
             if isinstance(node.left, ast.BinOp):
                 args[:1] = ["(", node.left, ")"]
