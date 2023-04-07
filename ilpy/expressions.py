@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ast
-from typing import Any, Sequence, Union, cast
+from typing import Any, Sequence, Union
 
 from ilpy.wrapper import Constraint, Objective, Relation, Sense
 
