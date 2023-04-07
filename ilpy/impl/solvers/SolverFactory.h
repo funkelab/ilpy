@@ -2,9 +2,8 @@
 #define INFERENCE_DEFAULT_FACTORY_H__
 
 #include <memory>
-#include "SolverBackendFactory.h"
 
-class SolverFactory : public SolverBackendFactory {
+class SolverFactory {
 
 public:
 
