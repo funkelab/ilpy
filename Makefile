@@ -9,7 +9,7 @@ install-dev:
 
 .PHONY: tests
 tests:
-	pytest -v --cov=ilpy -s ilpy
+	pytest -v --cov=ilpy
 	flake8 ilpy
 
 clean:
