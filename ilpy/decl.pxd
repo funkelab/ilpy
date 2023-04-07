@@ -5,34 +5,34 @@ from libcpp.map cimport map
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
-cdef extern from 'impl/solvers/Relation.h':
+cdef extern from "impl/solvers/Relation.h":
     cdef enum Relation:
         LessEqual
         Equal
         GreaterEqual
 
-cdef extern from 'impl/solvers/VariableType.h':
+cdef extern from "impl/solvers/VariableType.h":
     cdef enum VariableType:
         Continuous
         Integer
         Binary
 
-cdef extern from 'impl/solvers/Sense.h':
+cdef extern from "impl/solvers/Sense.h":
     cdef enum Sense:
         Minimize
         Maximize
 
-cdef extern from 'impl/solvers/BackendPreference.h':
+cdef extern from "impl/solvers/BackendPreference.h":
     cdef enum Preference:
         Any
         Scip
         Gurobi
         Cplex
 
-cdef extern from 'impl/solvers/Solution.cpp':
+cdef extern from "impl/solvers/Solution.cpp":
     pass
 
-cdef extern from 'impl/solvers/Solution.h':
+cdef extern from "impl/solvers/Solution.h":
     cdef cppclass Solution:
         Solution(unsigned int) except +
         void resize(unsigned int)
@@ -41,10 +41,10 @@ cdef extern from 'impl/solvers/Solution.h':
         void setValue(double value)
         double getValue()
 
-cdef extern from 'impl/solvers/Objective.cpp':
+cdef extern from "impl/solvers/Objective.cpp":
     pass
 
-cdef extern from 'impl/solvers/Objective.h':
+cdef extern from "impl/solvers/Objective.h":
     cdef cppclass Objective:
         Objective() except +
         Objective(unsigned int) except +
@@ -59,10 +59,10 @@ cdef extern from 'impl/solvers/Objective.h':
         void resize(unsigned int)
         unsigned int size()
 
-cdef extern from 'impl/solvers/Constraint.cpp':
+cdef extern from "impl/solvers/Constraint.cpp":
     pass
 
-cdef extern from 'impl/solvers/Constraint.h':
+cdef extern from "impl/solvers/Constraint.h":
     cdef cppclass Constraint:
         Constraint() except +
         void setCoefficient(unsigned int, double)
@@ -75,20 +75,22 @@ cdef extern from 'impl/solvers/Constraint.h':
         double getValue()
         bool isViolated(const Solution&)
 
-cdef extern from 'impl/solvers/Constraints.cpp':
+cdef extern from "impl/solvers/Constraints.cpp":
     pass
 
-cdef extern from 'impl/solvers/Constraints.h':
+cdef extern from "impl/solvers/Constraints.h":
     cdef cppclass Constraints:
         Constraints() except +
         void clear()
         void add(Constraint&)
-        void addAll(Constraints&);
+        void addAll(Constraints&)
         unsigned int size()
 
-cdef extern from 'impl/solvers/SolverBackend.h':
+cdef extern from "impl/solvers/SolverBackend.h":
     cdef cppclass SolverBackend:
-        void initialize(unsigned int, VariableType, map[unsigned int, VariableType]&) except +
+        void initialize(
+            unsigned int, VariableType, map[unsigned int, VariableType]&
+        ) except +
         void setObjective(Objective&)
         void setConstraints(Constraints&)
         void addConstraint(Constraint&)
@@ -98,15 +100,15 @@ cdef extern from 'impl/solvers/SolverBackend.h':
         void setVerbose(bool)
         bool solve(Solution& solution, string& message)
 
-cdef extern from 'impl/solvers/ScipBackend.cpp':
+cdef extern from "impl/solvers/ScipBackend.cpp":
     pass
 
-cdef extern from 'impl/solvers/GurobiBackend.cpp':
+cdef extern from "impl/solvers/GurobiBackend.cpp":
     pass
 
-cdef extern from 'impl/solvers/SolverFactory.cpp':
+cdef extern from "impl/solvers/SolverFactory.cpp":
     pass
 
-cdef extern from 'impl/solvers/SolverFactory.h':
+cdef extern from "impl/solvers/SolverFactory.h":
     cdef cppclass SolverFactory:
         shared_ptr[SolverBackend] createSolverBackend(Preference) except +

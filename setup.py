@@ -1,5 +1,4 @@
 import os
-
 from ctypes import util
 
 from Cython.Build import cythonize

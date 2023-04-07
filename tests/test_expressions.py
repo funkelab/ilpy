@@ -1,7 +1,6 @@
 import operator
 
 import pytest
-
 from ilpy.expressions import Expression, Variable, _get_coefficients
 from ilpy.wrapper import Constraint, Objective, Relation, Sense
 

@@ -12,6 +12,24 @@ on:
       - main
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run pre-commit linting
+        run: pipx run pre-commit run --all-files
+
+  check-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # this test ensures that the sdist contains all necessary files
+      # if it fails, you need to either update MANIFEST.in,
+      # or add an explicit "ignore" rule to pyproject.toml
+      - name: Run check-manifest
+        run: pipx run check-manifest
+
   test:
     runs-on: ${{ matrix.platform }}
     defaults:
@@ -24,8 +42,6 @@ jobs:
         platform: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: ${{ matrix.python-version }}
@@ -41,18 +57,6 @@ jobs:
       - name: run tests
         run: pytest --color yes -v
 
-  check-manifest:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-      # this test ensures that the sdist contains all necessary files
-      # if it fails, you need to either update MANIFEST.in,
-      # or add an explicit "ignore" rule to pyproject.toml
-      - name: Run check-manifest
-        run: pipx run check-manifest
-
   # we only deploy the sdist to PyPI, the wheel is still complicated
   deploy-sdist:
     if: startsWith(github.ref, 'refs/tags')
@@ -61,8 +65,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
       - uses: actions/setup-python@v4
         with:
           python-version: "3.x"

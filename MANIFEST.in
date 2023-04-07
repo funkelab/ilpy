@@ -6,3 +6,4 @@ recursive-exclude tests *
 exclude .gitmodules
 exclude ilpy/wrapper.cpp
 exclude Makefile
+exclude .pre-commit-config.yaml
