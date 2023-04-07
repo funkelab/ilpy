@@ -70,13 +70,7 @@ ScipBackend::initialize(
 }
 
 void
-ScipBackend::setObjective(const LinearObjective& objective) {
-
-	setObjective((QuadraticObjective)objective);
-}
-
-void
-ScipBackend::setObjective(const QuadraticObjective& objective) {
+ScipBackend::setObjective(const Objective& objective) {
 
 	// set sense of objective
 	if (objective.getSense() == Minimize)
@@ -129,7 +123,7 @@ ScipBackend::setObjective(const QuadraticObjective& objective) {
 }
 
 void
-ScipBackend::setConstraints(const LinearConstraints& constraints) {
+ScipBackend::setConstraints(const Constraints& constraints) {
 
 	// remove previous constraints
 	freeConstraints();
@@ -138,7 +132,7 @@ ScipBackend::setConstraints(const LinearConstraints& constraints) {
 	_constraints.reserve(constraints.size());
 
 	unsigned int j = 0;
-	for (const LinearConstraint& constraint : constraints) {
+	for (const Constraint& constraint : constraints) {
 
 		addConstraint(constraint);
 
@@ -147,50 +141,7 @@ ScipBackend::setConstraints(const LinearConstraints& constraints) {
 }
 
 void
-ScipBackend::addConstraint(const LinearConstraint& constraint) {
-
-	// create a list of variables and their coefficients
-	std::vector<SCIP_VAR*> vars;
-	std::vector<SCIP_Real> coefs;
-	for (auto& p : constraint.getCoefficients()) {
-		vars.push_back(_variables[p.first]);
-		coefs.push_back(p.second);
-	}
-
-	// create the SCIP constraint lhs <= linear expr <= rhs
-	SCIP_CONS* c;
-	std::string name("c");
-	name += std::to_string(_constraints.size());
-
-	// set lhs and rhs according to constraint relation
-	SCIP_Real lhs = constraint.getValue();
-	SCIP_Real rhs = constraint.getValue();
-	if (constraint.getRelation() == LessEqual)
-		lhs = -SCIPinfinity(_scip);
-	if (constraint.getRelation() == GreaterEqual)
-		rhs = SCIPinfinity(_scip);
-
-	SCIP_CALL_ABORT(SCIPcreateConsBasicLinear(
-			_scip,
-			&c,
-			name.c_str(),
-			vars.size(),
-			&vars[0],
-			&coefs[0],
-			lhs,
-			rhs));
-
-	_constraints.push_back(c);
-
-	SCIP_CALL_ABORT(SCIPaddCons(_scip, c));
-	SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &c));
-
-}
-
-void
-ScipBackend::addConstraint(const QuadraticConstraint& constraint) {
-
-	// FIXME: code duplication with addConstraint(LinearConstraint) 
+ScipBackend::addConstraint(const Constraint& constraint) {
 
 	// create a list of variables and their coefficients
 	std::vector<SCIP_VAR*> linvars;

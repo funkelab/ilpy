@@ -1,30 +1,30 @@
-#include "LinearConstraints.h"
+#include "Constraints.h"
 
-LinearConstraints::LinearConstraints(size_t size) {
+Constraints::Constraints(size_t size) {
 
-	_linearConstraints.resize(size);
+	_constraints.resize(size);
 }
 
 void
-LinearConstraints::add(const LinearConstraint& linearConstraint) {
+Constraints::add(const Constraint& constraint) {
 
-	_linearConstraints.push_back(linearConstraint);
+	_constraints.push_back(constraint);
 }
 
 void
-LinearConstraints::addAll(const LinearConstraints& linearConstraints) {
+Constraints::addAll(const Constraints& constraints) {
 
-	_linearConstraints.insert(_linearConstraints.end(), linearConstraints.begin(), linearConstraints.end());
+	_constraints.insert(_constraints.end(), constraints.begin(), constraints.end());
 }
 
 std::vector<unsigned int>
-LinearConstraints::getConstraints(const std::vector<unsigned int>& variableIds) {
+Constraints::getConstraints(const std::vector<unsigned int>& variableIds) {
 
 	std::vector<unsigned int> indices;
 
 	for (unsigned int i = 0; i < size(); i++) {
 
-		LinearConstraint& constraint = _linearConstraints[i];
+		Constraint& constraint = _constraints[i];
 
 		for (unsigned int v : variableIds) {
 

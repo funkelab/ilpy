@@ -5,13 +5,13 @@
 #include "BackendPreference.h"
 
 // forward declaration
-class LinearSolverBackend;
+class SolverBackend;
 
-class LinearSolverBackendFactory {
+class SolverBackendFactory {
 
 public:
 
-	virtual std::shared_ptr<LinearSolverBackend> createLinearSolverBackend(Preference preference = Any) const = 0;
+	virtual std::shared_ptr<SolverBackend> createSolverBackend(Preference preference = Any) const = 0;
 };
 
 #endif // LINEAR_PROGRAM_SOLVER_FACTORY_H__

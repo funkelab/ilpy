@@ -1,73 +1,72 @@
 #ifndef INFERENCE_LINEAR_CONSTRAINTS_H__
 #define INFERENCE_LINEAR_CONSTRAINTS_H__
 
-#include "LinearConstraint.h"
+#include "Constraint.h"
 
-class LinearConstraints {
+class Constraints {
 
-	typedef std::vector<LinearConstraint> linear_constraints_type;
+	typedef std::vector<Constraint> constraints_type;
 
 public:
 
-	typedef linear_constraints_type::iterator       iterator;
+	typedef constraints_type::iterator       iterator;
 
-	typedef linear_constraints_type::const_iterator const_iterator;
+	typedef constraints_type::const_iterator const_iterator;
 
 	/**
-	 * Create a new set of linear constraints and allocate enough memory to hold
-	 * 'size' linear constraints. More or less constraints can be added, but
+	 * Create a new set of constraints and allocate enough memory to hold
+	 * 'size' constraints. More or less constraints can be added, but
 	 * memory might be wasted (if more allocated then necessary) or unnecessary
 	 * reallocations might occur (if more added than allocated).
 	 *
-	 * @param size The number of linear constraints to reserve memory for.
+	 * @param size The number of constraints to reserve memory for.
 	 */
-	LinearConstraints(size_t size = 0);
+	Constraints(size_t size = 0);
 
 	/**
-	 * Remove all constraints from this set of linear constraints.
+	 * Remove all constraints from this set of constraints.
 	 */
-	void clear() { _linearConstraints.clear(); }
+	void clear() { _constraints.clear(); }
 
 	/**
-	 * Add a linear constraint.
+	 * Add a constraint.
 	 *
-	 * @param linearConstraint The linear constraint to add.
+	 * @param constraint The constraint to add.
 	 */
-	void add(const LinearConstraint& linearConstraint);
+	void add(const Constraint& constraint);
 
 	/**
-	 * Add a set of linear constraints.
+	 * Add a set of constraints.
 	 *
-	 * @param linearConstraints The set of linear constraints to add.
+	 * @param constraints The set of constraints to add.
 	 */
-	void addAll(const LinearConstraints& linearConstraints);
+	void addAll(const Constraints& constraints);
 
 	/**
-	 * @return The number of linear constraints in this set.
+	 * @return The number of constraints in this set.
 	 */
-	unsigned int size() const { return _linearConstraints.size(); }
+	unsigned int size() const { return _constraints.size(); }
 
-	const const_iterator begin() const { return _linearConstraints.begin(); }
+	const const_iterator begin() const { return _constraints.begin(); }
 
-	iterator begin() { return _linearConstraints.begin(); }
+	iterator begin() { return _constraints.begin(); }
 
-	const const_iterator end() const { return _linearConstraints.end(); }
+	const const_iterator end() const { return _constraints.end(); }
 
-	iterator end() { return _linearConstraints.end(); }
+	iterator end() { return _constraints.end(); }
 
-	const LinearConstraint& operator[](size_t i) const { return _linearConstraints[i]; }
+	const Constraint& operator[](size_t i) const { return _constraints[i]; }
 
-	LinearConstraint& operator[](size_t i) { return _linearConstraints[i]; }
+	Constraint& operator[](size_t i) { return _constraints[i]; }
 
 	/**
-	 * Get a linst of indices of linear constraints that use the given 
-	 * variables.
+	 * Get a linst of indices of constraints that use the given variables.
 	 */
 	std::vector<unsigned int> getConstraints(const std::vector<unsigned int>& variableIds);
 
 private:
 
-	linear_constraints_type _linearConstraints;
+	constraints_type _constraints;
 };
 
 #endif // INFERENCE_LINEAR_CONSTRAINTS_H__

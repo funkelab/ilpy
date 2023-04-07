@@ -8,9 +8,9 @@
 
 #include <scip/scip.h>
 
-#include "LinearConstraints.h"
-#include "QuadraticObjective.h"
-#include "QuadraticSolverBackend.h"
+#include "Constraints.h"
+#include "Objective.h"
+#include "SolverBackend.h"
 #include "Sense.h"
 #include "Solution.h"
 
@@ -27,7 +27,7 @@
  * vector denoting the coefficients of the objective and Q a PSD matrix giving
  * the quadratic coefficients of the objective.
  */
-class ScipBackend : public QuadraticSolverBackend {
+class ScipBackend : public SolverBackend {
 
 public:
 
@@ -48,15 +48,11 @@ public:
 			VariableType                                defaultVariableType,
 			const std::map<unsigned int, VariableType>& specialVariableTypes);
 
-	void setObjective(const LinearObjective& objective);
+	void setObjective(const Objective& objective);
 
-	void setObjective(const QuadraticObjective& objective);
+	void setConstraints(const Constraints& constraints);
 
-	void setConstraints(const LinearConstraints& constraints);
-
-	void addConstraint(const LinearConstraint& constraint);
-
-	void addConstraint(const QuadraticConstraint& constraint);
+	void addConstraint(const Constraint& constraint);
 
 	void setTimeout(double timeout);
 
