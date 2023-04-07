@@ -268,7 +268,7 @@ def _enure_index(var: Variable) -> int:
 def _expression_to_objective(
     expr: Expression, sense: Sense = Sense.Minimize
 ) -> Objective:
-    """Convert an expression to a `LinearObjective`."""
+    """Convert an expression to an `Objective`."""
     if _get_relation(expr) is not None:
         # TODO: may be supported in the future, eg. for piecewise objectives?
         raise ValueError(f"Objective function cannot have comparisons: {expr}")
