@@ -8,9 +8,7 @@ QuadraticConstraint::setCoefficient(unsigned int varNum, double coef) {
 
 	if (coef == 0) {
 
-		std::map<unsigned int, double>::iterator i = _coefs.find(varNum);
-		if (i != _coefs.end())
-			_coefs.erase(_coefs.find(varNum));
+		_coefs.erase(varNum);
 
 	} else {
 
@@ -23,7 +21,7 @@ QuadraticConstraint::setQuadraticCoefficient(unsigned int varNum1, unsigned int 
 
 	if (coef == 0) {
 
-		_quadraticCoefs.erase(_quadraticCoefs.find(std::make_pair(varNum1, varNum2)));
+		_quadraticCoefs.erase(std::make_pair(varNum1, varNum2));
 
 	} else {
 

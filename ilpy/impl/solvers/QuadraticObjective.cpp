@@ -39,7 +39,7 @@ QuadraticObjective::setQuadraticCoefficient(unsigned int varNum1, unsigned int v
 
 	if (coef == 0) {
 
-		_quadraticCoefs.erase(_quadraticCoefs.find(std::make_pair(varNum1, varNum2)));
+		_quadraticCoefs.erase(std::make_pair(varNum1, varNum2));
 
 	} else {
 
