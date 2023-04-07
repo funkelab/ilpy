@@ -1,13 +1,11 @@
+.PHONY: default install-dev tests clean
+
 default:
-	pip install -r requirements.txt
 	pip install .
-	rm -rf ilpy.egg-info
 
 install-dev:
-	pip install -r requirements_dev.txt
-	pip install -e .
+	pip install -e .[dev]
 
-.PHONY: tests
 tests:
 	pytest -v --cov=ilpy --cov-report=term-missing
 	pre-commit run --all-files
