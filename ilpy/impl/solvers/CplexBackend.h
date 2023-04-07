@@ -10,9 +10,9 @@
 
 #include <ilcplex/ilocplex.h>
 
-#include "LinearConstraints.h"
-#include "QuadraticObjective.h"
-#include "QuadraticSolverBackend.h"
+#include "Constraints.h"
+#include "Objective.h"
+#include "SolverBackend.h"
 #include "Sense.h"
 #include "Solution.h"
 
@@ -31,7 +31,7 @@
  * vector denoting the coefficients of the objective and Q a PSD matrix giving
  * the quadratic coefficients of the objective.
  */
-class CplexBackend : public QuadraticSolverBackend {
+class CplexBackend : public SolverBackend {
 
 public:
 
@@ -77,13 +77,11 @@ public:
             VariableType                                defaultVariableType,
             const std::map<unsigned int, VariableType>& specialVariableTypes);
 
-    void setObjective(const LinearObjective& objective);
+    void setObjective(const Objective& objective);
 
-    void setObjective(const QuadraticObjective& objective);
+    void setConstraints(const Constraints& constraints);
 
-    void setConstraints(const LinearConstraints& constraints);
-
-    void addConstraint(const LinearConstraint& constraint);
+    void addConstraint(const Constraint& constraint);
 
     void setTimeout(double timeout) { timeout_ = timeout; }
 
@@ -117,7 +115,7 @@ private:
     void setMIPFocus(unsigned int focus);
 
     // create a CPLEX constraint from a linear constraint
-    IloRange createConstraint(const LinearConstraint &constraint);
+    IloRange createConstraint(const Constraint &constraint);
 
     /**
      * Enable solver output.

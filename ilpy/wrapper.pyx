@@ -67,12 +67,12 @@ cdef class Solution:
     def set_value(self, value):
         self.p.setValue(value)
 
-cdef class QuadraticObjective:
+cdef class Objective:
 
-    cdef decl.QuadraticObjective* p
+    cdef decl.Objective* p
 
     def __cinit__(self, size = 0):
-        self.p = new decl.QuadraticObjective(size)
+        self.p = new decl.Objective(size)
 
     def __dealloc__(self):
         del self.p
@@ -107,46 +107,12 @@ cdef class QuadraticObjective:
     def __len__(self):
         return self.p.size()
 
-cdef class LinearObjective:
+cdef class Constraint:
 
-    cdef decl.LinearObjective* p
-
-    def __cinit__(self, size = 0):
-        self.p = new decl.LinearObjective(size)
-
-    def __dealloc__(self):
-        del self.p
-
-    def set_constant(self, value):
-        self.p.setConstant(value)
-
-    def get_constant(self):
-        return self.p.getConstant()
-
-    def set_coefficient(self, i, value):
-        self.p.setCoefficient(i, value)
-
-    def get_coefficients(self):
-        return self.p.getCoefficients()
-
-    def set_sense(self, sense):
-        self.p.setSense(sense)
-
-    def get_sense(self):
-        return Sense(self.p.getSense())
-
-    def resize(self, size):
-        self.p.resize(size)
-
-    def __len__(self):
-        return self.p.size()
-
-cdef class QuadraticConstraint:
-
-    cdef decl.QuadraticConstraint* p
+    cdef decl.Constraint* p
 
     def __cinit__(self):
-        self.p = new decl.QuadraticConstraint()
+        self.p = new decl.Constraint()
 
     def __dealloc__(self):
         del self.p
@@ -178,46 +144,12 @@ cdef class QuadraticConstraint:
     def is_violated(self, Solution solution):
         return self.p.isViolated(solution.p[0])
 
-cdef class LinearConstraint:
+cdef class Constraints:
 
-    cdef decl.LinearConstraint* p
-
-    def __cinit__(self):
-        self.p = new decl.LinearConstraint()
-
-    def __dealloc__(self):
-        del self.p
-
-    def set_coefficient(self, i, value):
-        self.p.setCoefficient(i, value)
-
-    def get_coefficients(self):
-        return self.p.getCoefficients()
-
-    def set_relation(self, relation):
-        self.p.setRelation(relation)
-
-    def set_value(self, value):
-        self.p.setValue(value)
-
-    def get_relation(self):
-        return Relation(self.p.getRelation())
-
-    def get_value(self):
-        return self.p.getValue()
-
-    def is_violated(self, Solution solution):
-        # avoid segfault in some cases of wrong type
-        if not isinstance(solution, Solution):
-            raise TypeError('solution must be of type Solution')
-        return self.p.isViolated(solution.p[0])
-
-cdef class LinearConstraints:
-
-    cdef decl.LinearConstraints* p
+    cdef decl.Constraints* p
 
     def __cinit__(self):
-        self.p = new decl.LinearConstraints()
+        self.p = new decl.Constraints()
 
     def __dealloc__(self):
         del self.p
@@ -225,18 +157,18 @@ cdef class LinearConstraints:
     def clear(self):
         self.p.clear()
 
-    def add(self, LinearConstraint constraint):
+    def add(self, Constraint constraint):
         self.p.add(constraint.p[0])
 
-    def add_all(self, LinearConstraints constraints):
+    def add_all(self, Constraints constraints):
         self.p.addAll(constraints.p[0])
 
     def __len__(self):
         return self.p.size()
 
-cdef class LinearSolver:
+cdef class Solver:
 
-    cdef shared_ptr[decl.LinearSolverBackend] p
+    cdef shared_ptr[decl.SolverBackend] p
     cdef unsigned int num_variables
 
     def __cinit__(
@@ -250,64 +182,17 @@ cdef class LinearSolver:
         if variable_types is not None:
             for k, v in variable_types.items():
                 vtypes[k] = v
-        self.p = factory.createLinearSolverBackend(preference)
+        self.p = factory.createSolverBackend(preference)
         self.num_variables = num_variables
         deref(self.p).initialize(num_variables, default_variable_type, vtypes)
 
-    def set_objective(self, LinearObjective objective):
+    def set_objective(self, Objective objective):
         deref(self.p).setObjective(objective.p[0])
 
-    def set_constraints(self, LinearConstraints constraints):
+    def set_constraints(self, Constraints constraints):
         deref(self.p).setConstraints(constraints.p[0])
 
-    def add_constraint(self, LinearConstraint constraint):
-        deref(self.p).addConstraint(constraint.p[0])
-
-    def set_timeout(self, timeout):
-        deref(self.p).setTimeout(timeout)
-
-    def set_optimality_gap(self, gap, absolute=False):
-        deref(self.p).setOptimalityGap(gap, absolute)
-
-    def set_num_threads(self, num_threads):
-        deref(self.p).setNumThreads(num_threads)
-
-    def set_verbose(self, verbose):
-        deref(self.p).setVerbose(verbose)
-
-    def solve(self):
-        solution = Solution(self.num_variables)
-        cdef string message
-        deref(self.p).solve(solution.p[0], message)
-        return solution, message
-
-cdef class QuadraticSolver:
-
-    cdef shared_ptr[decl.QuadraticSolverBackend] p
-    cdef unsigned int num_variables
-
-    def __cinit__(
-            self,
-            num_variables,
-            default_variable_type,
-            dict variable_types=None,
-            Preference preference=Preference.Any):
-        cdef decl.SolverFactory factory
-        cdef cppmap[unsigned int, decl.VariableType] vtypes
-        if variable_types is not None:
-            for k, v in variable_types.items():
-                vtypes[k] = v
-        self.p = factory.createQuadraticSolverBackend(preference)
-        self.num_variables = num_variables
-        deref(self.p).initialize(num_variables, default_variable_type, vtypes)
-
-    def set_objective(self, QuadraticObjective objective):
-        deref(self.p).setObjective(objective.p[0])
-
-    def set_constraints(self, LinearConstraints constraints):
-        deref(self.p).setConstraints(constraints.p[0])
-
-    def add_constraint(self, QuadraticConstraint constraint):
+    def add_constraint(self, Constraint constraint):
         deref(self.p).addConstraint(constraint.p[0])
 
     def set_timeout(self, timeout):

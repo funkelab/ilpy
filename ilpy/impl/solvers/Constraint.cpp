@@ -1,10 +1,10 @@
-#include "QuadraticConstraint.h"
+#include "Constraint.h"
 
-QuadraticConstraint::QuadraticConstraint() :
+Constraint::Constraint() :
 	_relation(LessEqual) {}
 
 void
-QuadraticConstraint::setCoefficient(unsigned int varNum, double coef) {
+Constraint::setCoefficient(unsigned int varNum, double coef) {
 
 	if (coef == 0) {
 
@@ -17,7 +17,7 @@ QuadraticConstraint::setCoefficient(unsigned int varNum, double coef) {
 }
 
 void
-QuadraticConstraint::setQuadraticCoefficient(unsigned int varNum1, unsigned int varNum2, double coef) {
+Constraint::setQuadraticCoefficient(unsigned int varNum1, unsigned int varNum2, double coef) {
 
 	if (coef == 0) {
 
@@ -30,12 +30,12 @@ QuadraticConstraint::setQuadraticCoefficient(unsigned int varNum1, unsigned int 
 }
 
 void
-QuadraticConstraint::setRelation(Relation relation) {
+Constraint::setRelation(Relation relation) {
 
 	_relation = relation;
 }
 
-bool QuadraticConstraint::isViolated(const Solution & solution){
+bool Constraint::isViolated(const Solution & solution){
 
     double s = 0;
 
@@ -58,36 +58,36 @@ bool QuadraticConstraint::isViolated(const Solution & solution){
 
 
 void
-QuadraticConstraint::setValue(double value) {
+Constraint::setValue(double value) {
 
 	_value = value;
 }
 
 const std::map<unsigned int, double>&
-QuadraticConstraint::getCoefficients() const {
+Constraint::getCoefficients() const {
 
 	return _coefs;
 }
 
 const std::map<std::pair<unsigned int, unsigned int>, double>&
-QuadraticConstraint::getQuadraticCoefficients() const {
+Constraint::getQuadraticCoefficients() const {
 
 	return _quadraticCoefs;
 }
 
 const Relation&
-QuadraticConstraint::getRelation() const {
+Constraint::getRelation() const {
 
 	return _relation;
 }
 
 double
-QuadraticConstraint::getValue() const {
+Constraint::getValue() const {
 
 	return _value;
 }
 
-std::ostream& operator<<(std::ostream& out, const QuadraticConstraint& constraint) {
+std::ostream& operator<<(std::ostream& out, const Constraint& constraint) {
 
 	typedef std::map<unsigned int, double>::value_type pair_t;
 	for (const pair_t& pair : constraint.getCoefficients())
