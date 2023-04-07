@@ -8,7 +8,7 @@ from ilpy.expressions import Constant, Expression, Variable
 # (this is the best way I could find to determine this so far)
 marks = []
 try:
-    ilpy.LinearSolver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+    ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
 except RuntimeError:
     marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
 
@@ -22,7 +22,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
     num_vars = 10
     special_var = 5
 
-    solver = ilpy.LinearSolver(
+    solver = ilpy.Solver(
         num_vars,
         ilpy.VariableType.Binary,
         {special_var: ilpy.VariableType.Continuous},
@@ -37,7 +37,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
         _e += 0.5 * Variable(str(special_var), index=special_var)
         objective = cast(ilpy.LinearObjective, _e.as_objective())
     else:
-        objective = ilpy.LinearObjective()
+        objective = ilpy.Objective()
         for i in range(num_vars):
             objective.set_coefficient(i, 1.0)
         objective.set_coefficient(special_var, 0.5)
@@ -47,7 +47,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
         _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
         constraint = (_e == 1).as_constraint()
     else:
-        constraint = ilpy.LinearConstraint()
+        constraint = ilpy.Constraint()
         for i in range(num_vars):
             constraint.set_coefficient(i, 1.0)
         constraint.set_relation(ilpy.Relation.Equal)
@@ -70,7 +70,7 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
     num_vars = 10
     special_var = 5
 
-    solver = ilpy.QuadraticSolver(
+    solver = ilpy.Solver(
         num_vars,
         ilpy.VariableType.Binary,
         {special_var: ilpy.VariableType.Continuous},
@@ -78,7 +78,7 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
     )
 
     # objective function
-    objective = ilpy.QuadraticObjective()
+    objective = ilpy.Objective()
     for i in range(num_vars):
         objective.set_coefficient(i, 1.0)
     objective.set_quadratic_coefficient(special_var, special_var, 0.2)  # TODO
@@ -90,7 +90,7 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
         s = sum(Variable(str(i), index=i) for i in range(num_vars))
         constraint = (s == 1).constraint()  # type: ignore
     else:
-        constraint = ilpy.QuadraticConstraint()
+        constraint = ilpy.Constraint()
         for i in range(num_vars):
             constraint.set_coefficient(i, 1.0)
         # FIXME: we get a segfault on solve if value == 0

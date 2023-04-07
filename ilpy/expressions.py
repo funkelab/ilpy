@@ -3,13 +3,7 @@ from __future__ import annotations
 import ast
 from typing import Any, Sequence, Union, cast
 
-from ilpy.wrapper import (
-    LinearConstraint,
-    LinearObjective,
-    QuadraticObjective,
-    Relation,
-    Sense,
-)
+from ilpy.wrapper import Constraint, Objective, Relation, Sense
 
 Number = Union[float, int]
 
@@ -28,13 +22,11 @@ class Expression(ast.AST):
     Or, use ``print(expr)` to see the string representation of an expression.
     """
 
-    def as_constraint(self) -> LinearConstraint:
+    def as_constraint(self) -> Constraint:
         """Create a linear constraint from this expression."""
         return _expression_to_constraint(self)
 
-    def as_objective(
-        self, sense: Sense = Sense.Minimize
-    ) -> LinearObjective | QuadraticObjective:
+    def as_objective(self, sense: Sense = Sense.Minimize) -> Objective:
         """Create a linear objective from this expression."""
         return _expression_to_objective(self, sense=sense)
 
@@ -241,9 +233,9 @@ def _get_relation(expr: Expression) -> Relation | None:
     return relation
 
 
-def _expression_to_constraint(expr: Expression) -> LinearConstraint:
-    """Convert an expression to a `LinearConstraint`."""
-    constraint = LinearConstraint()
+def _expression_to_constraint(expr: Expression) -> Constraint:
+    """Convert an expression to a `Constraint`."""
+    constraint = Constraint()
     if relation := _get_relation(expr):
         constraint.set_relation(relation)
 
@@ -266,31 +258,28 @@ def _expression_to_constraint(expr: Expression) -> LinearConstraint:
             constraint.set_coefficient(var.index, coefficient)
     return constraint
 
+
 def _enure_index(var: Variable) -> int:
     if var.index is None:
         raise ValueError("All variables must have an index")
     return var.index
 
+
 def _expression_to_objective(
     expr: Expression, sense: Sense = Sense.Minimize
-) -> LinearObjective | QuadraticObjective:
+) -> Objective:
     """Convert an expression to a `LinearObjective`."""
     if _get_relation(expr) is not None:
         # TODO: may be supported in the future, eg. for piecewise objectives?
         raise ValueError(f"Objective function cannot have comparisons: {expr}")
 
-    objective: LinearObjective | QuadraticObjective
-    coeffs = _get_coefficients(expr)
-    if any(isinstance(var, tuple) for var in coeffs):
-        objective = QuadraticObjective()
-    else:
-        objective = LinearObjective()
+    objective = Objective()
 
-    for var, coef in coeffs.items():
+    for var, coef in _get_coefficients(expr).items():
         if var is None:
             objective.set_constant(coef)
         elif isinstance(var, tuple):
-            objective.set_quadratic_coefficient( # type: ignore
+            objective.set_quadratic_coefficient(  # type: ignore
                 _enure_index(var[0]), _enure_index(var[1]), coef
             )
         elif coef != 0:

@@ -1,16 +1,16 @@
-#ifndef INFERENCE_LINEAR_SOLVER_BACKEND_H__
-#define INFERENCE_LINEAR_SOLVER_BACKEND_H__
+#ifndef INFERENCE_SOLVER_BACKEND_H__
+#define INFERENCE_SOLVER_BACKEND_H__
 
-#include "LinearObjective.h"
-#include "LinearConstraints.h"
+#include "Objective.h"
+#include "Constraints.h"
 #include "Solution.h"
 #include "VariableType.h"
 
-class LinearSolverBackend {
+class SolverBackend {
 
 public:
 
-	virtual ~LinearSolverBackend() {}
+	virtual ~SolverBackend() {}
 
 	/**
 	 * Initialise the linear solver for the given type of variables.
@@ -47,21 +47,21 @@ public:
 	 *
 	 * @param objective A linear objective.
 	 */
-	virtual void setObjective(const LinearObjective& objective) = 0;
+	virtual void setObjective(const Objective& objective) = 0;
 
 	/**
 	 * Set the linear (in)equality constraints.
 	 *
 	 * @param constraints A set of linear constraints.
 	 */
-	virtual void setConstraints(const LinearConstraints& constraints) = 0;
+	virtual void setConstraints(const Constraints& constraints) = 0;
 
 	/**
 	 * Add a single constraint.
 	 *
 	 * @param constraint A linear constraints.
 	 */
-	virtual void addConstraint(const LinearConstraint& constraint) = 0;
+	virtual void addConstraint(const Constraint& constraint) = 0;
 
 	/**
 	 * Set a timeout in seconds for subsequent solve calls.
@@ -111,5 +111,5 @@ public:
 	virtual bool solve(Solution& solution, std::string& message) = 0;
 };
 
-#endif // INFERENCE_LINEAR_SOLVER_BACKEND_H__
+#endif // INFERENCE_SOLVER_BACKEND_H__
 

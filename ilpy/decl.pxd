@@ -41,13 +41,13 @@ cdef extern from 'impl/solvers/Solution.h':
         void setValue(double value)
         double getValue()
 
-cdef extern from 'impl/solvers/QuadraticObjective.cpp':
+cdef extern from 'impl/solvers/Objective.cpp':
     pass
 
-cdef extern from 'impl/solvers/QuadraticObjective.h':
-    cdef cppclass QuadraticObjective:
-        QuadraticObjective() except +
-        QuadraticObjective(unsigned int) except +
+cdef extern from 'impl/solvers/Objective.h':
+    cdef cppclass Objective:
+        Objective() except +
+        Objective(unsigned int) except +
         void setConstant(double)
         double getConstant()
         void setCoefficient(unsigned int, double)
@@ -59,25 +59,12 @@ cdef extern from 'impl/solvers/QuadraticObjective.h':
         void resize(unsigned int)
         unsigned int size()
 
-cdef extern from 'impl/solvers/LinearObjective.h':
-    cdef cppclass LinearObjective:
-        LinearObjective() except +
-        LinearObjective(unsigned int) except +
-        void setConstant(double)
-        double getConstant()
-        void setCoefficient(unsigned int, double)
-        const vector[double]& getCoefficients()
-        void setSense(Sense)
-        Sense getSense()
-        void resize(unsigned int)
-        unsigned int size()
-
-cdef extern from 'impl/solvers/QuadraticConstraint.cpp':
+cdef extern from 'impl/solvers/Constraint.cpp':
     pass
 
-cdef extern from 'impl/solvers/QuadraticConstraint.h':
-    cdef cppclass QuadraticConstraint:
-        QuadraticConstraint() except +
+cdef extern from 'impl/solvers/Constraint.h':
+    cdef cppclass Constraint:
+        Constraint() except +
         void setCoefficient(unsigned int, double)
         const map[unsigned int, double]& getCoefficients()
         void setQuadraticCoefficient(unsigned int, unsigned int, double)
@@ -88,46 +75,23 @@ cdef extern from 'impl/solvers/QuadraticConstraint.h':
         double getValue()
         bool isViolated(const Solution&)
 
-cdef extern from 'impl/solvers/LinearConstraint.h':
-    cdef cppclass LinearConstraint:
-        LinearConstraint() except +
-        void setCoefficient(unsigned int, double)
-        const map[unsigned int, double]& getCoefficients()
-        void setRelation(Relation)
-        void setValue(double)
-        Relation getRelation()
-        double getValue()
-        bool isViolated(const Solution&)
-
-cdef extern from 'impl/solvers/LinearConstraints.cpp':
+cdef extern from 'impl/solvers/Constraints.cpp':
     pass
 
-cdef extern from 'impl/solvers/LinearConstraints.h':
-    cdef cppclass LinearConstraints:
-        LinearConstraints() except +
+cdef extern from 'impl/solvers/Constraints.h':
+    cdef cppclass Constraints:
+        Constraints() except +
         void clear()
-        void add(LinearConstraint&)
-        void addAll(LinearConstraints&);
+        void add(Constraint&)
+        void addAll(Constraints&);
         unsigned int size()
 
-cdef extern from 'impl/solvers/LinearSolverBackend.h':
-    cdef cppclass LinearSolverBackend:
+cdef extern from 'impl/solvers/SolverBackend.h':
+    cdef cppclass SolverBackend:
         void initialize(unsigned int, VariableType, map[unsigned int, VariableType]&) except +
-        void setObjective(LinearObjective&)
-        void setConstraints(LinearConstraints&)
-        void addConstraint(LinearConstraint&)
-        void setTimeout(double)
-        void setOptimalityGap(double, bool)
-        void setNumThreads(unsigned int)
-        void setVerbose(bool)
-        bool solve(Solution& solution, string& message)
-
-cdef extern from 'impl/solvers/QuadraticSolverBackend.h':
-    cdef cppclass QuadraticSolverBackend:
-        void initialize(unsigned int, VariableType, map[unsigned int, VariableType]&) except +
-        void setObjective(QuadraticObjective&)
-        void setConstraints(LinearConstraints&)
-        void addConstraint(QuadraticConstraint&)
+        void setObjective(Objective&)
+        void setConstraints(Constraints&)
+        void addConstraint(Constraint&)
         void setTimeout(double)
         void setOptimalityGap(double, bool)
         void setNumThreads(unsigned int)
@@ -145,5 +109,4 @@ cdef extern from 'impl/solvers/SolverFactory.cpp':
 
 cdef extern from 'impl/solvers/SolverFactory.h':
     cdef cppclass SolverFactory:
-        shared_ptr[LinearSolverBackend] createLinearSolverBackend(Preference) except +
-        shared_ptr[QuadraticSolverBackend] createQuadraticSolverBackend(Preference) except +
+        shared_ptr[SolverBackend] createSolverBackend(Preference) except +

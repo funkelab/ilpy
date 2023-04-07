@@ -1,5 +1,5 @@
-#ifndef INFERENCE_QUADRATIC_OBJECTIVE_H__
-#define INFERENCE_QUADRATIC_OBJECTIVE_H__
+#ifndef INFERENCE_OBJECTIVE_H__
+#define INFERENCE_OBJECTIVE_H__
 
 #include <map>
 #include <vector>
@@ -8,7 +8,7 @@
 
 #include "Sense.h"
 
-class QuadraticObjective {
+class Objective {
 
 public:
 
@@ -17,7 +17,7 @@ public:
 	 *
 	 * @param size The number of coefficients in the objective.
 	 */
-	explicit QuadraticObjective(unsigned int size = 0);
+	explicit Objective(unsigned int size = 0);
 
 	/**
 	 * Set the constant value of the expression.
@@ -105,7 +105,7 @@ private:
 	std::map<std::pair<unsigned int, unsigned int>, double> _quadraticCoefs;
 };
 
-std::ostream& operator<<(std::ostream& out, const QuadraticObjective& objective);
+std::ostream& operator<<(std::ostream& out, const Objective& objective);
 
-#endif // INFERENCE_QUADRATIC_OBJECTIVE_H__
+#endif // INFERENCE_OBJECTIVE_H__
 

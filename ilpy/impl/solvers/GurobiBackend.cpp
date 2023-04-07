@@ -92,13 +92,7 @@ GurobiBackend::initialize(
 }
 
 void
-GurobiBackend::setObjective(const LinearObjective& objective) {
-
-	setObjective((QuadraticObjective)objective);
-}
-
-void
-GurobiBackend::setObjective(const QuadraticObjective& objective) {
+GurobiBackend::setObjective(const Objective& objective) {
 
 	// set sense of objective
 	if (objective.getSense() == Minimize) {
@@ -138,7 +132,7 @@ GurobiBackend::setObjective(const QuadraticObjective& objective) {
 }
 
 void
-GurobiBackend::setConstraints(const LinearConstraints& constraints) {
+GurobiBackend::setConstraints(const Constraints& constraints) {
 
 	// delete all previous constraints
 
@@ -154,7 +148,7 @@ GurobiBackend::setConstraints(const LinearConstraints& constraints) {
 
 	_numConstraints = constraints.size();
 	unsigned int j = 0;
-	for (const LinearConstraint& constraint : constraints) {
+	for (const Constraint& constraint : constraints) {
 
 		addConstraint(constraint);
 
@@ -165,41 +159,7 @@ GurobiBackend::setConstraints(const LinearConstraints& constraints) {
 }
 
 void
-GurobiBackend::addConstraint(const LinearConstraint& constraint) {
-
-	int numNz = constraint.getCoefficients().size();
-
-	int*    inds = new int[numNz];
-	double* vals = new double[numNz];
-
-	// set the coefficients
-	int i = 0;
-	for (auto& pair : constraint.getCoefficients()) {
-
-		inds[i] = pair.first;
-		vals[i] = pair.second;
-		i++;
-	}
-
-	GRB_CHECK(GRBaddconstr(
-			_model,
-			numNz,
-			inds,
-			vals,
-			(constraint.getRelation() == LessEqual ? GRB_LESS_EQUAL :
-					(constraint.getRelation() == GreaterEqual ? GRB_GREATER_EQUAL :
-							GRB_EQUAL)),
-			constraint.getValue(),
-			NULL /* optional name */));
-
-	delete[] inds;
-	delete[] vals;
-}
-
-void
-GurobiBackend::addConstraint(const QuadraticConstraint& constraint) {
-
-	// FIXME: code duplication with addConstraint(LinearConstraint) 
+GurobiBackend::addConstraint(const Constraint& constraint) {
 
 	// set the linear coefficients
 	int numlNz = constraint.getCoefficients().size();

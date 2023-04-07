@@ -1,6 +1,6 @@
-#include "QuadraticObjective.h"
+#include "Objective.h"
 
-QuadraticObjective::QuadraticObjective(unsigned int size) :
+Objective::Objective(unsigned int size) :
 	_sense(Minimize),
 	_constant(0) {
 
@@ -8,19 +8,19 @@ QuadraticObjective::QuadraticObjective(unsigned int size) :
 }
 
 void
-QuadraticObjective::setConstant(double constant) {
+Objective::setConstant(double constant) {
 
 	_constant = constant;
 }
 
 double
-QuadraticObjective::getConstant() const {
+Objective::getConstant() const {
 
 	return _constant;
 }
 
 void
-QuadraticObjective::setCoefficient(unsigned int varNum, double coef) {
+Objective::setCoefficient(unsigned int varNum, double coef) {
 
 	if (varNum >= size())
 		resize(varNum + 1);
@@ -29,17 +29,17 @@ QuadraticObjective::setCoefficient(unsigned int varNum, double coef) {
 }
 
 const std::vector<double>&
-QuadraticObjective::getCoefficients() const {
+Objective::getCoefficients() const {
 
 	return _coefs;
 }
 
 void
-QuadraticObjective::setQuadraticCoefficient(unsigned int varNum1, unsigned int varNum2, double coef) {
+Objective::setQuadraticCoefficient(unsigned int varNum1, unsigned int varNum2, double coef) {
 
 	if (coef == 0) {
 
-		_quadraticCoefs.erase(_quadraticCoefs.find(std::make_pair(varNum1, varNum2)));
+		_quadraticCoefs.erase(std::make_pair(varNum1, varNum2));
 
 	} else {
 
@@ -48,30 +48,30 @@ QuadraticObjective::setQuadraticCoefficient(unsigned int varNum1, unsigned int v
 }
 
 const std::map<std::pair<unsigned int, unsigned int>, double>&
-QuadraticObjective::getQuadraticCoefficients() const {
+Objective::getQuadraticCoefficients() const {
 
 	return _quadraticCoefs;
 }
 
 void
-QuadraticObjective::setSense(Sense sense) {
+Objective::setSense(Sense sense) {
 
 	_sense = sense;
 }
 
 Sense
-QuadraticObjective::getSense() const {
+Objective::getSense() const {
 
 	return _sense;
 }
 
 void
-QuadraticObjective::resize(unsigned int size) {
+Objective::resize(unsigned int size) {
 
 	_coefs.resize(size, 0.0);
 }
 
-std::ostream& operator<<(std::ostream& out, const QuadraticObjective& objective) {
+std::ostream& operator<<(std::ostream& out, const Objective& objective) {
 
 	for (unsigned int i = 0; i < objective.size(); i++)
 		out << objective.getCoefficients()[i] << "*" << i << " ";

@@ -3,13 +3,7 @@ import operator
 import pytest
 
 from ilpy.expressions import Expression, Variable, _get_coefficients
-from ilpy.wrapper import (
-    LinearConstraint,
-    LinearObjective,
-    QuadraticObjective,
-    Relation,
-    Sense,
-)
+from ilpy.wrapper import Constraint, Objective, Relation, Sense
 
 u = Variable("u")
 v = Variable("v")
@@ -59,14 +53,14 @@ def test_to_constraint():
 
     expr = 2 * u - 5 * v + e / 2 >= -3
     constraint = expr.as_constraint()
-    assert isinstance(constraint, LinearConstraint)
+    assert isinstance(constraint, Constraint)
     assert constraint.get_value() == -3
     assert constraint.get_relation() == Relation.GreaterEqual
     assert constraint.get_coefficients() == {0: 2.0, 1: -5.0, 2: 0.5}
 
     expr = u == v
     constraint = expr.as_constraint()
-    assert isinstance(constraint, LinearConstraint)
+    assert isinstance(constraint, Constraint)
     assert constraint.get_value() == 0
     assert constraint.get_relation() == Relation.Equal
     assert constraint.get_coefficients() == {0: 1.0, 1: -1.0}
@@ -80,21 +74,21 @@ def test_to_objective() -> None:
 
     expr: Expression = u - 2 * v + 3
     constraint = expr.as_objective(Sense.Maximize)
-    assert isinstance(constraint, LinearObjective)
+    assert isinstance(constraint, Objective)
     assert constraint.get_constant() == 3
     assert constraint.get_sense() == Sense.Maximize
     assert constraint.get_coefficients() == [1.0, -2.0]
 
     expr = 4 * e - 2 * u
     constraint = expr.as_objective()
-    assert isinstance(constraint, LinearObjective)
+    assert isinstance(constraint, Objective)
     assert constraint.get_constant() == 0
     assert constraint.get_sense() == Sense.Minimize
     assert constraint.get_coefficients() == [-2.0, 0, 0, 4]
 
     expr = -2 * u**2 - 3 * v * e + 4 * v + 5
     constraint = expr.as_objective()
-    assert isinstance(constraint, QuadraticObjective)
+    assert isinstance(constraint, Objective)
     assert constraint.get_constant() == 5
     assert constraint.get_sense() == Sense.Minimize
     assert constraint.get_quadratic_coefficients() == {
@@ -105,7 +99,7 @@ def test_to_objective() -> None:
 
     expr = u * (v - 2 * 6 * e)
     constraint = expr.as_objective()
-    assert isinstance(constraint, QuadraticObjective)
+    assert isinstance(constraint, Objective)
     assert constraint.get_constant() == 0
     assert constraint.get_sense() == Sense.Minimize
     assert constraint.get_quadratic_coefficients() == {
