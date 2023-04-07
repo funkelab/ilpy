@@ -1,5 +1,5 @@
-#ifndef INFERENCE_QUADRATIC_OBJECTIVE_H__
-#define INFERENCE_QUADRATIC_OBJECTIVE_H__
+#ifndef INFERENCE_OBJECTIVE_H__
+#define INFERENCE_OBJECTIVE_H__
 
 #include <map>
 #include <vector>
@@ -107,5 +107,5 @@ private:
 
 std::ostream& operator<<(std::ostream& out, const Objective& objective);
 
-#endif // INFERENCE_QUADRATIC_OBJECTIVE_H__
+#endif // INFERENCE_OBJECTIVE_H__
 

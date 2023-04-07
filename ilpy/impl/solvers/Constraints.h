@@ -1,5 +1,5 @@
-#ifndef INFERENCE_LINEAR_CONSTRAINTS_H__
-#define INFERENCE_LINEAR_CONSTRAINTS_H__
+#ifndef INFERENCE_CONSTRAINTS_H__
+#define INFERENCE_CONSTRAINTS_H__
 
 #include "Constraint.h"
 
@@ -69,5 +69,5 @@ private:
 	constraints_type _constraints;
 };
 
-#endif // INFERENCE_LINEAR_CONSTRAINTS_H__
+#endif // INFERENCE_CONSTRAINTS_H__
 

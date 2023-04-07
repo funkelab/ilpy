@@ -1,5 +1,5 @@
-#ifndef INFERENCE_QUADRATIC_CONSTRAINT_H__
-#define INFERENCE_QUADRATIC_CONSTRAINT_H__
+#ifndef INFERENCE_CONSTRAINT_H__
+#define INFERENCE_CONSTRAINT_H__
 
 #include <map>
 #include <ostream>
@@ -46,5 +46,5 @@ private:
 
 std::ostream& operator<<(std::ostream& out, const Constraint& constraint);
 
-#endif // INFERENCE_QUADRATIC_CONSTRAINT_H__
+#endif // INFERENCE_CONSTRAINT_H__
 

@@ -1,5 +1,5 @@
-#ifndef INFERENCE_LINEAR_SOLVER_BACKEND_H__
-#define INFERENCE_LINEAR_SOLVER_BACKEND_H__
+#ifndef INFERENCE_SOLVER_BACKEND_H__
+#define INFERENCE_SOLVER_BACKEND_H__
 
 #include "Objective.h"
 #include "Constraints.h"
@@ -111,5 +111,5 @@ public:
 	virtual bool solve(Solution& solution, std::string& message) = 0;
 };
 
-#endif // INFERENCE_LINEAR_SOLVER_BACKEND_H__
+#endif // INFERENCE_SOLVER_BACKEND_H__
 
