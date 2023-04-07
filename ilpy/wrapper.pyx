@@ -132,11 +132,11 @@ cdef class Constraint:
     def set_relation(self, relation):
         self.p.setRelation(relation)
 
-    def set_value(self, value):
-        self.p.setValue(value)
-
     def get_relation(self):
         return Relation(self.p.getRelation())
+
+    def set_value(self, value):
+        self.p.setValue(value)
 
     def get_value(self):
         return self.p.getValue()
