@@ -259,7 +259,7 @@ def _expression_to_constraint(expr: Expression) -> Constraint:
     return constraint
 
 
-def _enure_index(var: Variable) -> int:
+def _ensure_index(var: Variable) -> int:
     if var.index is None:
         raise ValueError("All variables must have an index")
     return var.index
@@ -280,14 +280,14 @@ def _expression_to_objective(
             objective.set_constant(coef)
         elif isinstance(var, tuple):
             objective.set_quadratic_coefficient(  # type: ignore
-                _enure_index(var[0]), _enure_index(var[1]), coef
+                _ensure_index(var[0]), _ensure_index(var[1]), coef
             )
         elif coef != 0:
             if var.index is None:
                 raise ValueError(
                     "All variables in a objective expression must have an index"
                 )
-            objective.set_coefficient(_enure_index(var), coef)
+            objective.set_coefficient(_ensure_index(var), coef)
 
     objective.set_sense(sense)
     return objective
