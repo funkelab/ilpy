@@ -1,6 +1,6 @@
 import ilpy
-from ilpy.expressions import Variable
 import pytest
+from ilpy.expressions import Variable
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)
@@ -77,7 +77,7 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
 
     # constraints
     if as_expression:
-        pytest.skip(reason='quadratic expressions not yet implemented')
+        pytest.skip(reason="quadratic expressions not yet implemented")
         s = sum(Variable(str(i), index=i) for i in range(num_vars))
         constraint = (s == 1).constraint()  # type: ignore
     else:
