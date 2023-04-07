@@ -279,9 +279,8 @@ def _expression_to_objective(
         if var is None:
             objective.set_constant(coef)
         elif isinstance(var, tuple):
-            objective.set_quadratic_coefficient(  # type: ignore
-                _ensure_index(var[0]), _ensure_index(var[1]), coef
-            )
+            i0, i1 = _ensure_index(var[0]), _ensure_index(var[1])
+            objective.set_quadratic_coefficient(i0, i1, coef)
         elif coef != 0:
             if var.index is None:
                 raise ValueError(
