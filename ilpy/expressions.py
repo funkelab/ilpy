@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 from typing import Any, Sequence, Union
 
-from ilpy.wrapper import Constraint, Relation
+from ilpy.wrapper import Constraint, Relation, Sense, Objective
 
 Number = Union[float, int]
 
@@ -22,9 +22,13 @@ class Expression(ast.AST):
     Or, use ``print(expr)` to see the string representation of an expression.
     """
 
-    def constraint(self) -> Constraint:
+    def as_constraint(self) -> Constraint:
         """Create a linear constraint from this expression."""
         return _expression_to_constraint(self)
+
+    def as_objective(self, sense: Sense = Sense.Minimize) -> Objective:
+        """Create a linear objective from this expression."""
+        return _expression_to_objective(self, sense=sense)
 
     @staticmethod
     def _cast(obj: Any) -> Expression:
@@ -222,6 +226,29 @@ def _expression_to_constraint(expr: Expression) -> Constraint:
     return constraint
 
 
+def _expression_to_objective(
+    expr: Expression, sense: Sense = Sense.Minimize
+) -> Objective:
+    """Convert an expression to a `Objective`."""
+    objective = Objective()
+    if _get_relation(expr) is not None:
+        # TODO: may be supported in the future, eg. for piecewise objectives?
+        raise ValueError(f"Objective function cannot have comparisons: {expr}")
+
+    for var, coef in _get_coefficients(expr).items():
+        if var is None:
+            objective.set_constant(coef)
+        elif coef != 0:
+            if var.index is None:
+                raise ValueError(
+                    "All variables in a objective expression must have an index"
+                )
+            objective.set_coefficient(var.index, coef)
+
+    objective.set_sense(sense)
+    return objective
+
+
 def _get_coefficients(
     expr: Expression | ast.expr,
     coeffs: dict[Variable | None, float] | None = None,
@@ -272,8 +299,10 @@ def _get_coefficients(
                 e = expr.right
                 v = expr.left.value
             else:
-                # XXX: will we ever need multiplication by a variable?
-                raise ValueError("Multiplication must be by a constant")
+                raise NotImplementedError(
+                    "Only linear expressions currently supported, "
+                    "multiplication must be by a constant"
+                )
             scale *= 1 / v if isinstance(expr.op, ast.Div) else v
             _get_coefficients(e, coeffs, scale)
         else:
