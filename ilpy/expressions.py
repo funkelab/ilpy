@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 from typing import Any, Sequence, Union
 
-from ilpy.wrapper import LinearConstraint, LinearObjective, Relation, Sense
+from ilpy.wrapper import Constraint, Relation
 
 Number = Union[float, int]
 
@@ -22,11 +22,11 @@ class Expression(ast.AST):
     Or, use ``print(expr)` to see the string representation of an expression.
     """
 
-    def as_constraint(self) -> LinearConstraint:
+    def as_constraint(self) -> Constraint:
         """Create a linear constraint from this expression."""
         return _expression_to_constraint(self)
 
-    def as_objective(self, sense: Sense = Sense.Minimize) -> LinearObjective:
+    def as_objective(self, sense: Sense = Sense.Minimize) -> Objective:
         """Create a linear objective from this expression."""
         return _expression_to_objective(self, sense=sense)
 
@@ -202,9 +202,9 @@ def _get_relation(expr: Expression) -> Relation | None:
     return relation
 
 
-def _expression_to_constraint(expr: Expression) -> LinearConstraint:
-    """Convert an expression to a `LinearConstraint`."""
-    constraint = LinearConstraint()
+def _expression_to_constraint(expr: Expression) -> Constraint:
+    """Convert an expression to a `Constraint`."""
+    constraint = Constraint()
     if relation := _get_relation(expr):
         constraint.set_relation(relation)
 
@@ -228,9 +228,9 @@ def _expression_to_constraint(expr: Expression) -> LinearConstraint:
 
 def _expression_to_objective(
     expr: Expression, sense: Sense = Sense.Minimize
-) -> LinearObjective:
-    """Convert an expression to a `LinearObjective`."""
-    objective = LinearObjective()
+) -> Objective:
+    """Convert an expression to a `Objective`."""
+    objective = Objective()
     if _get_relation(expr) is not None:
         # TODO: may be supported in the future, eg. for piecewise objectives?
         raise ValueError(f"Objective function cannot have comparisons: {expr}")

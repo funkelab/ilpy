@@ -7,9 +7,9 @@
 
 #include <ilcplex/ilocplex.h>
 
-#include "LinearConstraints.h"
-#include "QuadraticObjective.h"
-#include "QuadraticSolverBackend.h"
+#include "Constraints.h"
+#include "Objective.h"
+#include "SolverBackend.h"
 #include "Sense.h"
 #include "Solution.h"
 #include "CplexBackend.h"
@@ -71,13 +71,13 @@ CplexBackend::initialize(
 }
 
 void
-CplexBackend::setObjective(const LinearObjective& objective) {
+CplexBackend::setObjective(const Objective& objective) {
 
-    setObjective((QuadraticObjective)objective);
+    setObjective((Objective)objective);
 }
 
 void
-CplexBackend::setObjective(const QuadraticObjective& objective) {
+CplexBackend::setObjective(const Objective& objective) {
     try {
 
 
@@ -127,7 +127,7 @@ CplexBackend::setObjective(const QuadraticObjective& objective) {
 }
 
 void
-CplexBackend::setConstraints(const LinearConstraints& constraints) {
+CplexBackend::setConstraints(const Constraints& constraints) {
 
     // remove previous constraints
     for (ConstraintVector::iterator constraint = _constraints.begin(); constraint != _constraints.end(); constraint++)
@@ -139,7 +139,7 @@ CplexBackend::setConstraints(const LinearConstraints& constraints) {
 
     try {
         IloExtractableArray cplex_constraints(env_);
-        for (LinearConstraints::const_iterator constraint = constraints.begin(); constraint != constraints.end(); constraint++) {
+        for (Constraints::const_iterator constraint = constraints.begin(); constraint != constraints.end(); constraint++) {
             IloRange linearConstraint = createConstraint(*constraint);
             _constraints.push_back(linearConstraint);
             cplex_constraints.add(linearConstraint);
@@ -155,7 +155,7 @@ CplexBackend::setConstraints(const LinearConstraints& constraints) {
 }
 
 void
-CplexBackend::addConstraint(const LinearConstraint& constraint) {
+CplexBackend::addConstraint(const Constraint& constraint) {
 
     try {
 		// add to the model
@@ -168,7 +168,7 @@ CplexBackend::addConstraint(const LinearConstraint& constraint) {
 }
 
 IloRange
-CplexBackend::createConstraint(const LinearConstraint& constraint) {
+CplexBackend::createConstraint(const Constraint& constraint) {
 
 
     // create the lhs expression
