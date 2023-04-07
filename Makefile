@@ -9,8 +9,8 @@ install-dev:
 
 .PHONY: tests
 tests:
-	pytest -v --cov=ilpy
-	flake8 ilpy
+	pytest -v --cov=ilpy --cov-report=term-missing
+	pre-commit run --all-files
 
 clean:
 	rm -rf build dist
