@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 from typing import Any, Sequence, Union
 
-from ilpy.wrapper import Constraint, Relation, Sense
+from ilpy.wrapper import Constraint, Relation, Sense, Objective
 
 Number = Union[float, int]
 
