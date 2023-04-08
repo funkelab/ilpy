@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+import os
 from typing import Iterable, NamedTuple, Sequence
 
 import ilpy
@@ -10,24 +11,23 @@ from ilpy.expressions import Expression, Variable
 from ilpy.wrapper import VariableType
 
 try:
-    from gurobi import GRB, Model
-
-    HAVE_GUROBIPY = True
+    import gurobipy as gb
 except ImportError:
-    HAVE_GUROBIPY = False
+    if os.getenv("CI"):
+        raise ImportError("Gurobipy not installed, but required for CI") from None
+    gb = None
 
-
-# XFAIL if no gurobi not installed or no license found
-# (this is the best way I could find to determine this so far)
-gu_marks = []
-try:
-    ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
-except RuntimeError:
-    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+# # XFAIL if no gurobi not installed or no license found
+# # (this is the best way I could find to determine this so far)
+# gu_marks = []
+# try:
+#     ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+# except RuntimeError:
+#     gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
 
 PREFS = [
     pytest.param(ilpy.Preference.Scip, id="scip"),
-    pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
+    pytest.param(ilpy.Preference.Gurobi, id="gurobi"),
 ]
 
 
@@ -71,7 +71,7 @@ def test_solve(preference: ilpy.Preference, case: Case) -> None:
     kwargs = case._asdict()
     expectation = kwargs.pop("expectation")
     npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
-    if HAVE_GUROBIPY:
+    if gb is not None:
         npt.assert_allclose(_gurobipy_solve(**kwargs), expectation)
 
 
@@ -97,25 +97,25 @@ def _gurobipy_solve(
 
     n_vars = len(objective)
 
-    model = Model()
+    model = gb.Model()
     model.params.OutputFlag = int(verbose)
 
     vtype = {
-        ilpy.VariableType.Continuous: GRB.CONTINUOUS,
-        ilpy.VariableType.Binary: GRB.BINARY,
-        ilpy.VariableType.Integer: GRB.INTEGER,
-        GRB.CONTINUOUS: GRB.CONTINUOUS,
-        GRB.BINARY: GRB.BINARY,
-        GRB.INTEGER: GRB.INTEGER,
+        ilpy.VariableType.Continuous: gb.GRB.CONTINUOUS,
+        ilpy.VariableType.Binary: gb.GRB.BINARY,
+        ilpy.VariableType.Integer: gb.GRB.INTEGER,
+        gb.GRB.CONTINUOUS: gb.GRB.CONTINUOUS,
+        gb.GRB.BINARY: gb.GRB.BINARY,
+        gb.GRB.INTEGER: gb.GRB.INTEGER,
     }[variable_type]
     # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
-    x = model.addVars(n_vars, lb=-GRB.INFINITY, vtype=vtype)
+    x = model.addVars(n_vars, lb=-gb.GRB.INFINITY, vtype=vtype)
 
     _sense = {
-        GRB.MINIMIZE: GRB.MINIMIZE,
-        GRB.MAXIMIZE: GRB.MAXIMIZE,
-        ilpy.Sense.Minimize: GRB.MINIMIZE,
-        ilpy.Sense.Maximize: GRB.MAXIMIZE,
+        gb.GRB.MINIMIZE: gb.GRB.MINIMIZE,
+        gb.GRB.MAXIMIZE: gb.GRB.MAXIMIZE,
+        ilpy.Sense.Minimize: gb.GRB.MINIMIZE,
+        ilpy.Sense.Maximize: gb.GRB.MAXIMIZE,
     }[sense]
     objective = sum(objective[i] * x[i] for i in range(n_vars))
     model.setObjective(objective, _sense)
