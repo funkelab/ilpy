@@ -6,6 +6,7 @@ from libcpp.map cimport map as cppmap
 from libcpp.string cimport string
 from cython.operator cimport dereference as deref
 cimport decl
+from typing import Iterable, Mapping, Sequence
 
 ####################################
 # Enums                            #
@@ -107,6 +108,33 @@ cdef class Objective:
     def __len__(self):
         return self.p.size()
 
+    @classmethod
+    def from_coefficients(
+        cls,
+        coefficients: Sequence[float] | Mapping[int, float] = (),
+        quadratic_coefficients: Mapping[tuple[int, int], float]
+        | Iterable[tuple[tuple[int, int], float]] = (),
+        sense: Sense = Sense.Minimize,
+    ) -> Objective:
+        obj = cls()
+        iter_coeffs = (
+            coefficients.items()
+            if isinstance(coefficients, Mapping)
+            else enumerate(coefficients)
+        )
+        for i, coeff in iter_coeffs:
+            obj.set_coefficient(i, coeff)
+        iter_quadratic_coeffs = (
+            quadratic_coefficients.items()
+            if isinstance(quadratic_coefficients, Mapping)
+            else quadratic_coefficients
+        )
+        for (i, j), coeff in iter_quadratic_coeffs:
+            obj.set_quadratic_coefficient(i, j, coeff)
+
+        obj.set_sense(sense)
+        return obj
+
 cdef class Constraint:
 
     cdef decl.Constraint* p
@@ -143,6 +171,35 @@ cdef class Constraint:
 
     def is_violated(self, Solution solution):
         return self.p.isViolated(solution.p[0])
+
+    @classmethod
+    def from_coefficients(
+        cls,
+        coefficients: Sequence[float] | Mapping[int, float] = (),
+        quadratic_coefficients: Mapping[tuple[int, int], float]
+        | Iterable[tuple[tuple[int, int], float]] = (),
+        relation: Relation = Relation.LessEqual,
+        value: float = 0,
+    ) -> Constraint:
+        constraint = cls()
+        iter_coeffs = (
+            coefficients.items()
+            if isinstance(coefficients, Mapping)
+            else enumerate(coefficients)
+        )
+        for i, coeff in iter_coeffs:
+            constraint.set_coefficient(i, coeff)
+        iter_quadratic_coeffs = (
+            quadratic_coefficients.items()
+            if isinstance(quadratic_coefficients, Mapping)
+            else quadratic_coefficients
+        )
+        for (i, j), coeff in iter_quadratic_coeffs:
+            constraint.set_quadratic_coefficient(i, j, coeff)
+
+        constraint.set_relation(relation)
+        constraint.set_value(value)
+        return constraint
 
 cdef class Constraints:
 
