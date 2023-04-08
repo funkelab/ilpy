@@ -23,12 +23,28 @@ class Expression(ast.AST):
     """
 
     def as_constraint(self) -> Constraint:
-        """Create a linear constraint from this expression."""
-        return _expression_to_constraint(self)
+        """Create an ilpy.Constraint object from this expression."""
+        l_coeffs, q_coeffs, value = _get_coeff_indices(self)
+        return Constraint.from_coefficients(
+            coefficients=l_coeffs,
+            quadratic_coefficients=q_coeffs,
+            relation=_get_relation(self) or Relation.LessEqual,
+            value=-value,  # negate value to convert to RHS form
+        )
 
     def as_objective(self, sense: Sense = Sense.Minimize) -> Objective:
         """Create a linear objective from this expression."""
-        return _expression_to_objective(self, sense=sense)
+        if _get_relation(self) is not None:
+            # TODO: may be supported in the future, eg. for piecewise objectives?
+            raise ValueError(f"Objective function cannot have comparisons: {self}")
+
+        l_coeffs, q_coeffs, value = _get_coeff_indices(self)
+        return Objective.from_coefficients(
+            coefficients=l_coeffs,
+            quadratic_coefficients=q_coeffs,
+            constant=value,
+            sense=sense,
+        )
 
     @staticmethod
     def _cast(obj: Any) -> Expression:
@@ -233,63 +249,26 @@ def _get_relation(expr: Expression) -> Relation | None:
     return relation
 
 
-def _expression_to_constraint(expr: Expression) -> Constraint:
-    """Convert an expression to a `Constraint`."""
-    constraint = Constraint()
-    if relation := _get_relation(expr):
-        constraint.set_relation(relation)
-
-    coeffs = _get_coefficients(expr)
-    # this appears to be necessary to avoid a rounding error in the C++ code
-    # when set_value() is never called
-    coeffs.setdefault(None, 0)
-    for var, coefficient in coeffs.items():
+def _get_coeff_indices(
+    expr: Expression,
+) -> tuple[dict[int, float], dict[tuple[int, int], float], float]:
+    l_coeffs: dict[int, float] = {}
+    q_coeffs: dict[tuple[int, int], float] = {}
+    constant = 0.0
+    for var, coefficient in _get_coefficients(expr).items():
         if var is None:
-            # None is the constant term, which is the right hand side of the
-            # comparison.
-            constraint.set_value(-coefficient)
+            constant = coefficient
         elif isinstance(var, tuple):
-            raise NotImplementedError("Quadratic constraints are not yet supported")
+            q_coeffs[(_ensure_index(var[0]), _ensure_index(var[1]))] = coefficient
         elif coefficient != 0:
-            if var.index is None:
-                raise ValueError(
-                    "All variables in a constraint expression must have an index"
-                )
-            constraint.set_coefficient(var.index, coefficient)
-    return constraint
+            l_coeffs[_ensure_index(var)] = coefficient
+    return l_coeffs, q_coeffs, constant
 
 
 def _ensure_index(var: Variable) -> int:
     if var.index is None:
-        raise ValueError("All variables must have an index")
+        raise ValueError("All variables in an Expression must have an index")
     return var.index
-
-
-def _expression_to_objective(
-    expr: Expression, sense: Sense = Sense.Minimize
-) -> Objective:
-    """Convert an expression to an `Objective`."""
-    if _get_relation(expr) is not None:
-        # TODO: may be supported in the future, eg. for piecewise objectives?
-        raise ValueError(f"Objective function cannot have comparisons: {expr}")
-
-    objective = Objective()
-
-    for var, coef in _get_coefficients(expr).items():
-        if var is None:
-            objective.set_constant(coef)
-        elif isinstance(var, tuple):
-            i0, i1 = _ensure_index(var[0]), _ensure_index(var[1])
-            objective.set_quadratic_coefficient(i0, i1, coef)
-        elif coef != 0:
-            if var.index is None:
-                raise ValueError(
-                    "All variables in a objective expression must have an index"
-                )
-            objective.set_coefficient(_ensure_index(var), coef)
-
-    objective.set_sense(sense)
-    return objective
 
 
 def _get_coefficients(

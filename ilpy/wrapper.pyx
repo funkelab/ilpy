@@ -114,6 +114,7 @@ cdef class Objective:
         coefficients: Sequence[float] | Mapping[int, float] = (),
         quadratic_coefficients: Mapping[tuple[int, int], float]
         | Iterable[tuple[tuple[int, int], float]] = (),
+        constant: float = 0,
         sense: Sense = Sense.Minimize,
     ) -> Objective:
         obj = cls()
@@ -132,6 +133,7 @@ cdef class Objective:
         for (i, j), coeff in iter_quadratic_coeffs:
             obj.set_quadratic_coefficient(i, j, coeff)
 
+        obj.set_constant(constant)
         obj.set_sense(sense)
         return obj
 

@@ -68,6 +68,7 @@ class Objective:
         cls,
         coefficients: LinearCoeffs = (),
         quadratic_coefficients: QCoeffs = (),
+        constant: float = 0,
         sense: Sense = Sense.Minimize,
     ) -> Objective: ...
 
