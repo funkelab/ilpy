@@ -1,103 +1,146 @@
+from __future__ import annotations
+
+import operator
+from typing import Iterable, NamedTuple, Sequence
+
 import ilpy
+import numpy.testing as npt
 import pytest
-from ilpy.expressions import Constant, Expression, Variable
+from ilpy.expressions import Expression, Variable
+from ilpy.wrapper import VariableType
+
+try:
+    from gurobi import GRB, Model
+
+    HAVE_GUROBIPY = True
+except ImportError:
+    HAVE_GUROBIPY = False
+
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)
-marks = []
+gu_marks = []
 try:
     ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
 except RuntimeError:
-    marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+
+PREFS = [
+    pytest.param(ilpy.Preference.Scip, id="scip"),
+    pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
+]
 
 
-@pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
-)
-def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
-    num_vars = 10
-    special_var = 5
-
-    solver = ilpy.Solver(
-        num_vars,
-        ilpy.VariableType.Binary,
-        {special_var: ilpy.VariableType.Continuous},
-        preference,
-    )
-
-    _e: Expression
-    # objective function
-    if as_expression:
-        # note: the Constant(0) here is only to satisfy mypy... it would work without
-        _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
-        _e += 0.5 * Variable(str(special_var), index=special_var)
-        objective = _e.as_objective()
-    else:
-        objective = ilpy.Objective()
-        for i in range(num_vars):
-            objective.set_coefficient(i, 1.0)
-        objective.set_coefficient(special_var, 0.5)
-
-    # constraints
-    if as_expression:
-        _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
-        constraint = (_e == 1).as_constraint()
-    else:
-        constraint = ilpy.Constraint()
-        for i in range(num_vars):
-            constraint.set_coefficient(i, 1.0)
-        constraint.set_relation(ilpy.Relation.Equal)
-        constraint.set_value(1.0)
-
-    solver.set_objective(objective)
-    solver.add_constraint(constraint)
-
-    solution, _ = solver.solve()
-
-    assert solution[5] == 1
+X = [Variable(f"x{i}", index=i) for i in range(10)]
 
 
-@pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
-)
-def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> None:
-    num_vars = 10
-    special_var = 5
+class Case(NamedTuple):
+    objective: Sequence[float] | Expression | ilpy.Objective
+    constraints: Iterable[tuple | Expression | ilpy.Constraint]
+    sense: ilpy.Sense | str = ilpy.Sense.Minimize
+    variable_type: VariableType | str = ilpy.VariableType.Continuous
+    expectation: Sequence[float] | None = None
 
-    solver = ilpy.Solver(
-        num_vars,
-        ilpy.VariableType.Binary,
-        {special_var: ilpy.VariableType.Continuous},
-        preference,
-    )
 
-    # objective function
-    objective = ilpy.Objective()
-    for i in range(num_vars):
-        objective.set_coefficient(i, 1.0)
-    objective.set_quadratic_coefficient(special_var, special_var, 0.2)  # TODO
-    solver.set_objective(objective)
+CASES = [
+    Case(
+        objective=[1, 1, 1, 1, 0.5, 1, 1, 1, 1, 1],
+        constraints=[([1, 1, 1, 1, 1, 1, 1, 1, 1, 1], "=", 1)],
+        variable_type=ilpy.VariableType.Binary,
+        expectation=[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    ),
+    Case(
+        objective=[2, 3],
+        constraints=[
+            ([3, 2], ilpy.Relation.GreaterEqual, 10),
+            ([1, 2], ilpy.Relation.GreaterEqual, 8),
+        ],
+        expectation=[1, 3.5],
+    ),
+    Case(
+        objective=2 * X[0] + 3 * X[1],
+        constraints=[3 * X[0] + 2 * X[1] >= 10, 1 * X[0] + 2 * X[1] >= 8],
+        expectation=[1, 3.5],
+    ),
+]
 
-    # constraints
-    if as_expression:
-        pytest.skip(reason="quadratic expressions not yet implemented")
-        s = sum(Variable(str(i), index=i) for i in range(num_vars))
-        constraint = (s == 1).constraint()  # type: ignore
-    else:
-        constraint = ilpy.Constraint()
-        for i in range(num_vars):
-            constraint.set_coefficient(i, 1.0)
-        # FIXME: we get a segfault on solve if value == 0
-        constraint.set_quadratic_coefficient(1, 1, 2)  # do something more interesting
-        constraint.set_relation(ilpy.Relation.Equal)
-        constraint.set_value(1.0)
 
-    solver.add_constraint(constraint)
+@pytest.mark.parametrize("preference", PREFS)
+@pytest.mark.parametrize("case", CASES)
+def test_solve(preference: ilpy.Preference, case: Case) -> None:
+    kwargs = case._asdict()
+    expectation = kwargs.pop("expectation")
+    npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
+    if HAVE_GUROBIPY:
+        npt.assert_allclose(_gurobipy_solve(**kwargs), expectation)
 
-    solution, _ = solver.solve()
 
-    assert solution[5] == -2  # jan please check
+def _gurobipy_solve(
+    objective: list[float],
+    constraints: list[tuple[list[float], ilpy.Relation | str, float]],
+    sense: ilpy.Sense | int = ilpy.Sense.Minimize,
+    verbose: bool = False,
+    variable_type: ilpy.VariableType | str = ilpy.VariableType.Continuous,
+) -> list[float]:
+    """Solve a linear program using Gurobipy.
+
+    This is used for testing purposes only.
+
+    Examples
+    --------
+    >>> gurobipy_solve([2,3], [([3,2], '>=', 10), ([1,2], '>=', 8)])
+    [1.0, 3.5]
+    """
+
+    if isinstance(objective, Expression):
+        objective = objective.as_objective().get_coefficients()
+
+    n_vars = len(objective)
+
+    model = Model()
+    model.params.OutputFlag = int(verbose)
+
+    vtype = {
+        ilpy.VariableType.Continuous: GRB.CONTINUOUS,
+        ilpy.VariableType.Binary: GRB.BINARY,
+        ilpy.VariableType.Integer: GRB.INTEGER,
+        GRB.CONTINUOUS: GRB.CONTINUOUS,
+        GRB.BINARY: GRB.BINARY,
+        GRB.INTEGER: GRB.INTEGER,
+    }[variable_type]
+    # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
+    x = model.addVars(n_vars, lb=-GRB.INFINITY, vtype=vtype)
+
+    _sense = {
+        GRB.MINIMIZE: GRB.MINIMIZE,
+        GRB.MAXIMIZE: GRB.MAXIMIZE,
+        ilpy.Sense.Minimize: GRB.MINIMIZE,
+        ilpy.Sense.Maximize: GRB.MAXIMIZE,
+    }[sense]
+    objective = sum(objective[i] * x[i] for i in range(n_vars))
+    model.setObjective(objective, _sense)
+
+    _op_map = {
+        ilpy.Relation.GreaterEqual: operator.ge,
+        ilpy.Relation.LessEqual: operator.le,
+        ilpy.Relation.Equal: operator.eq,
+        ">=": operator.ge,
+        "<=": operator.le,
+        "=": operator.eq,
+    }
+
+    for c in constraints:
+        if isinstance(c, Expression):
+            _c = c.as_constraint()
+            coefs, relation, val = (
+                _c.get_coefficients(),
+                _c.get_relation(),
+                _c.get_value(),
+            )
+        else:
+            coefs, relation, val = c
+        left = sum(coefs[i] * x[i] for i in range(n_vars))
+        model.addConstr(_op_map[relation](left, val))
+
+    model.optimize()
+    return [x[i].x for i in range(n_vars)]

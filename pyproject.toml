@@ -16,7 +16,7 @@ dependencies = []
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-dev = ["ruff", "mypy", "black", "pytest", "pytest-cov"]
+dev = ["ruff", "mypy", "black", "pytest", "pytest-cov", "cython"]
 
 [project.urls]
 homepage = "https://github.com/funkelab/ilpy"
@@ -47,3 +47,6 @@ files = "ilpy"
 strict = true                 # feel free to relax this if it's annoying
 disallow_any_generics = false
 ignore_missing_imports = true
+
+[tool.coverage.run]
+plugins = ["Cython.Coverage"]

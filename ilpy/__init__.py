@@ -25,4 +25,7 @@ __all__ = [  # noqa: F405
     "Solver",
     "Solver",
     "VariableType",
+    "solve",
 ]
+
+from ._functional import solve
