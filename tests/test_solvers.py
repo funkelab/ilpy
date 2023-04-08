@@ -70,9 +70,9 @@ CASES = [
 def test_solve(preference: ilpy.Preference, case: Case) -> None:
     kwargs = case._asdict()
     expectation = kwargs.pop("expectation")
+    # if gb is not None:
+    npt.assert_allclose(_gurobipy_solve(**kwargs), expectation)
     npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
-    if gb is not None:
-        npt.assert_allclose(_gurobipy_solve(**kwargs), expectation)
 
 
 def _gurobipy_solve(
