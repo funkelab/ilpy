@@ -33,7 +33,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
         # note: the Constant(0) here is only to satisfy mypy... it would work without
         _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
         _e += 0.5 * Variable(str(special_var), index=special_var)
-        objective = _e.as_objective()
+        objective = _e
     else:
         objective = ilpy.Objective()
         for i in range(num_vars):
@@ -43,7 +43,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
     # constraints
     if as_expression:
         _e = sum((Variable(str(i), index=i) for i in range(num_vars)), Constant(0))
-        constraint = (_e == 1).as_constraint()
+        constraint = _e == 1
     else:
         constraint = ilpy.Constraint()
         for i in range(num_vars):
