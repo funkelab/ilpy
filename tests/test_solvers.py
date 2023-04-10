@@ -62,21 +62,26 @@ CASES = [
         constraints=[3 * X[0] + 2 * X[1] >= 10, 1 * X[0] + 2 * X[1] >= 8],
         expectation=[1, 3.5],
     ),
+    # FIXME: segfaults
+    # Case(
+    #     objective=X[0] ** 2 - X[1] ** 2,
+    #     constraints=[X[0] <= -3, X[1] >= 2],
+    #     expectation=[-3, 2],
+    # ),
     Case(
         objective=X[0] ** 2,
-        constraints=[X[0] >= 3],
-        expectation=[3],
+        constraints=[X[0] <= -3],
+        expectation=[-3],
     ),
 ]
 
-# @pytest.mark.parametrize("preference", PREFS)
-# @pytest.mark.parametrize("case", CASES)
-# def test_solve(preference: ilpy.Preference, case: Case) -> None:
-#     kwargs = case._asdict()
-#     expectation = kwargs.pop("expectation")
-#     npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
 
-#     # if gb is not None:
+@pytest.mark.parametrize("preference", PREFS)
+@pytest.mark.parametrize("case", CASES)
+def test_solve(preference: ilpy.Preference, case: Case) -> None:
+    kwargs = case._asdict()
+    expectation = kwargs.pop("expectation")
+    npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
 
 
 @pytest.mark.skipif(gb is None, reason="Gurobipy not installed")
@@ -97,7 +102,8 @@ def _gurobipy_solve(
 ) -> list[float]:
     """Solve a linear program using Gurobipy.
 
-    This is used for testing purposes only.
+    This is used for testing purposes only: it uses Gurobipy's API directly
+    instead of going through ilpy.
 
     Examples
     --------
@@ -163,4 +169,4 @@ def _gurobipy_solve(
         model.addConstr(_op_map[relation](left, val))
 
     model.optimize()
-    return [getattr(x[i], 'x', 0) for i in range(n_vars)]
+    return [getattr(x[i], "x", 0) for i in range(n_vars)]
