@@ -63,11 +63,11 @@ CASES = [
         expectation=[1, 3.5],
     ),
     # FIXME: abort trap
-    # Case(
-    #     objective=X[0] ** 2 - X[1] ** 2,
-    #     constraints=[X[0] <= -3, X[1] >= 2],
-    #     expectation=[-3, 2],
-    # ),
+    Case(
+        objective=-X[0] ** 2,
+        constraints=[X[0] <= -3],
+        expectation=[-3],
+    ),
     Case(
         objective=X[0] ** 2,
         constraints=[X[0] <= -3],
