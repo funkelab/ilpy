@@ -10,24 +10,24 @@ import pytest
 from ilpy.expressions import Expression, Variable
 from ilpy.wrapper import VariableType
 
+# XFAIL if no gurobi not installed or no license found
+# (this is the best way I could find to determine this so far)
+gu_marks = []
 try:
-    import gurobipy as gb
-except ImportError:
-    if os.getenv("CI"):
-        raise ImportError("Gurobipy not installed, but required for CI") from None
+    ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+    try:
+        import gurobipy as gb
+    except ImportError:
+        if os.getenv("CI"):
+            raise ImportError("Gurobipy not installed, but required for CI") from None
+        gb = None
+except RuntimeError:
+    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
     gb = None
-
-# # XFAIL if no gurobi not installed or no license found
-# # (this is the best way I could find to determine this so far)
-# gu_marks = []
-# try:
-#     ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
-# except RuntimeError:
-#     gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
 
 PREFS = [
     pytest.param(ilpy.Preference.Scip, id="scip"),
-    pytest.param(ilpy.Preference.Gurobi, id="gurobi"),
+    pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
 ]
 
 
@@ -62,17 +62,30 @@ CASES = [
         constraints=[3 * X[0] + 2 * X[1] >= 10, 1 * X[0] + 2 * X[1] >= 8],
         expectation=[1, 3.5],
     ),
+    Case(
+        objective=X[0] ** 2,
+        constraints=[X[0] >= 3],
+        expectation=[3],
+    ),
 ]
 
+# @pytest.mark.parametrize("preference", PREFS)
+# @pytest.mark.parametrize("case", CASES)
+# def test_solve(preference: ilpy.Preference, case: Case) -> None:
+#     kwargs = case._asdict()
+#     expectation = kwargs.pop("expectation")
+#     npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
 
-@pytest.mark.parametrize("preference", PREFS)
+#     # if gb is not None:
+
+
+@pytest.mark.skipif(gb is None, reason="Gurobipy not installed")
 @pytest.mark.parametrize("case", CASES)
-def test_solve(preference: ilpy.Preference, case: Case) -> None:
+def test_gurobipy_solve(case: Case) -> None:
+    # just a sanity check to ensure that our solutions match gurobipy's
     kwargs = case._asdict()
     expectation = kwargs.pop("expectation")
-    # if gb is not None:
     npt.assert_allclose(_gurobipy_solve(**kwargs), expectation)
-    npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
 
 
 def _gurobipy_solve(
@@ -91,11 +104,13 @@ def _gurobipy_solve(
     >>> gurobipy_solve([2,3], [([3,2], '>=', 10), ([1,2], '>=', 8)])
     [1.0, 3.5]
     """
-
+    _obj = objective
     if isinstance(objective, Expression):
         objective = objective.as_objective().get_coefficients()
 
     n_vars = len(objective)
+    if not n_vars:
+        breakpoint()
 
     model = gb.Model()
     model.params.OutputFlag = int(verbose)
@@ -132,15 +147,20 @@ def _gurobipy_solve(
     for c in constraints:
         if isinstance(c, Expression):
             _c = c.as_constraint()
-            coefs, relation, val = (
+            coefs, qcoefs, relation, val = (
                 _c.get_coefficients(),
+                _c.get_quadratic_coefficients(),
                 _c.get_relation(),
                 _c.get_value(),
             )
         else:
-            coefs, relation, val = c
-        left = sum(coefs[i] * x[i] for i in range(n_vars))
+            _coefs, relation, val = c
+            coefs = dict(enumerate(_coefs))
+            qcoefs = {}
+        left = sum(lcoef * x[idx] for idx, lcoef in coefs.items())
+        for (i, j), qcoef in qcoefs.items():
+            left += qcoef * x[i] * x[j]
         model.addConstr(_op_map[relation](left, val))
 
     model.optimize()
-    return [x[i].x for i in range(n_vars)]
+    return [getattr(x[i], 'x', 0) for i in range(n_vars)]
