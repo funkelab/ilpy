@@ -36,7 +36,7 @@ X = [Variable(f"x{i}", index=i) for i in range(10)]
 
 class Case(NamedTuple):
     objective: Sequence[float] | Expression | ilpy.Objective
-    constraints: Iterable[tuple | Expression | ilpy.Constraint]
+    constraints: Iterable[tuple | Expression | ilpy.Constraint] = ()
     sense: ilpy.Sense | str = ilpy.Sense.Minimize
     variable_type: VariableType | str = ilpy.VariableType.Continuous
     expectation: Sequence[float] | None = None
@@ -62,7 +62,7 @@ CASES = [
         constraints=[3 * X[0] + 2 * X[1] >= 10, 1 * X[0] + 2 * X[1] >= 8],
         expectation=[1, 3.5],
     ),
-    # FIXME: segfaults
+    # FIXME: abort trap
     # Case(
     #     objective=X[0] ** 2 - X[1] ** 2,
     #     constraints=[X[0] <= -3, X[1] >= 2],
@@ -115,8 +115,6 @@ def _gurobipy_solve(
         objective = objective.as_objective().get_coefficients()
 
     n_vars = len(objective)
-    if not n_vars:
-        breakpoint()
 
     model = gb.Model()
     model.params.OutputFlag = int(verbose)
