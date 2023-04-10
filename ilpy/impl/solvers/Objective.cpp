@@ -37,6 +37,11 @@ Objective::getCoefficients() const {
 void
 Objective::setQuadraticCoefficient(unsigned int varNum1, unsigned int varNum2, double coef) {
 
+	if (varNum1 >= size())
+		resize(varNum1 + 1);
+	if (varNum2 >= size())
+		resize(varNum2 + 1);
+
 	if (coef == 0) {
 
 		_quadraticCoefs.erase(std::make_pair(varNum1, varNum2));
