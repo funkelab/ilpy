@@ -28,6 +28,40 @@ def solve(
     verbose: bool = False,
     preference: PreferenceType = Preference.Any,
 ) -> list[float]:
+    """Solve an objective subject to constraints.
+
+    Parameters
+    ----------
+    objective : Sequence[float] | Expression | Objective
+        The objective to solve.  If a sequence of floats is provided, it is
+        interpreted as the coefficients of the objective. For example, the objective
+        2x + 3y would be provided as [2, 3]. 
+        Alternatively, an `ilpy.Expression` or `ilpy.Objective` can be provided.
+    constraints : Iterable[ConstraintTuple  |  Expression  |  Constraint]
+        The constraints to satisfy.  May be provided as a sequence of Expression or
+        Constraint objects, or as a sequence of tuples of the form
+        (coefficients, relation, value), where coefficients is a sequence of floats,
+        relation is an `ilpy.Relation` or a string in {"<=", ">=", "="}, and value is a
+        float.  For example, the constraint 2x + 3y <= 5 would be provided as
+        `([2, 3], Relation.LessEqual, 5)`.
+    sense : Sense | Literal["minimize", "maximize"]
+        The sense of the objective, either `Sense.Minimize` or `Sense.Maximize`.
+        Alternatively, a string in {"minimize", "maximize"} can be provided.
+        By default, `Sense.Minimize`.
+    variable_type : VariableType | Literal["continuous", "binary", "integer"]
+        The type of the variables, either an `ilpy.VariableType`, or a string in
+        {"continuous", "binary", "integer"}.  By default, `VariableType.Continuous`.
+    verbose : bool, optional
+        Whether to print the solver output, by default False.
+    preference : Preference | Literal["any", "cplex", "gurobi", "scip"]
+        Backend preference, either an `ilpy.Preference` or a string in
+        {"any", "cplex", "gurobi", "scip"}.  By default, `Preference.Any`.
+
+    Returns
+    -------
+    list[float]
+        The solution to the objective.
+    """
     if isinstance(sense, str):
         sense = Sense[sense.title()]
     if isinstance(variable_type, str):
