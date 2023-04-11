@@ -1,5 +1,6 @@
 from . import wrapper
 from ._functional import solve
+from .expressions import Expression, Variable
 from .wrapper import *  # noqa: F403
 
 __version__ = "0.2.3"
@@ -12,6 +13,7 @@ __all__ = [  # noqa: F405
     "Continuous",
     "Cplex",
     "Equal",
+    "Expression",
     "GreaterEqual",
     "Gurobi",
     "Integer",
@@ -24,10 +26,11 @@ __all__ = [  # noqa: F405
     "Scip",
     "Sense",
     "Solution",
-    "Solver",
-    "Solver",
-    "VariableType",
     "solve",
+    "Solver",
+    "Solver",
+    "Variable",
+    "VariableType",
 ]
 
 
