@@ -218,20 +218,30 @@ GurobiBackend::solve(Solution& x, std::string& msg) {
 
 	GRB_CHECK(GRBupdatemodel(_model));
 
+	GRBenv* modelenv = GRBgetenv(_model);
+
 	if (_timeout > 0) {
 
-		GRBenv* modelenv = GRBgetenv(_model);
 		GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_TIMELIMIT, _timeout));
 	}
 
 	if (_gap >= 0) {
 
-		GRBenv* modelenv = GRBgetenv(_model);
 		if (_absoluteGap)
 			GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_MIPGAPABS, _gap));
 		else
 			GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_MIPGAP, _gap));
 	}
+
+	// Sets the strategy for handling non-convex quadratic objectives
+	// or non-convex quadratic constraints. 
+	// 0 = an error is reported if the original user model contains non-convex
+	//     quadratic constructs.
+	// 1 = an error is reported if non-convex quadratic constructs could not be
+	//     discarded or linearized during presolve.
+	// 2 = non-convex quadratic problems are solved by means of translating them
+	//     into bilinear form and applying spatial branching.
+	GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_NONCONVEX, 2));
 
 	GRB_CHECK(GRBoptimize(_model));
 

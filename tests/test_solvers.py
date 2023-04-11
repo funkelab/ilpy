@@ -101,3 +101,24 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
     solution, _ = solver.solve()
 
     assert solution[5] == -2  # jan please check
+
+
+@pytest.mark.parametrize(
+    "preference",
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+)
+def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
+    # currently, just a smoke test to make sure we don't crash on solve.
+    obj = ilpy.Objective()
+    obj.set_quadratic_coefficient(0, 0, -1)  # quadratic term (-x^2)
+
+    solver = ilpy.Solver(1, ilpy.VariableType.Continuous, preference=preference)
+    solver.set_objective(obj)
+
+    constraint = ilpy.Constraint()
+    constraint.set_coefficient(0, 1)
+    constraint.set_value(1)
+    solver.add_constraint(constraint)
+
+    # Gurobi will give zeros and SCIP will give something like -9999999987
+    assert solver.solve() is not None
