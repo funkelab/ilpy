@@ -4,17 +4,19 @@ from ilpy.expressions import Constant, Expression, Variable
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)
-marks = []
+gu_marks = []
 try:
     ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+    HAVE_GUROBI = True
 except RuntimeError:
-    marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+    HAVE_GUROBI = False
 
 
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
 @pytest.mark.parametrize(
     "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
 )
 def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
@@ -62,7 +64,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
 @pytest.mark.parametrize(
     "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
 )
 def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
