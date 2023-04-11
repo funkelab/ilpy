@@ -38,9 +38,11 @@ cpdef enum Preference:
 cdef class Solution:
 
     cdef decl.Solution* p
+    cdef string _status
 
     def __cinit__(self, size):
         self.p = new decl.Solution(size)
+        self._status = ""
 
     def __dealloc__(self):
         del self.p
@@ -66,6 +68,9 @@ cdef class Solution:
 
     def set_value(self, value):
         self.p.setValue(value)
+    
+    def get_status(self) -> str:
+        return self._status.decode('UTF-8')
 
 cdef class Objective:
 
@@ -209,6 +214,5 @@ cdef class Solver:
 
     def solve(self):
         solution = Solution(self.num_variables)
-        cdef string message
-        deref(self.p).solve(solution.p[0], message)
-        return solution, message
+        deref(self.p).solve(solution.p[0], solution._status)
+        return solution

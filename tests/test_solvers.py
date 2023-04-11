@@ -56,7 +56,8 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
     solver.set_objective(objective)
     solver.add_constraint(constraint)
 
-    solution, _ = solver.solve()
+    solution = solver.solve()
+    assert isinstance(solution.get_status(), str)
 
     assert solution[5] == 1
 
@@ -100,7 +101,7 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
 
     solver.add_constraint(constraint)
 
-    solution, _ = solver.solve()
+    solution = solver.solve()
 
     assert solution[5] == -2  # jan please check
 
