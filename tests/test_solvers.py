@@ -13,11 +13,11 @@ except RuntimeError:
     HAVE_GUROBI = False
 
 
+PREFS = [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)]
+
+
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
-)
+@pytest.mark.parametrize("preference", PREFS)
 def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
     special_var = 5
@@ -62,10 +62,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
 
 
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
-)
+@pytest.mark.parametrize("preference", PREFS)
 def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
     special_var = 5
@@ -105,10 +102,7 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
     assert solution[5] == -2  # jan please check
 
 
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
-)
+@pytest.mark.parametrize("preference", PREFS)
 def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
     # currently, just a smoke test to make sure we don't crash on solve.
     obj = ilpy.Objective()
