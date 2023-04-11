@@ -35,7 +35,7 @@ def solve(
     objective : Sequence[float] | Expression | Objective
         The objective to solve.  If a sequence of floats is provided, it is
         interpreted as the coefficients of the objective. For example, the objective
-        2x + 3y would be provided as [2, 3]. 
+        2x + 3y would be provided as [2, 3].
         Alternatively, an `ilpy.Expression` or `ilpy.Objective` can be provided.
     constraints : Iterable[ConstraintTuple  |  Expression  |  Constraint]
         The constraints to satisfy.  May be provided as a sequence of Expression or
