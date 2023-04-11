@@ -48,14 +48,31 @@ jobs:
           mamba-version: "*"
           channels: conda-forge,gurobi,defaults
           channel-priority: true
+
       - name: install build deps
         run: mamba install scip gurobi
+
+      - name: add gurobi license
+        shell: bash
+        id: write-license
+        env:
+          LICENSE: ${{ secrets.GRB_LICENSE_FILE   }}
+        run: |
+          echo "$LICENSE" > $PWD/gurobi.lic
+          echo "grb_license_file=$PWD/gurobi.lic" >> $GITHUB_OUTPUT
+
       - name: install package
         run: |
           python -m pip install -U pip
           python -m pip install -e .[dev]
+
       - name: run tests
-        run: pytest --color yes -v
+        run: pytest --color yes -v --cov ilpy --cov-report=xml
+        env:
+          GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
+
+      - name: upload coverage
+        uses: codecov/codecov-action@v2
 
   # we only deploy the sdist to PyPI, the wheel is still complicated
   deploy-sdist:
