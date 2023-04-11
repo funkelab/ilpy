@@ -4,17 +4,19 @@ from ilpy.expressions import Constant, Expression, Variable
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)
-marks = []
+gu_marks = []
 try:
     ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+    HAVE_GUROBI = True
 except RuntimeError:
-    marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+    HAVE_GUROBI = False
 
 
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
 @pytest.mark.parametrize(
     "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
 )
 def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
@@ -62,7 +64,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
 @pytest.mark.parametrize(
     "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
+    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
 )
 def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
@@ -101,3 +103,24 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
     solution, _ = solver.solve()
 
     assert solution[5] == -2  # jan please check
+
+
+@pytest.mark.skipif(not HAVE_GUROBI, reason="Gurobi not installed")
+def test_non_convex_quadratic_gurobi() -> None:
+    # currently, just a smoke test to make sure we don't crash on solve.
+    obj = ilpy.Objective()
+    obj.set_quadratic_coefficient(0, 0, -1)  # quadratic term (-x^2)
+
+    solver = ilpy.Solver(
+        1, ilpy.VariableType.Continuous, preference=ilpy.Preference.Gurobi
+    )
+    solver.set_objective(obj)
+
+    constraint = ilpy.Constraint()
+    constraint.set_coefficient(0, 1)
+    constraint.set_value(1)
+    solver.add_constraint(constraint)
+
+    # Gurobi will raise an exception at the moment... may be changed later:
+    with pytest.raises(RuntimeError, match="Q matrix is not positive semi-definite"):
+        solver.solve()

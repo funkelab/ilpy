@@ -98,7 +98,7 @@ cdef extern from "impl/solvers/SolverBackend.h":
         void setOptimalityGap(double, bool)
         void setNumThreads(unsigned int)
         void setVerbose(bool)
-        bool solve(Solution& solution, string& message)
+        bool solve(Solution& solution, string& message) except +
 
 cdef extern from "impl/solvers/ScipBackend.cpp":
     pass
