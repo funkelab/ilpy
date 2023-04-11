@@ -68,9 +68,9 @@ cdef class Solution:
 
     def set_value(self, value):
         self.p.setValue(value)
-    
+
     def get_status(self) -> str:
-        return self._status.decode('UTF-8')
+        return self._status.decode("UTF-8")
 
 cdef class Objective:
 
