@@ -5,6 +5,9 @@ from Cython.Build import cythonize
 from setuptools import setup
 from setuptools.extension import Extension
 
+# enable test coverage tracing if CYTHON_TRACE is set to a non-zero value
+CYTHON_TRACE = int(os.getenv("CYTHON_TRACE", "0") not in ("0", "False"))
+
 libraries = ["libscip"] if os.name == "nt" else ["scip"]
 include_dirs = ["ilpy/impl"]
 library_dirs = []
@@ -38,6 +41,7 @@ wrapper = Extension(
     libraries=libraries,
     library_dirs=library_dirs,
     language="c++",
+    define_macros=[("CYTHON_TRACE", CYTHON_TRACE)],
 )
 
-setup(ext_modules=cythonize([wrapper]))
+setup(ext_modules=cythonize([wrapper], compiler_directives={"linetrace": CYTHON_TRACE}))

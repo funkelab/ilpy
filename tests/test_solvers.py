@@ -4,18 +4,20 @@ from ilpy.expressions import Constant, Expression, Variable
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)
-marks = []
+gu_marks = []
 try:
     ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+    HAVE_GUROBI = True
 except RuntimeError:
-    marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+    HAVE_GUROBI = False
+
+
+PREFS = [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)]
 
 
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
-)
+@pytest.mark.parametrize("preference", PREFS)
 def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
     special_var = 5
@@ -54,16 +56,14 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
     solver.set_objective(objective)
     solver.add_constraint(constraint)
 
-    solution, _ = solver.solve()
+    solution = solver.solve()
+    assert isinstance(solution.get_status(), str)
 
     assert solution[5] == 1
 
 
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=marks)],
-)
+@pytest.mark.parametrize("preference", PREFS)
 def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
     special_var = 5
@@ -98,6 +98,24 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
 
     solver.add_constraint(constraint)
 
-    solution, _ = solver.solve()
+    solution = solver.solve()
 
     assert solution[5] == -2  # jan please check
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
+    # currently, just a smoke test to make sure we don't crash on solve.
+    obj = ilpy.Objective()
+    obj.set_quadratic_coefficient(0, 0, -1)  # quadratic term (-x^2)
+
+    solver = ilpy.Solver(1, ilpy.VariableType.Continuous, preference=preference)
+    solver.set_objective(obj)
+
+    constraint = ilpy.Constraint()
+    constraint.set_coefficient(0, 1)
+    constraint.set_value(1)
+    solver.add_constraint(constraint)
+
+    # Gurobi will give zeros and SCIP will give something like -9999999987
+    assert solver.solve() is not None
