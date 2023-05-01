@@ -1,4 +1,5 @@
 # distutils: language = c++
+from typing import TYPE_CHECKING
 
 from libc.stdint cimport uint32_t
 from libcpp.memory cimport shared_ptr
@@ -7,6 +8,9 @@ from libcpp.string cimport string
 from cython.operator cimport dereference as deref
 cimport decl
 from typing import Iterable, Mapping, Sequence
+
+if TYPE_CHECKING:
+    from .expression import Expression
 
 ####################################
 # Enums                            #
@@ -250,14 +254,24 @@ cdef class Solver:
         self.num_variables = num_variables
         deref(self.p).initialize(num_variables, default_variable_type, vtypes)
 
-    def set_objective(self, Objective objective):
-        deref(self.p).setObjective(objective.p[0])
+    def set_objective(self, objective: Objective | Expression):
+        cdef Objective obj
+        if hasattr(objective, "as_objective"):
+            obj = objective.as_objective()
+        else:
+            obj = objective
+        deref(self.p).setObjective(obj.p[0])
 
     def set_constraints(self, Constraints constraints):
         deref(self.p).setConstraints(constraints.p[0])
 
-    def add_constraint(self, Constraint constraint):
-        deref(self.p).addConstraint(constraint.p[0])
+    def add_constraint(self, constraint: Constraint | Expression):
+        cdef Constraint const
+        if hasattr(constraint, "as_constraint"):
+            const = constraint.as_constraint()
+        else:
+            const = constraint
+        deref(self.p).addConstraint(const.p[0])
 
     def set_timeout(self, timeout):
         deref(self.p).setTimeout(timeout)
