@@ -92,7 +92,7 @@ def solve(
             )
         solver.add_constraint(const)
 
-    solution, _ = solver.solve()
+    solution = solver.solve()
     return list(solution)  # type: ignore
 
 

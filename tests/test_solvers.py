@@ -172,15 +172,13 @@ def _gurobipy_solve(
     return [getattr(x[i], "x", 0) for i in range(n_vars)]
 
 
-@pytest.mark.skipif(not HAVE_GUROBI, reason="Gurobi not installed")
-def test_non_convex_quadratic_gurobi() -> None:
+@pytest.mark.parametrize("preference", PREFS)
+def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
     # currently, just a smoke test to make sure we don't crash on solve.
     obj = ilpy.Objective()
     obj.set_quadratic_coefficient(0, 0, -1)  # quadratic term (-x^2)
 
-    solver = ilpy.Solver(
-        1, ilpy.VariableType.Continuous, preference=ilpy.Preference.Gurobi
-    )
+    solver = ilpy.Solver(1, ilpy.VariableType.Continuous, preference=preference)
     solver.set_objective(obj)
 
     constraint = ilpy.Constraint()
@@ -188,6 +186,5 @@ def test_non_convex_quadratic_gurobi() -> None:
     constraint.set_value(1)
     solver.add_constraint(constraint)
 
-    # Gurobi will raise an exception at the moment... may be changed later:
-    with pytest.raises(RuntimeError, match="Q matrix is not positive semi-definite"):
-        solver.solve()
+    # Gurobi will give zeros and SCIP will give something like -9999999987
+    assert solver.solve() is not None
