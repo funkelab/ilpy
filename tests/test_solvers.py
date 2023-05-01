@@ -13,11 +13,11 @@ except RuntimeError:
     HAVE_GUROBI = False
 
 
+PREFS = [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)]
+
+
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
-)
+@pytest.mark.parametrize("preference", PREFS)
 def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
     special_var = 5
@@ -63,10 +63,7 @@ def test_simple_solver(preference: ilpy.Preference, as_expression: bool) -> None
 
 
 @pytest.mark.parametrize("as_expression", [True, False], ids=["as_expr", "as_constr"])
-@pytest.mark.parametrize(
-    "preference",
-    [ilpy.Preference.Scip, pytest.param(ilpy.Preference.Gurobi, marks=gu_marks)],
-)
+@pytest.mark.parametrize("preference", PREFS)
 def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> None:
     num_vars = 10
     special_var = 5
@@ -106,15 +103,13 @@ def test_quadratic_solver(preference: ilpy.Preference, as_expression: bool) -> N
     assert solution[5] == -2  # jan please check
 
 
-@pytest.mark.skipif(not HAVE_GUROBI, reason="Gurobi not installed")
-def test_non_convex_quadratic_gurobi() -> None:
+@pytest.mark.parametrize("preference", PREFS)
+def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
     # currently, just a smoke test to make sure we don't crash on solve.
     obj = ilpy.Objective()
     obj.set_quadratic_coefficient(0, 0, -1)  # quadratic term (-x^2)
 
-    solver = ilpy.Solver(
-        1, ilpy.VariableType.Continuous, preference=ilpy.Preference.Gurobi
-    )
+    solver = ilpy.Solver(1, ilpy.VariableType.Continuous, preference=preference)
     solver.set_objective(obj)
 
     constraint = ilpy.Constraint()
@@ -122,6 +117,5 @@ def test_non_convex_quadratic_gurobi() -> None:
     constraint.set_value(1)
     solver.add_constraint(constraint)
 
-    # Gurobi will raise an exception at the moment... may be changed later:
-    with pytest.raises(RuntimeError, match="Q matrix is not positive semi-definite"):
-        solver.solve()
+    # Gurobi will give zeros and SCIP will give something like -9999999987
+    assert solver.solve() is not None
