@@ -57,5 +57,15 @@ strict = true                 # feel free to relax this if it's annoying
 disallow_any_generics = false
 ignore_missing_imports = true
 
+# https://coverage.readthedocs.io/en/6.4/config.html
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "@overload",
+    "except ImportError",
+    "\\.\\.\\.",
+    "raise NotImplementedError()",
+]
 [tool.coverage.run]
 plugins = ["Cython.Coverage"]
