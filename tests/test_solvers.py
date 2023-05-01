@@ -33,6 +33,7 @@ PREFS = [
 ]
 
 
+# just a bunch of variables to use in tests
 X = [Variable(f"x{i}", index=i) for i in range(10)]
 
 
@@ -64,12 +65,6 @@ CASES = [
         constraints=[3 * X[0] + 2 * X[1] >= 10, 1 * X[0] + 2 * X[1] >= 8],
         expectation=[1, 3.5],
     ),
-    # abort trap at the moment
-    # Case(
-    #     objective=-X[0] ** 2,
-    #     constraints=[X[0] <= -3],
-    #     expectation=[-3],
-    # ),
     Case(
         objective=X[0] ** 2,
         constraints=[X[0] <= -3],
@@ -121,6 +116,7 @@ def _gurobipy_solve(
     model = gb.Model()
     model.params.OutputFlag = int(verbose)
 
+    # map ilpy variable types to gurobipy variable types
     vtype = {
         ilpy.VariableType.Continuous: gb.GRB.CONTINUOUS,
         ilpy.VariableType.Binary: gb.GRB.BINARY,
@@ -132,6 +128,7 @@ def _gurobipy_solve(
     # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
     x = model.addVars(n_vars, lb=-gb.GRB.INFINITY, vtype=vtype)
 
+    # map ilpy senses to gurobipy senses
     _sense = {
         gb.GRB.MINIMIZE: gb.GRB.MINIMIZE,
         gb.GRB.MAXIMIZE: gb.GRB.MAXIMIZE,
@@ -141,6 +138,7 @@ def _gurobipy_solve(
     objective = sum(objective[i] * x[i] for i in range(n_vars))
     model.setObjective(objective, _sense)
 
+    # map ilpy relations to gurobipy relations
     _op_map = {
         ilpy.Relation.GreaterEqual: operator.ge,
         ilpy.Relation.LessEqual: operator.le,
@@ -150,8 +148,10 @@ def _gurobipy_solve(
         "=": operator.eq,
     }
 
+    # add constraints to the model
     for c in constraints:
         if isinstance(c, Expression):
+            # convert ilpy expressions to gurobipy constraints
             _c = c.as_constraint()
             coefs, qcoefs, relation, val = (
                 _c.get_coefficients(),
