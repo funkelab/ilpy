@@ -137,6 +137,6 @@ def test_expression_errors():
 
     # cannot cast to a constraint without a variable index
     with pytest.raises(
-        ValueError, match="All variables in a constraint expression must have an index"
+        ValueError, match="All variables in an Expression must have an index"
     ):
         (Variable("u") <= 0).as_constraint()

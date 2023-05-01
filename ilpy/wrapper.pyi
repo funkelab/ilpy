@@ -1,4 +1,9 @@
 from enum import IntEnum, auto
+from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
+
+if TYPE_CHECKING:
+    LinearCoeffs = Sequence[float] | Mapping[int, float]
+    QCoeffs = Mapping[tuple[int, int], float] | Iterable[tuple[tuple[int, int], float]]
 
 class Preference(IntEnum):
     Any = auto()
@@ -59,6 +64,14 @@ class Objective:
     def get_sense(self) -> Sense: ...
     def resize(self, size: int) -> None: ...
     def __len__(self) -> int: ...
+    @classmethod
+    def from_coefficients(
+        cls,
+        coefficients: LinearCoeffs = (),
+        quadratic_coefficients: QCoeffs = (),
+        constant: float = 0,
+        sense: Sense = Sense.Minimize,
+    ) -> Objective: ...
 
 class Constraint:
     def __init__(self) -> None: ...
@@ -71,6 +84,14 @@ class Constraint:
     def set_value(self, value: float) -> None: ...
     def get_value(self) -> float: ...
     def is_violated(self, solution: Solution) -> bool: ...
+    @classmethod
+    def from_coefficients(
+        cls,
+        coefficients: LinearCoeffs = (),
+        quadratic_coefficients: QCoeffs = (),
+        relation: Relation = Relation.LessEqual,
+        value: float = 0,
+    ) -> Constraint: ...
 
 class Constraints:
     def __init__(self) -> None: ...
