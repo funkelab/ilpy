@@ -172,6 +172,7 @@ def _gurobipy_solve(
     return [getattr(x[i], "x", 0) for i in range(n_vars)]
 
 
+@pytest.mark.skipif(os.name == "nt", reason="very slow on windows CI for some reason.")
 @pytest.mark.parametrize("preference", PREFS)
 def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
     # currently, just a smoke test to make sure we don't crash on solve.
