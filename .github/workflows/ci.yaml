@@ -74,7 +74,7 @@ jobs:
           GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
 
       - name: upload coverage
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
 
   # we only deploy the sdist to PyPI, the wheel is still complicated
   deploy-sdist:
