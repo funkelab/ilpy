@@ -9,7 +9,10 @@ name = "ilpy"
 description = "Python wrappers for popular MIP solvers."
 requires-python = ">=3.8"
 license = { text = "MIT" }
-authors = [{ email = "funkej@janelia.hhmi.org", name = "Jan Funke" }]
+authors = [
+    { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
+    { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
+]
 dynamic = ["version", "readme"]
 dependencies = []
 
