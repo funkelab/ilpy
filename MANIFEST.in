@@ -1,4 +1,5 @@
 recursive-include ilpy *.cpp *.h *.pxd *.py *.pyx *.txt
+include *.md
 
 recursive-exclude conda *
 recursive-exclude tests *
