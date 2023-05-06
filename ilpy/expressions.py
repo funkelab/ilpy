@@ -222,11 +222,6 @@ class Variable(Expression, ast.Name):
         # allow use as dict key
         return id(self)
 
-    def __index__(self) -> int:
-        if self.index is None:
-            raise TypeError(f"Variable {self!r} has no index")
-        return self.index
-
     def __int__(self) -> int:
         if self.index is None:
             raise TypeError(f"Variable {self!r} has no index")
