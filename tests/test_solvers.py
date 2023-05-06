@@ -107,7 +107,6 @@ def _gurobipy_solve(
     >>> gurobipy_solve([2,3], [([3,2], '>=', 10), ([1,2], '>=', 8)])
     [1.0, 3.5]
     """
-    _obj = objective
     if isinstance(objective, Expression):
         objective = objective.as_objective().get_coefficients()
 
@@ -149,6 +148,7 @@ def _gurobipy_solve(
     }
 
     # add constraints to the model
+    qcoefs: dict[tuple[int, int], float]
     for c in constraints:
         if isinstance(c, Expression):
             # convert ilpy expressions to gurobipy constraints
@@ -189,3 +189,13 @@ def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
 
     # Gurobi will give zeros and SCIP will give something like -9999999987
     assert solver.solve() is not None
+
+
+def test_solution_indexing() -> None:
+    """Test that we can use a Variable instance to index into a solution."""
+    solver = ilpy.Solver(5, ilpy.VariableType.Continuous)
+    solution = solver.solve()
+    x = ilpy.Variable("x", index=0)
+    _ = solution[x]  # smoke test
+    solution[x] = 2  # can be used to set too
+    assert solution[x] == 2
