@@ -2,7 +2,15 @@ import operator
 
 import pytest
 from ilpy.expressions import Expression, Variable, _get_coefficients
-from ilpy.wrapper import Constraint, Objective, Relation, Sense
+from ilpy.wrapper import (
+    Constraint,
+    Constraints,
+    Objective,
+    Relation,
+    Sense,
+    Solver,
+    VariableType,
+)
 
 u = Variable("u")
 v = Variable("v")
@@ -140,3 +148,16 @@ def test_expression_errors():
         ValueError, match="All variables in an Expression must have an index"
     ):
         (Variable("u") <= 0).as_constraint()
+
+
+def test_adding() -> None:
+    """Test various add() overloads accept expressions as well as objects."""
+
+    u = Variable("u", index=0)
+    constraints = Constraints()
+    constraints.add(u >= 10)
+
+    solver = Solver(2, VariableType.Integer)
+    solver.set_objective(u)
+    solver.add_constraint(u >= 0)
+    solver.set_constraints(constraints)
