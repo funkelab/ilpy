@@ -227,8 +227,13 @@ cdef class Constraints:
     def clear(self):
         self.p.clear()
 
-    def add(self, Constraint constraint):
-        self.p.add(constraint.p[0])
+    def add(self, constraint: Constraint | Expression):
+        cdef Constraint const
+        if hasattr(constraint, "as_constraint"):
+            const = constraint.as_constraint()
+        else:
+            const = constraint
+        self.p.add(const.p[0])
 
     def add_all(self, Constraints constraints):
         self.p.addAll(constraints.p[0])
