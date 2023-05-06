@@ -58,13 +58,13 @@ cdef class Solution:
     def __getitem__(self, i):
         i = int(i)
         if i < 0 or i >= self.p.size():
-            raise IndexError()
+            raise IndexError(f"index {i!r} out of range for size {self.p.size()}")
         return self.p[0][i]
 
     def __setitem__(self, i, value):
         i = int(i)
         if i < 0 or i >= self.p.size():
-            raise IndexError()
+            raise IndexError(f"index {i!r} out of range for size {self.p.size()}")
         self.p[0][i] = value
 
     def resize(self, size):
