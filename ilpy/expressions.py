@@ -222,6 +222,14 @@ class Variable(Expression, ast.Name):
         # allow use as dict key
         return id(self)
 
+    def __index__(self) -> int:
+        if self.index is None:
+            raise TypeError(f"Variable {self!r} has no index")
+        return self.index
+
+    def __repr__(self) -> str:
+        return f"ilpy.Variable({self.id!r}, index={self.index!r})"
+
 
 # conversion between ast comparison operators and ilpy relations
 # TODO: support more less/greater than operators
