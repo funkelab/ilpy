@@ -227,6 +227,11 @@ class Variable(Expression, ast.Name):
             raise TypeError(f"Variable {self!r} has no index")
         return self.index
 
+    def __int__(self) -> int:
+        if self.index is None:
+            raise TypeError(f"Variable {self!r} has no index")
+        return int(self.index)
+
     def __repr__(self) -> str:
         return f"ilpy.Variable({self.id!r}, index={self.index!r})"
 
