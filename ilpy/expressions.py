@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ast
-from typing import Any, Sequence, Union
+from typing import Any, ClassVar, Sequence, Union
 
 from ilpy.wrapper import Constraint, Objective, Relation, Sense
 
@@ -412,7 +412,9 @@ class _ExprSerializer(ast.NodeVisitor):
     Used above in `Expression.__str__`.
     """
 
-    OP_MAP: dict[type[ast.operator] | type[ast.cmpop] | type[ast.unaryop], str] = {
+    OP_MAP: ClassVar[
+        dict[type[ast.operator] | type[ast.cmpop] | type[ast.unaryop], str]
+    ] = {
         # ast.cmpop
         ast.Eq: "==",
         ast.Gt: ">",

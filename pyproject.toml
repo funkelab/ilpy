@@ -48,6 +48,7 @@ target-version = "py38"
 src = ["ilpy"]
 select = [
     "F",   # pyflakes
+    "W",   # pyflakes
     "E",   # pycodestyle
     "I",   # isort
     "UP",  # pyupgrade 
