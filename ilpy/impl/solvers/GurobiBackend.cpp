@@ -147,12 +147,8 @@ GurobiBackend::setConstraints(const Constraints& constraints) {
 	}
 
 	_numConstraints = constraints.size();
-	unsigned int j = 0;
 	for (const Constraint& constraint : constraints) {
-
 		addConstraint(constraint);
-
-		j++;
 	}
 
 	GRB_CHECK(GRBupdatemodel(_model));

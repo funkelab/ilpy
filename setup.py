@@ -44,4 +44,12 @@ wrapper = Extension(
     define_macros=[("CYTHON_TRACE", CYTHON_TRACE)],
 )
 
-setup(ext_modules=cythonize([wrapper], compiler_directives={"linetrace": CYTHON_TRACE}))
+setup(
+    ext_modules=cythonize(
+        [wrapper],
+        compiler_directives={
+            "linetrace": CYTHON_TRACE,
+            "language_level": "3",
+        },
+    )
+)

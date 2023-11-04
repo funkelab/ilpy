@@ -6,7 +6,7 @@ from libcpp.memory cimport shared_ptr
 from libcpp.map cimport map as cppmap
 from libcpp.string cimport string
 from cython.operator cimport dereference as deref
-cimport decl
+from . cimport decl
 from typing import Iterable, Mapping, Sequence
 
 if TYPE_CHECKING:
@@ -47,7 +47,7 @@ cdef class Solution:
 
     def __cinit__(self, size):
         self.p = new decl.Solution(size)
-        self._status = ""
+        self._status = b""
 
     def __dealloc__(self):
         del self.p

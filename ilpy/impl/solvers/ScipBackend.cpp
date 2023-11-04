@@ -3,6 +3,7 @@
 #ifdef HAVE_SCIP
 
 #include <sstream>
+#include <stdexcept> // for std::runtime_error
 
 #include <scip/scipdefplugins.h>
 #include <scip/cons_linear.h>
@@ -131,12 +132,8 @@ ScipBackend::setConstraints(const Constraints& constraints) {
 	// allocate memory for new constraints
 	_constraints.reserve(constraints.size());
 
-	unsigned int j = 0;
 	for (const Constraint& constraint : constraints) {
-
 		addConstraint(constraint);
-
-		j++;
 	}
 }
 
@@ -172,7 +169,7 @@ ScipBackend::addConstraint(const Constraint& constraint) {
 	if (constraint.getRelation() == GreaterEqual)
 		rhs = SCIPinfinity(_scip);
 
-	SCIP_CALL_ABORT(SCIPcreateConsBasicQuadratic(
+	SCIP_CALL_ABORT(SCIPcreateConsBasicQuadraticNonlinear(
 			_scip,
 			&c,
 			name.c_str(),
@@ -323,7 +320,8 @@ ScipBackend::scipVarType(VariableType type, double& lb, double& ub) {
 		return SCIP_VARTYPE_CONTINUOUS;
 	}
 
-	assert(false);
+    // Handle the unexpected value of 'type'
+    throw std::runtime_error("Unhandled VariableType passed to ScipBackend::scipVarType");
 }
 
 #endif // HAVE_SCIP
