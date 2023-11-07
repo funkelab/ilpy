@@ -72,4 +72,5 @@ exclude_lines = [
     "raise NotImplementedError()",
 ]
 [tool.coverage.run]
+source = ['ilpy']
 plugins = ["Cython.Coverage"]
