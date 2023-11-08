@@ -6,7 +6,7 @@ from setuptools import setup
 from setuptools.extension import Extension
 
 # enable test coverage tracing if CYTHON_TRACE is set to a non-zero value
-CYTHON_TRACE = int(os.getenv("CYTHON_TRACE", "0") not in ("0", "False"))
+CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
 
 libraries = ["libscip"] if os.name == "nt" else ["scip"]
 include_dirs = ["ilpy/impl"]
