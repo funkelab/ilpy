@@ -95,9 +95,6 @@ private:
 	// size of a and x
 	unsigned int _numVariables;
 
-	// number of rows in A and C
-	unsigned int _numConstraints;
-
 	// the GRB environment
 	GRBenv* _env;
 
