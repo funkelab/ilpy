@@ -141,10 +141,9 @@ GurobiBackend::setConstraints(const Constraints &constraints)
 	if (numConstrs > 0)
 	{
 		int *constraintIndicies = new int[numConstrs];
-		for (int i = 0; i < numConstrs; i++)
-		{
+		for (unsigned int i = 0; i < numConstrs; i++)
 			constraintIndicies[i] = i;
-		}
+
 		GRB_CHECK(GRBdelconstrs(_model, numConstrs, constraintIndicies));
 		delete[] constraintIndicies;
 
@@ -152,9 +151,7 @@ GurobiBackend::setConstraints(const Constraints &constraints)
 	}
 
 	for (const Constraint &constraint : constraints)
-	{
 		addConstraint(constraint);
-	}
 
 	// Update the model to include new constraints
 	GRB_CHECK(GRBupdatemodel(_model));
