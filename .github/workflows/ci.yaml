@@ -55,7 +55,7 @@ jobs:
           channel-priority: true
 
       - name: install build deps
-        run: mamba install scip gurobi
+        run: mamba install scip gurobi gcovr
 
       - name: add gurobi license
         shell: bash
@@ -70,17 +70,23 @@ jobs:
         run: |
           python -m pip install -U pip
           python -m pip install -e .[dev]
+          python setup.py build_ext --inplace  # required for C coverage
         env:
           CYTHON_TRACE: 1 # enable coverage of cython code
+          CFLAGS: '-coverage' # enable coverage of C code
 
       - name: run tests
-        run: pytest --color yes -v --cov ilpy --cov-report=xml
+        run: |
+          pytest --color yes -v --cov ilpy --cov-report=xml
+          gcovr --xml coverage_cpp.xml  # generate C coverage report
         env:
           GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
 
       - name: upload coverage
         uses: codecov/codecov-action@v3
-
+        with:
+          files: ./coverage.xml,./coverage_cpp.xml
+        
   # we only deploy the sdist to PyPI, the wheel is still complicated
   deploy-sdist:
     if: startsWith(github.ref, 'refs/tags')

@@ -10,3 +10,5 @@ ilpy/wrapper.cpp
 build
 dist
 .vscode
+coverage.xml
+coverage_cpp.xml
