@@ -214,8 +214,17 @@ def test_solve_twice(preference: ilpy.Preference) -> None:
     c0.add(2 * x1 + 3 * x2 >= 12)
     c0.add(x1 - x2 <= 5)
 
+    c1 = ilpy.Constraints()
+    c1.add(x1 + x2 <= 10)
+    c1.add(2 * x1 + 3 * x2 >= 12)
+    c1.add(x1 - x2 >= 5)
+
     # initial solve
-    solver.set_constraints(c0)
     solver.set_constraints(c0)
     solution = solver.solve()
     assert list(solution) == [7, 3] and solution.get_value() == 10
+
+    # add a constraint and check that the solution has changed
+    solver.set_constraints(c1)
+    solution = solver.solve()
+    assert list(solution) != [7, 3]
