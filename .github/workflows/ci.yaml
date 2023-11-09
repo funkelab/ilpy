@@ -78,7 +78,7 @@ jobs:
       - name: run tests
         run: |
           pytest --color yes -v --cov ilpy --cov-report=xml
-          gcovr --xml coverage_cpp.xml
+          gcovr --xml coverage_cpp.xml  # generate C coverage report
         env:
           GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
 
