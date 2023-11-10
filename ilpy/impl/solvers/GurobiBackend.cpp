@@ -12,7 +12,6 @@
 
 GurobiBackend::GurobiBackend() :
 	_numVariables(0),
-	_numConstraints(0),
 	_env(0),
 	_model(0),
 	_timeout(0),
@@ -49,7 +48,6 @@ GurobiBackend::initialize(
 
 	if (_model) {
 		GRBfreemodel(_model);
-		_numConstraints = 0;
 	}
 	GRB_CHECK(GRBnewmodel(_env, &_model, NULL, 0, NULL, NULL, NULL, NULL, NULL));
 
@@ -132,25 +130,30 @@ GurobiBackend::setObjective(const Objective& objective) {
 }
 
 void
-GurobiBackend::setConstraints(const Constraints& constraints) {
+GurobiBackend::setConstraints(const Constraints &constraints)
+{
+	int numConstrs;
 
-	// delete all previous constraints
+	// Get the number of constraints
+	GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_NUMCONSTRS, &numConstrs));
 
-	if (_numConstraints > 0) {
-
-		int* constraintIndicies = new int[_numConstraints];
-		for (unsigned int i = 0; i < _numConstraints; i++)
+	// Remove all constraints if there are any
+	if (numConstrs > 0)
+	{
+		int *constraintIndicies = new int[numConstrs];
+		for (unsigned int i = 0; i < numConstrs; i++)
 			constraintIndicies[i] = i;
-		GRB_CHECK(GRBdelconstrs(_model, _numConstraints, constraintIndicies));
+
+		GRB_CHECK(GRBdelconstrs(_model, numConstrs, constraintIndicies));
+		delete[] constraintIndicies;
 
 		GRB_CHECK(GRBupdatemodel(_model));
 	}
 
-	_numConstraints = constraints.size();
-	for (const Constraint& constraint : constraints) {
+	for (const Constraint &constraint : constraints)
 		addConstraint(constraint);
-	}
 
+	// Update the model to include new constraints
 	GRB_CHECK(GRBupdatemodel(_model));
 }
 

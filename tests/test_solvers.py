@@ -199,3 +199,32 @@ def test_solution_indexing() -> None:
     _ = solution[x]  # smoke test
     solution[x] = 2  # can be used to set too
     assert solution[x] == 2
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_solve_twice(preference: ilpy.Preference) -> None:
+    solver = ilpy.Solver(2, ilpy.VariableType.Integer, preference=preference)
+    x1 = ilpy.Variable("x1", index=0)
+    x2 = ilpy.Variable("x2", index=1)
+
+    solver.set_objective((x1 + x2).as_objective(ilpy.Maximize))
+
+    c0 = ilpy.Constraints()
+    c0.add(x1 + x2 <= 10)
+    c0.add(2 * x1 + 3 * x2 >= 12)
+    c0.add(x1 - x2 <= 5)
+
+    c1 = ilpy.Constraints()
+    c1.add(x1 + x2 <= 10)
+    c1.add(2 * x1 + 3 * x2 >= 12)
+    c1.add(x1 - x2 >= 5)
+
+    # initial solve
+    solver.set_constraints(c0)
+    solution = solver.solve()
+    assert list(solution) == [7, 3] and solution.get_value() == 10
+
+    # add a constraint and check that the solution has changed
+    solver.set_constraints(c1)
+    solution = solver.solve()
+    assert list(solution) != [7, 3]

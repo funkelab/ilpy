@@ -183,10 +183,12 @@ ScipBackend::addConstraint(const Constraint& constraint) {
 			lhs,
 			rhs));
 
-	_constraints.push_back(c);
 
 	SCIP_CALL_ABORT(SCIPaddCons(_scip, c));
-	SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &c));
+	_constraints.push_back(c);
+	// we do not release the constraint here
+	// so that we can remove the constraints later in freeConstraints()
+	// SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &c));
 }
 
 void
@@ -290,9 +292,21 @@ ScipBackend::freeVariables() {
 }
 
 void
-ScipBackend::freeConstraints() {
+ScipBackend::freeConstraints()
+{
+	// Iterate over all constraints and remove them from the SCIP model
+	for (SCIP_CONS *cons : _constraints)
+	{
+		if (cons != nullptr)
+		{
+			// Remove the constraint from the model
+			SCIP_CALL_ABORT(SCIPdelCons(_scip, cons));
+			// Release the constraint
+			SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &cons));
+		}
+	}
 
-	// SCIPfree should free the constraints for us
+	// Clear the vector of constraint pointers
 	_constraints.clear();
 }
 
