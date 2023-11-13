@@ -201,6 +201,8 @@ void ScipBackend::removeConstraint(intptr_t constraintId){
 	SCIP_CALL_ABORT(SCIPdelCons(_scip, cons));
 	// Release the constraint
 	SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &cons));
+	// TODO: remove from _constraints as well
+	
 }
 
 void
