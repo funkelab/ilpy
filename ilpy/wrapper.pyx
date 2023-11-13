@@ -283,13 +283,11 @@ cdef class Solver:
             const = constraint
         backend_id = <uintptr_t>deref(self.p).addConstraint(const.p[0])
         self._constraint_map[id(constraint)] = backend_id
-        print("stored", backend_id)
 
     def remove_constraint(self, constraint: Constraint | Expression):
         if id(constraint) not in self._constraint_map:
             raise ValueError("Constraint not found")
         backend_id = <uintptr_t>self._constraint_map[id(constraint)]
-        print("removing", backend_id)
         deref(self.p).removeConstraint(backend_id)
 
     def set_timeout(self, timeout):

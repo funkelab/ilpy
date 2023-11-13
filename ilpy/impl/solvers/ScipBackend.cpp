@@ -191,16 +191,10 @@ ScipBackend::addConstraint(const Constraint& constraint) {
 	// SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &c));
 
 	// Cast the pointer to the new SCIP constraint to intptr_t and return it
-    intptr_t x = reinterpret_cast<intptr_t>(c);
-	printf("ScipBackend::addConstraint\n");
-	printf("returning constraintId = %ld\n", x);
-	return x;
+	return reinterpret_cast<intptr_t>(c);
 }
 
 void ScipBackend::removeConstraint(intptr_t constraintId){
-	printf("ScipBackend::removeConstraint\n");
-	printf("constraintId = %ld\n", constraintId);
-
 	// Cast the intptr_t back to a SCIP_CONS pointer
 	SCIP_CONS *cons = reinterpret_cast<SCIP_CONS*>(constraintId);
 	// Remove the constraint from the model
