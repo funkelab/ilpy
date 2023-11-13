@@ -228,3 +228,37 @@ def test_solve_twice(preference: ilpy.Preference) -> None:
     solver.set_constraints(c1)
     solution = solver.solve()
     assert list(solution) != [7, 3]
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_unique_constraint(preference: ilpy.Preference) -> None:
+    solver = ilpy.Solver(2, ilpy.VariableType.Integer, preference=preference)
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)
+    solver.add_constraint(x + y <= 4)
+    solver.add_constraint(2 * x + y >= 5)
+    solver.add_constraint(y - x >= 2)
+    solution = solver.solve()
+    assert list(solution) == [1, 3]
+    # assert solution.get_value() == solution[0] + 2 * solution[1]
+
+
+@pytest.mark.parametrize("preference", [ilpy.Scip])
+def test_unique_constraint(preference: ilpy.Preference) -> None:
+    solver = ilpy.Solver(2, ilpy.VariableType.Integer, preference=preference)
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)
+    solver.add_constraint(y == x + 1)
+    c = y == 3 - x
+    solver.add_constraint(c)
+    solver.set_objective((x + y).as_objective(ilpy.Minimize))
+    solution = solver.solve()
+    assert list(solution) == [1, 2]
+    solver.remove_constraint(c)
+    solver.add_constraint(y == 5 - x)
+    solution = solver.solve()
+    assert list(solution) == [2, 3]
+    # assert list(solution) == [0, 0]  # optimal solution is now infeasible
+    # solver.remove_constraint(c)
+    # solution = solver.solve()
+    # assert list(solution) == [2, 3]

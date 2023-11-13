@@ -157,7 +157,7 @@ GurobiBackend::setConstraints(const Constraints &constraints)
 	GRB_CHECK(GRBupdatemodel(_model));
 }
 
-void
+intptr_t
 GurobiBackend::addConstraint(const Constraint& constraint) {
 
 	// set the linear coefficients
@@ -210,8 +210,13 @@ GurobiBackend::addConstraint(const Constraint& constraint) {
 	delete[] qrows;
 	delete[] qcols;
 	delete[] qvals;
+
+	return 0;
 }
 
+void GurobiBackend::removeConstraint(intptr_t constraintId){
+	
+}
 bool
 GurobiBackend::solve(Solution& x, std::string& msg) {
 

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from libc.stdint cimport uint32_t
 from libcpp.memory cimport shared_ptr
 from libcpp.map cimport map as cppmap
+from libc.stdint cimport uintptr_t
 from libcpp.string cimport string
 from cython.operator cimport dereference as deref
 from . cimport decl
@@ -245,6 +246,7 @@ cdef class Solver:
 
     cdef shared_ptr[decl.SolverBackend] p
     cdef unsigned int num_variables
+    cdef dict _constraint_map
 
     def __cinit__(
             self,
@@ -259,6 +261,7 @@ cdef class Solver:
                 vtypes[k] = v
         self.p = factory.createSolverBackend(preference)
         self.num_variables = num_variables
+        self._constraint_map = {}
         deref(self.p).initialize(num_variables, default_variable_type, vtypes)
 
     def set_objective(self, objective: Objective | Expression):
@@ -278,7 +281,16 @@ cdef class Solver:
             const = constraint.as_constraint()
         else:
             const = constraint
-        deref(self.p).addConstraint(const.p[0])
+        backend_id = <uintptr_t>deref(self.p).addConstraint(const.p[0])
+        self._constraint_map[id(constraint)] = backend_id
+        print("stored", backend_id)
+
+    def remove_constraint(self, constraint: Constraint | Expression):
+        if id(constraint) not in self._constraint_map:
+            raise ValueError("Constraint not found")
+        backend_id = <uintptr_t>self._constraint_map[id(constraint)]
+        print("removing", backend_id)
+        deref(self.p).removeConstraint(backend_id)
 
     def set_timeout(self, timeout):
         deref(self.p).setTimeout(timeout)
