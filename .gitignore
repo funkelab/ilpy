@@ -12,3 +12,5 @@ dist
 .vscode
 coverage.xml
 coverage_cpp.xml
+docs/_build/
+docs/build/

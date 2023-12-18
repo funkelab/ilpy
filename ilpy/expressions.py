@@ -19,7 +19,7 @@ class Expression(ast.AST):
     write ``2 * Variable('x') - Variable('y') >= 0``.
 
     Tip: you can use ``ast.dump`` to see the AST representation of an expression.
-    Or, use ``print(expr)` to see the string representation of an expression.
+    Or, use ``print(expr)`` to see the string representation of an expression.
     """
 
     def as_constraint(self) -> Constraint:
