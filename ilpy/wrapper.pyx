@@ -10,7 +10,7 @@ from . cimport decl
 from typing import Iterable, Mapping, Sequence
 
 if TYPE_CHECKING:
-    from .expression import Expression
+    from .expressions import Expression  # no-cython-lint
 
 ####################################
 # Enums                            #
@@ -227,7 +227,7 @@ cdef class Constraints:
     def clear(self):
         self.p.clear()
 
-    def add(self, constraint: Constraint | Expression):
+    def add(self, constraint: Constraint | "Expression"):
         cdef Constraint const
         if hasattr(constraint, "as_constraint"):
             const = constraint.as_constraint()
@@ -261,7 +261,7 @@ cdef class Solver:
         self.num_variables = num_variables
         deref(self.p).initialize(num_variables, default_variable_type, vtypes)
 
-    def set_objective(self, objective: Objective | Expression):
+    def set_objective(self, objective: Objective | "Expression"):
         cdef Objective obj
         if hasattr(objective, "as_objective"):
             obj = objective.as_objective()
@@ -272,7 +272,7 @@ cdef class Solver:
     def set_constraints(self, Constraints constraints):
         deref(self.p).setConstraints(constraints.p[0])
 
-    def add_constraint(self, constraint: Constraint | Expression):
+    def add_constraint(self, constraint: Constraint | "Expression"):
         cdef Constraint const
         if hasattr(constraint, "as_constraint"):
             const = constraint.as_constraint()
