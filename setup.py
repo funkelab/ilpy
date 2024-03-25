@@ -22,7 +22,8 @@ if os.name == "nt" and "CONDA_PREFIX" in os.environ:
 
 # look for various gurobi versions, which are annoyingly
 # suffixed with the version number, and wildcards don't work
-for v in ["100"]:
+
+for v in range(80, 200):
     GUROBI_LIB = f"libgurobi{v}" if os.name == "nt" else f"gurobi{v}"
     if (gurolib := util.find_library(GUROBI_LIB)) is not None:
         print("FOUND GUROBI library: ", gurolib)
