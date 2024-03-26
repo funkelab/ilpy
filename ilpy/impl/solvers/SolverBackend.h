@@ -9,7 +9,38 @@
 #include "Solution.h"
 #include "VariableType.h"
 
+
+PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, double>>& map) {
+    PyObject* dict = PyDict_New();
+    if (!dict) return nullptr; // check for successful allocation
+
+    for (const auto& pair : map) {
+        PyObject* pyKey = PyUnicode_FromString(pair.first.c_str());
+        PyObject* pyValue = std::visit(
+            [](auto&& arg) -> PyObject* {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, std::string>) {
+                    return PyUnicode_FromString(arg.c_str());
+                } else if constexpr (std::is_same_v<T, double>) {
+                    return PyFloat_FromDouble(arg);
+                } else {
+                    throw std::runtime_error("Unsupported type");
+                }
+            },
+            pair.second);
+        PyDict_SetItem(dict, pyKey, pyValue);
+        Py_DECREF(pyKey);
+        Py_DECREF(pyValue);
+    }
+
+    return dict;
+}
+
 class SolverBackend {
+
+private:
+	PyObject* _callback = nullptr;
+	// double _last_gap = 0.0;
 
 public:
 
@@ -124,28 +155,21 @@ public:
 	 * 
 	*/
 	void emitEventData(
-		const std::map<std::string, std::variant<std::string, double>>& payload) const {
-		if (_callback == nullptr) { return; }
+		const std::map<std::string, std::variant<std::string, double>>& map) {
+		
+		// auto it = map.find("gap");
+		// if (it != map.end()) {
+		// 	double gap = std::get<double>(it->second);
+		// 	if (gap == _last_gap) return;
+		// 	_last_gap = gap;
+		// }
+
+		if (_callback == nullptr) return;
+
 		if (PyCallable_Check(_callback)) {
-			PyObject* dict = PyDict_New();
-			for (const auto& pair : payload) {
-				PyObject* pyKey = PyUnicode_FromString(pair.first.c_str());
-				PyObject* pyValue = std::visit(
-					[](auto&& arg) -> PyObject* {
-						using T = std::decay_t<decltype(arg)>;
-						if constexpr (std::is_same_v<T, std::string>) {
-							return PyUnicode_FromString(arg.c_str());
-						} else if constexpr (std::is_same_v<T, double>) {
-							return PyFloat_FromDouble(arg);
-						} else {
-							throw std::runtime_error("Unsupported type");
-						}
-					},
-					pair.second);
-				PyDict_SetItem(dict, pyKey, pyValue);
-				Py_DECREF(pyKey);
-				Py_DECREF(pyValue);
-			}
+			PyObject* dict = mapToPyObject(map);
+			if (!dict) return;
+
 			PyObject* result = PyObject_CallFunctionObjArgs(_callback, dict, nullptr);
 			if (result == nullptr) {
 				PyErr_Print();
@@ -167,8 +191,7 @@ public:
 	 */
 	virtual bool solve(Solution& solution, std::string& message) = 0;
 
-	protected:
-	    PyObject* _callback = nullptr;
+
 };
 
 #endif // INFERENCE_SOLVER_BACKEND_H__

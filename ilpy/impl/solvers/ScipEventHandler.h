@@ -97,7 +97,12 @@ class EventhdlrNewSol : public scip::ObjEventhdlr {
     SCIP_CALL(SCIPcatchEvent(scip, SCIP_EVENTTYPE_LPEVENT, eventhdlr, NULL, NULL));
     SCIP_CALL(SCIPcatchEvent(scip, SCIP_EVENTTYPE_SOLEVENT, eventhdlr, NULL, NULL));
     SCIP_CALL(SCIPcatchEvent(scip, SCIP_EVENTTYPE_ROWCHANGED, eventhdlr, NULL, NULL));
-    SCIP_CALL(SCIPcatchEvent(scip, SCIP_EVENTTYPE_ROWEVENT, eventhdlr, NULL, NULL));
+    // this is VERY verbose
+    // SCIP_CALL(SCIPcatchEvent(scip, SCIP_EVENTTYPE_ROWEVENT, eventhdlr, NULL, NULL));
+
+    // This is also verbose, but if you want to be notified at least every gap change, this is one way
+    // SCIP_CALL(SCIPcatchEvent(scip, SCIP_EVENTTYPE_ROWADDEDLP, eventhdlr, NULL, NULL));
+
     return SCIP_OKAY;
   }
 
