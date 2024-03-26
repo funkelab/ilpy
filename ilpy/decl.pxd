@@ -93,7 +93,8 @@ cdef extern from "impl/solvers/SolverBackend.h":
         ) except +
         void setObjective(Objective&)
         void setConstraints(Constraints&)
-        void addConstraint(Constraint&)
+        int addConstraint(Constraint&)
+        void removeConstraint(int)
         void setTimeout(double)
         void setOptimalityGap(double, bool)
         void setNumThreads(unsigned int)

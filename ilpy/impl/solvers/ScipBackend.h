@@ -52,7 +52,9 @@ public:
 
 	void setConstraints(const Constraints& constraints);
 
-	void addConstraint(const Constraint& constraint);
+	intptr_t addConstraint(const Constraint& constraint);
+
+	void removeConstraint(intptr_t constraintId);
 
 	void setTimeout(double timeout);
 

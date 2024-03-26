@@ -137,7 +137,7 @@ ScipBackend::setConstraints(const Constraints& constraints) {
 	}
 }
 
-void
+intptr_t
 ScipBackend::addConstraint(const Constraint& constraint) {
 
 	// create a list of variables and their coefficients
@@ -189,6 +189,20 @@ ScipBackend::addConstraint(const Constraint& constraint) {
 	// we do not release the constraint here
 	// so that we can remove the constraints later in freeConstraints()
 	// SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &c));
+
+	// Cast the pointer to the new SCIP constraint to intptr_t and return it
+	return reinterpret_cast<intptr_t>(c);
+}
+
+void ScipBackend::removeConstraint(intptr_t constraintId){
+	// Cast the intptr_t back to a SCIP_CONS pointer
+	SCIP_CONS *cons = reinterpret_cast<SCIP_CONS*>(constraintId);
+	// Remove the constraint from the model
+	SCIP_CALL_ABORT(SCIPdelCons(_scip, cons));
+	// Release the constraint
+	SCIP_CALL_ABORT(SCIPreleaseCons(_scip, &cons));
+	// TODO: remove from _constraints as well
+	
 }
 
 void

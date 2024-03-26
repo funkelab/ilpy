@@ -228,3 +228,29 @@ def test_solve_twice(preference: ilpy.Preference) -> None:
     solver.set_constraints(c1)
     solution = solver.solve()
     assert list(solution) != [7, 3]
+
+
+@pytest.mark.parametrize("preference", [ilpy.Scip])
+def test_remove_constraint(preference: ilpy.Preference) -> None:
+    solver = ilpy.Solver(2, ilpy.VariableType.Integer, preference=preference)
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)
+    solver.set_objective((x + y).as_objective(ilpy.Minimize))
+    c1 = y == x + 1
+    c2 = y == 3 - x
+    c3 = y == 5 - x  # incompatible with c2
+    solver.add_constraint(c1)
+    solver.add_constraint(c2)
+    solution = solver.solve()
+    assert list(solution) == [1, 2]
+
+    # FIXME: if we add an unsatisfiable constraint and solve in the middle,
+    # it appears to leave the solver in an unrecoverable state.
+    # solver.add_constraint(c3)
+    # solution = solver.solve()
+    # assert list(solution) == [0, 0]  # optimal solution is now infeasible
+
+    solver.remove_constraint(c2)
+    solver.add_constraint(c3)
+    solution = solver.solve()
+    assert list(solution) == [2, 3]
