@@ -10,11 +10,14 @@
 #include <scip/cons_quadratic.h>
 
 #include "ScipBackend.h"
+#include "ScipEventHandler.h"
 
 ScipBackend::ScipBackend() :
 		_scip(0) {
 
 	SCIP_CALL_ABORT(SCIPcreate(&_scip));
+	// TRUE means that the event handler will be deleted by SCIP during SCIPfree
+	SCIP_CALL_ABORT(SCIPincludeObjEventhdlr(_scip, new EventhdlrNewSol(_scip, this), TRUE));
 	SCIP_CALL_ABORT(SCIPincludeDefaultPlugins(_scip));
 	SCIP_CALL_ABORT(SCIPcreateProbBasic(_scip, "problem"));
 }

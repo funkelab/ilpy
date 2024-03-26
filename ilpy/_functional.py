@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Literal, Sequence, Tuple
+from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence, Tuple
 
 from .expressions import Expression
 from .wrapper import (
@@ -27,6 +27,7 @@ def solve(
     variable_type: VariableTypeType = VariableType.Continuous,
     verbose: bool = False,
     preference: PreferenceType = Preference.Any,
+    on_event: Callable[[Mapping], None] | None = None,
 ) -> list[float]:
     """Solve an objective subject to constraints.
 
@@ -56,6 +57,10 @@ def solve(
     preference : Preference | Literal["any", "cplex", "gurobi", "scip"]
         Backend preference, either an `ilpy.Preference` or a string in
         {"any", "cplex", "gurobi", "scip"}.  By default, `Preference.Any`.
+    on_event : Callable[[Mapping], None], optional
+        A callback function that is called when an event occurs, by default None.
+        The callback function should accept a dict which will contain event
+        metadata.
 
     Returns
     -------
@@ -92,6 +97,7 @@ def solve(
             )
         solver.add_constraint(const)
 
+    solver.set_event_callback(on_event)
     solution = solver.solve()
     return list(solution)  # type: ignore
 

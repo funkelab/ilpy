@@ -1,6 +1,12 @@
 #ifndef INFERENCE_SOLVER_BACKEND_H__
 #define INFERENCE_SOLVER_BACKEND_H__
 
+#ifdef NO_PYTHON
+typedef void PyObject;
+#else
+#include <Python.h>
+#endif
+
 #include "Objective.h"
 #include "Constraints.h"
 #include "Solution.h"
@@ -10,7 +16,9 @@ class SolverBackend {
 
 public:
 
-	virtual ~SolverBackend() {}
+	virtual ~SolverBackend() {
+		Py_XDECREF(_callback);
+	}
 
 	/**
 	 * Initialise the linear solver for the given type of variables.
@@ -98,7 +106,29 @@ public:
 	 * @param verbose
 	 *             If set to true, verbose logging is enabled.
 	 */
-        virtual void setVerbose(bool verbose) = 0;
+    virtual void setVerbose(bool verbose) = 0;
+	
+	/**
+	 * Set a callback function to be called on various events.
+	 * 
+	*/
+	virtual void setEventCallback(PyObject* callback) {
+		Py_XDECREF(_callback);
+		if (callback == Py_None) {
+			_callback = nullptr;
+		} else {
+			_callback = callback;
+			Py_INCREF(_callback);
+		}
+	}
+
+	/**
+	 * Get the event callback function or nullptr if no callback is set.
+	 * 
+	*/
+	PyObject* getEventCallback() const {
+        return _callback;
+    }
 
 	/**
 	 * Solve the problem.
@@ -109,6 +139,9 @@ public:
 	 * @return true, if the optimal value was found.
 	 */
 	virtual bool solve(Solution& solution, std::string& message) = 0;
+
+	protected:
+	    PyObject* _callback = nullptr;
 };
 
 #endif // INFERENCE_SOLVER_BACKEND_H__

@@ -14,3 +14,6 @@ clean:
 	rm -rf build dist
 	rm -rf ilpy/*.cpp
 	rm -rf ilpy/*.so
+
+build:
+	python setup.py build_ext --inplace
