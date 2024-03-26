@@ -62,7 +62,7 @@ const char* getEventTypeName(SCIP_EVENTTYPE eventtype) {
     case SCIP_EVENTTYPE_ROWCHANGED: return "ROWCHANGED";
     case SCIP_EVENTTYPE_ROWEVENT: return "ROWEVENT";
     // Add other cases here
-    default: return "SCIP_EVENTTYPE_UNKNOWN";
+    default: return "UNKNOWN";
   }
 }
 
@@ -109,10 +109,17 @@ class EventhdlrNewSol : public scip::ObjEventhdlr {
   virtual SCIP_DECL_EVENTEXIT(scip_exit) { return SCIP_OKAY; }
 
   virtual SCIP_DECL_EVENTEXEC(scip_exec) {
-    _backend->emitEventData({{"event_type", getEventTypeName(SCIPeventGetType(event))},
-                             {"gap", SCIPgetGap(scip)},
-                             {"dualbound", SCIPgetDualbound(scip)},
-                             {"primalbound", SCIPgetPrimalbound(scip)}});
+      if (!_backend->hasEventCallback()) {
+        return SCIP_OKAY; // don't bother collecting the data
+    }
+
+    _backend->emitEventData({
+      {"backend", "scip"},
+      {"event_type", getEventTypeName(SCIPeventGetType(event))},
+      {"gap", SCIPgetGap(scip)},
+      {"dualbound", SCIPgetDualbound(scip)},
+      {"primalbound", SCIPgetPrimalbound(scip)}
+    });
 
     return SCIP_OKAY;
   }
