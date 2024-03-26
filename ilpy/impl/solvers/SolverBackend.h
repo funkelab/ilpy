@@ -15,22 +15,35 @@ PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, do
     if (!dict) return nullptr; // check for successful allocation
 
     for (const auto& pair : map) {
-        PyObject* pyKey = PyUnicode_FromString(pair.first.c_str());
-        PyObject* pyValue = std::visit(
-            [](auto&& arg) -> PyObject* {
-                using T = std::decay_t<decltype(arg)>;
-                if constexpr (std::is_same_v<T, std::string>) {
-                    return PyUnicode_FromString(arg.c_str());
-                } else if constexpr (std::is_same_v<T, double>) {
-                    return PyFloat_FromDouble(arg);
-                } else {
-                    throw std::runtime_error("Unsupported type");
-                }
-            },
-            pair.second);
-        PyDict_SetItem(dict, pyKey, pyValue);
-        Py_DECREF(pyKey);
-        Py_DECREF(pyValue);
+		PyObject* pyValue;
+		if (auto val = std::get_if<std::string>(&pair.second)) {
+			pyValue = PyUnicode_FromString(val->c_str());
+		} else if (auto val = std::get_if<double>(&pair.second)) {
+			pyValue = PyFloat_FromDouble(*val);
+		} else {
+			Py_DECREF(dict);
+			throw std::runtime_error("Unsupported type");
+		}
+		if (!pyValue) {
+			Py_DECREF(dict);
+			throw std::runtime_error("Failed to create Python object");
+		}
+        
+		PyObject* pyKey = PyUnicode_FromString(pair.first.c_str());
+		if (!pyKey) {
+			Py_DECREF(pyValue);
+			Py_DECREF(dict);
+			throw std::runtime_error("Failed to create Python string");
+		}
+		
+		if (PyDict_SetItem(dict, pyKey, pyValue) == -1) {
+			Py_DECREF(pyKey);
+			Py_DECREF(pyValue);
+			Py_DECREF(dict);
+			throw std::runtime_error("Failed to add item to Python dictionary");
+		}
+		Py_DECREF(pyKey);
+		Py_DECREF(pyValue);
     }
 
     return dict;
