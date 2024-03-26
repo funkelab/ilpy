@@ -126,8 +126,28 @@ public:
 	 * Get the event callback function or nullptr if no callback is set.
 	 * 
 	*/
-	PyObject* getEventCallback() const {
-        return _callback;
+	void emitEvent(const std::map<std::string, std::string>& payload) const {
+		if (_callback == nullptr) {
+			return;
+		}
+		if (PyCallable_Check(_callback)) {
+			PyObject* dict = PyDict_New();
+			for (const auto& pair : payload) {
+				PyObject* pyKey = PyUnicode_FromString(pair.first.c_str());
+				PyObject* pyValue = PyUnicode_FromString(pair.second.c_str());
+				PyDict_SetItem(dict, pyKey, pyValue);
+				Py_DECREF(pyKey);
+				Py_DECREF(pyValue);
+			}
+			PyObject* result = PyObject_CallFunctionObjArgs(_callback, dict, nullptr);
+			if (result == nullptr) {
+				PyErr_Print();
+			}
+			Py_XDECREF(result);
+			Py_DECREF(dict);
+		} else {
+			throw std::runtime_error("Callback is not callable");
+		}
     }
 
 	/**
