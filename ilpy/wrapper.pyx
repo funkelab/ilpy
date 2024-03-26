@@ -295,7 +295,7 @@ cdef class Solver:
 
     def set_event_callback(self, callback):
         if callback is not None and not callable(callback):
-            raise TypeError('callback must be callable')
+            raise TypeError("callback must be callable")
         cdef PyObject* callback_ptr = <PyObject*>callback
         deref(self.p).setEventCallback(callback_ptr)
 
