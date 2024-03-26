@@ -83,7 +83,7 @@ jobs:
           GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
 
       - name: upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage.xml,./coverage_cpp.xml
         
