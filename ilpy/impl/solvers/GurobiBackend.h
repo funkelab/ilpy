@@ -65,6 +65,8 @@ public:
 
 	void setNumThreads(unsigned int numThreads);
 
+    static int __stdcall eventCallback(CB_ARGS);
+
 	bool solve(Solution& solution, std::string& message);
 
 	std::string solve(Solution& solution) {

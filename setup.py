@@ -11,7 +11,11 @@ CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
 libraries = ["libscip"] if os.name == "nt" else ["scip"]
 include_dirs = ["ilpy/impl"]
 library_dirs = []
-compile_args = ["-O3", "-std=c++11", "-DHAVE_SCIP"]
+compile_args = ["-O3", "-DHAVE_SCIP"]
+if os.name == "nt":
+    compile_args.append("/std:c++17")
+else:
+    compile_args.append("-std=c++17")
 
 # include conda environment windows include/lib if it exists
 # this will be done automatically by conda build, but is useful if someone

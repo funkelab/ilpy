@@ -8,341 +8,370 @@
 #include "GurobiBackend.h"
 
 #define GRB_CHECK(call) \
-		grbCheck(#call, __FILE__, __LINE__, call)
+        grbCheck(#call, __FILE__, __LINE__, call)
 
 GurobiBackend::GurobiBackend() :
-	_numVariables(0),
-	_env(0),
-	_model(0),
-	_timeout(0),
-	_gap(-1),
-	_absoluteGap(false) {
+    _numVariables(0),
+    _env(0),
+    _model(0),
+    _timeout(0),
+    _gap(-1),
+    _absoluteGap(false) {
 
-	GRB_CHECK(GRBloadenv(&_env, NULL));
+    GRB_CHECK(GRBloadenv(&_env, NULL));
 }
 
 GurobiBackend::~GurobiBackend() {
 
-	if (_model)
-		GRBfreemodel(_model);
+    if (_model)
+        GRBfreemodel(_model);
 
-	if (_env)
-		GRBfreeenv(_env);
+    if (_env)
+        GRBfreeenv(_env);
 }
 
 void
 GurobiBackend::initialize(
-		unsigned int numVariables,
-		VariableType variableType) {
+        unsigned int numVariables,
+        VariableType variableType) {
 
-	initialize(numVariables, variableType, std::map<unsigned int, VariableType>());
+    initialize(numVariables, variableType, std::map<unsigned int, VariableType>());
 }
 
 void
 GurobiBackend::initialize(
-		unsigned int                                numVariables,
-		VariableType                                defaultVariableType,
-		const std::map<unsigned int, VariableType>& specialVariableTypes) {
+        unsigned int                                numVariables,
+        VariableType                                defaultVariableType,
+        const std::map<unsigned int, VariableType>& specialVariableTypes) {
 
-	// create a new model
+    // create a new model
 
-	if (_model) {
-		GRBfreemodel(_model);
-	}
-	GRB_CHECK(GRBnewmodel(_env, &_model, NULL, 0, NULL, NULL, NULL, NULL, NULL));
+    if (_model) {
+        GRBfreemodel(_model);
+    }
+    GRB_CHECK(GRBnewmodel(_env, &_model, NULL, 0, NULL, NULL, NULL, NULL, NULL));
 
-	// set parameters
+    // set parameters
 
-	setVerbose(false);
+    setVerbose(false);
 
-	// add new variables to the model
+    // add new variables to the model
 
-	_numVariables = numVariables;
+    _numVariables = numVariables;
 
-	// create arrays of  variable types and infinite lower bounds
-	char* vtypes = new char[_numVariables];
-	double* lbs = new double[_numVariables];
-	for (unsigned int i = 0; i < _numVariables; i++) {
+    // create arrays of  variable types and infinite lower bounds
+    char* vtypes = new char[_numVariables];
+    double* lbs = new double[_numVariables];
+    for (unsigned int i = 0; i < _numVariables; i++) {
 
-		VariableType type = defaultVariableType;
-		if (specialVariableTypes.count(i))
-			type = specialVariableTypes.at(i);
-		char t = (type == Binary ? 'B' : (type == Integer ? 'I' : 'C'));
+        VariableType type = defaultVariableType;
+        if (specialVariableTypes.count(i))
+            type = specialVariableTypes.at(i);
+        char t = (type == Binary ? 'B' : (type == Integer ? 'I' : 'C'));
 
-		vtypes[i] = t;
-		lbs[i] = -GRB_INFINITY;
-	}
+        vtypes[i] = t;
+        lbs[i] = -GRB_INFINITY;
+    }
 
-	GRB_CHECK(GRBaddvars(
-			_model,
-			_numVariables,
-			0,                // num non-zeros for constraint matrix (we set it later)
-			NULL, NULL, NULL, // vbeg, vind, vval for constraint matrix
-			NULL,             // obj (we set it later)
-			lbs, NULL,        // lower and upper bound, set to -inf and inf
-			vtypes,           // variable types
-			NULL));           // names
+    GRB_CHECK(GRBaddvars(
+            _model,
+            _numVariables,
+            0,                // num non-zeros for constraint matrix (we set it later)
+            NULL, NULL, NULL, // vbeg, vind, vval for constraint matrix
+            NULL,             // obj (we set it later)
+            lbs, NULL,        // lower and upper bound, set to -inf and inf
+            vtypes,           // variable types
+            NULL));           // names
 
-	GRB_CHECK(GRBupdatemodel(_model));
+    GRB_CHECK(GRBupdatemodel(_model));
 
-	delete[] vtypes;
-	delete[] lbs;
+    delete[] vtypes;
+    delete[] lbs;
 }
 
 void
 GurobiBackend::setObjective(const Objective& objective) {
 
-	// set sense of objective
-	if (objective.getSense() == Minimize) {
-		GRB_CHECK(GRBsetintattr(_model, GRB_INT_ATTR_MODELSENSE, +1));
-	} else {
-		GRB_CHECK(GRBsetintattr(_model, GRB_INT_ATTR_MODELSENSE, -1));
-	}
+    // set sense of objective
+    if (objective.getSense() == Minimize) {
+        GRB_CHECK(GRBsetintattr(_model, GRB_INT_ATTR_MODELSENSE, +1));
+    } else {
+        GRB_CHECK(GRBsetintattr(_model, GRB_INT_ATTR_MODELSENSE, -1));
+    }
 
-	// set the constant value of the objective
-	GRB_CHECK(GRBsetdblattr(_model, GRB_DBL_ATTR_OBJCON, objective.getConstant()));
+    // set the constant value of the objective
+    GRB_CHECK(GRBsetdblattr(_model, GRB_DBL_ATTR_OBJCON, objective.getConstant()));
 
-	GRB_CHECK(GRBsetdblattrarray(
-			_model,
-			GRB_DBL_ATTR_OBJ,
-			0 /* start */, _numVariables,
-			const_cast<double*>(&objective.getCoefficients()[0])));
+    GRB_CHECK(GRBsetdblattrarray(
+            _model,
+            GRB_DBL_ATTR_OBJ,
+            0 /* start */, _numVariables,
+            const_cast<double*>(&objective.getCoefficients()[0])));
 
-	// remove all previous quadratic terms
-	GRB_CHECK(GRBdelq(_model));
+    // remove all previous quadratic terms
+    GRB_CHECK(GRBdelq(_model));
 
-	// set the quadratic coefficients for all pairs of variables
-	for (auto& pair : objective.getQuadraticCoefficients()) {
+    // set the quadratic coefficients for all pairs of variables
+    for (auto& pair : objective.getQuadraticCoefficients()) {
 
-		const std::pair<unsigned int, unsigned int>& variables = pair.first;
-		float value = pair.second;
+        const std::pair<unsigned int, unsigned int>& variables = pair.first;
+        float value = pair.second;
 
-		if (value != 0) {
+        if (value != 0) {
 
-			int row = variables.first;
-			int col = variables.second;
-			double val = value;
-			GRB_CHECK(GRBaddqpterms(_model, 1, &row, &col, &val));
-		}
-	}
+            int row = variables.first;
+            int col = variables.second;
+            double val = value;
+            GRB_CHECK(GRBaddqpterms(_model, 1, &row, &col, &val));
+        }
+    }
 
-	GRB_CHECK(GRBupdatemodel(_model));
+    GRB_CHECK(GRBupdatemodel(_model));
 }
 
 void
 GurobiBackend::setConstraints(const Constraints &constraints)
 {
-	int numConstrs;
+    int numConstrs;
 
-	// Get the number of constraints
-	GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_NUMCONSTRS, &numConstrs));
+    // Get the number of constraints
+    GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_NUMCONSTRS, &numConstrs));
 
-	// Remove all constraints if there are any
-	if (numConstrs > 0)
-	{
-		int *constraintIndicies = new int[numConstrs];
-		for (unsigned int i = 0; i < numConstrs; i++)
-			constraintIndicies[i] = i;
+    // Remove all constraints if there are any
+    if (numConstrs > 0)
+    {
+        int *constraintIndicies = new int[numConstrs];
+        for (unsigned int i = 0; i < numConstrs; i++)
+            constraintIndicies[i] = i;
 
-		GRB_CHECK(GRBdelconstrs(_model, numConstrs, constraintIndicies));
-		delete[] constraintIndicies;
+        GRB_CHECK(GRBdelconstrs(_model, numConstrs, constraintIndicies));
+        delete[] constraintIndicies;
 
-		GRB_CHECK(GRBupdatemodel(_model));
-	}
+        GRB_CHECK(GRBupdatemodel(_model));
+    }
 
-	for (const Constraint &constraint : constraints)
-		addConstraint(constraint);
+    for (const Constraint &constraint : constraints)
+        addConstraint(constraint);
 
-	// Update the model to include new constraints
-	GRB_CHECK(GRBupdatemodel(_model));
+    // Update the model to include new constraints
+    GRB_CHECK(GRBupdatemodel(_model));
 }
 
 void
 GurobiBackend::addConstraint(const Constraint& constraint) {
 
-	// set the linear coefficients
-	int numlNz = constraint.getCoefficients().size();
+    // set the linear coefficients
+    int numlNz = constraint.getCoefficients().size();
 
-	int*    linds = new int[numlNz];
-	double* lvals = new double[numlNz];
+    int*    linds = new int[numlNz];
+    double* lvals = new double[numlNz];
 
-	int i = 0;
-	for (auto& pair : constraint.getCoefficients()) {
+    int i = 0;
+    for (auto& pair : constraint.getCoefficients()) {
 
-		linds[i] = pair.first;
-		lvals[i] = pair.second;
-		i++;
-	}
+        linds[i] = pair.first;
+        lvals[i] = pair.second;
+        i++;
+    }
 
-	// set the quadratic coefficients
-	int numqNz = constraint.getQuadraticCoefficients().size();
+    // set the quadratic coefficients
+    int numqNz = constraint.getQuadraticCoefficients().size();
 
-	int*    qrows = new int[numqNz];
-	int*    qcols = new int[numqNz];
-	double* qvals = new double[numqNz];
+    int*    qrows = new int[numqNz];
+    int*    qcols = new int[numqNz];
+    double* qvals = new double[numqNz];
 
-	int qi = 0;
-	for (auto& pair : constraint.getQuadraticCoefficients()) {
+    int qi = 0;
+    for (auto& pair : constraint.getQuadraticCoefficients()) {
 
-		qrows[qi] = pair.first.first;
-		qcols[qi] = pair.first.second;
-		qvals[qi] = pair.second;
-		qi++;
-	}
+        qrows[qi] = pair.first.first;
+        qcols[qi] = pair.first.second;
+        qvals[qi] = pair.second;
+        qi++;
+    }
 
-	GRB_CHECK(GRBaddqconstr(
-			_model,
-			numlNz,
-			linds,
-			lvals,
-			numqNz,
-			qrows,
-			qcols,
-			qvals,
-			(constraint.getRelation() == LessEqual ? GRB_LESS_EQUAL :
-					(constraint.getRelation() == GreaterEqual ? GRB_GREATER_EQUAL :
-							GRB_EQUAL)),
-			constraint.getValue(),
-			NULL /* optional name */));
+    GRB_CHECK(GRBaddqconstr(
+            _model,
+            numlNz,
+            linds,
+            lvals,
+            numqNz,
+            qrows,
+            qcols,
+            qvals,
+            (constraint.getRelation() == LessEqual ? GRB_LESS_EQUAL :
+                    (constraint.getRelation() == GreaterEqual ? GRB_GREATER_EQUAL :
+                            GRB_EQUAL)),
+            constraint.getValue(),
+            NULL /* optional name */));
 
-	delete[] linds;
-	delete[] lvals;
-	delete[] qrows;
-	delete[] qcols;
-	delete[] qvals;
+    delete[] linds;
+    delete[] lvals;
+    delete[] qrows;
+    delete[] qcols;
+    delete[] qvals;
+}
+
+// Static member function
+int __stdcall GurobiBackend::eventCallback(CB_ARGS) {
+    // Cast usrdata back to a GurobiBackend pointer
+    GurobiBackend* backend = static_cast<GurobiBackend*>(usrdata);
+
+    // Only retrieve the primal and dual objective values in the GRB_CB_MIP and GRB_CB_MIPSOL states
+    if (where == GRB_CB_MIP) {
+        double bestbd, incumbent, gap;
+
+        GRBcbget(cbdata, where, GRB_CB_MIP_OBJBST, &incumbent);
+        GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &bestbd);
+        
+        // calculate the gap
+        gap = 100 * (fabs(bestbd - incumbent) / (std::numeric_limits<double>::epsilon() + fabs(incumbent)));
+
+        backend->emitEventData({
+            {"event_type", static_cast<double>(where)},
+            {"dualbound", bestbd},
+            {"primalbound", incumbent},
+            {"gap", gap}
+        });
+    }
+
+    return 0;
 }
 
 bool
 GurobiBackend::solve(Solution& x, std::string& msg) {
 
-	GRB_CHECK(GRBupdatemodel(_model));
+    GRB_CHECK(GRBupdatemodel(_model));
 
-	GRBenv* modelenv = GRBgetenv(_model);
+    GRBenv* modelenv = GRBgetenv(_model);
 
-	if (_timeout > 0) {
+    if (_timeout > 0) {
 
-		GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_TIMELIMIT, _timeout));
-	}
+        GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_TIMELIMIT, _timeout));
+    }
 
-	if (_gap >= 0) {
+    if (_gap >= 0) {
 
-		if (_absoluteGap)
-			GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_MIPGAPABS, _gap));
-		else
-			GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_MIPGAP, _gap));
-	}
+        if (_absoluteGap)
+            GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_MIPGAPABS, _gap));
+        else
+            GRB_CHECK(GRBsetdblparam(modelenv, GRB_DBL_PAR_MIPGAP, _gap));
+    }
 
-	// Sets the strategy for handling non-convex quadratic objectives
-	// or non-convex quadratic constraints. 
-	// 0 = an error is reported if the original user model contains non-convex
-	//     quadratic constructs.
-	// 1 = an error is reported if non-convex quadratic constructs could not be
-	//     discarded or linearized during presolve.
-	// 2 = non-convex quadratic problems are solved by means of translating them
-	//     into bilinear form and applying spatial branching.
-	GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_NONCONVEX, 2));
+    // Sets the strategy for handling non-convex quadratic objectives
+    // or non-convex quadratic constraints. 
+    // 0 = an error is reported if the original user model contains non-convex
+    //     quadratic constructs.
+    // 1 = an error is reported if non-convex quadratic constructs could not be
+    //     discarded or linearized during presolve.
+    // 2 = non-convex quadratic problems are solved by means of translating them
+    //     into bilinear form and applying spatial branching.
+    GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_NONCONVEX, 2));
 
-	GRB_CHECK(GRBoptimize(_model));
+    // Set the callback function
+    GRBsetcallbackfunc(_model, eventCallback, this);
 
-	int status;
-	GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_STATUS, &status));
+    GRB_CHECK(GRBoptimize(_model));
 
-	if (status != GRB_OPTIMAL) {
+    int status;
+    GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_STATUS, &status));
 
-		msg = "Optimal solution *NOT* found";
+    if (status != GRB_OPTIMAL) {
 
-		// see if a feasible solution exists
+        msg = "Optimal solution *NOT* found";
 
-		if (status == GRB_TIME_LIMIT) {
+        // see if a feasible solution exists
 
-			msg += " (timeout)";
+        if (status == GRB_TIME_LIMIT) {
 
-			int numSolutions;
-			GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_SOLCOUNT, &numSolutions));
+            msg += " (timeout)";
 
-			if (numSolutions == 0) {
+            int numSolutions;
+            GRB_CHECK(GRBgetintattr(_model, GRB_INT_ATTR_SOLCOUNT, &numSolutions));
 
-				msg += ", no feasible solution found)";
-				return false;
-			}
+            if (numSolutions == 0) {
 
-		} else if (status == GRB_SUBOPTIMAL) {
+                msg += ", no feasible solution found)";
+                return false;
+            }
 
-			msg += " (suboptimal solution found)";
+        } else if (status == GRB_SUBOPTIMAL) {
 
-		} else {
+            msg += " (suboptimal solution found)";
 
-			return false;
-		}
+        } else {
 
-	} else {
+            return false;
+        }
 
-		msg = "Optimal solution found";
-	}
+    } else {
 
-	// extract solution
-	x.resize(_numVariables);
-	for (unsigned int i = 0; i < _numVariables; i++)
-		// in case of several suboptimal solutions, the best-objective solution 
-		// is read
-		GRB_CHECK(GRBgetdblattrelement(_model, GRB_DBL_ATTR_X, i, &x[i]));
+        msg = "Optimal solution found";
+    }
 
-	// get current value of the objective
-	double value;
-	GRB_CHECK(GRBgetdblattr(_model, GRB_DBL_ATTR_OBJVAL, &value));
-	x.setValue(value);
+    // extract solution
+    x.resize(_numVariables);
+    for (unsigned int i = 0; i < _numVariables; i++)
+        // in case of several suboptimal solutions, the best-objective solution 
+        // is read
+        GRB_CHECK(GRBgetdblattrelement(_model, GRB_DBL_ATTR_X, i, &x[i]));
 
-	return true;
+    // get current value of the objective
+    double value;
+    GRB_CHECK(GRBgetdblattr(_model, GRB_DBL_ATTR_OBJVAL, &value));
+    x.setValue(value);
+
+    return true;
 }
 
 void
 GurobiBackend::setMIPFocus(unsigned int focus) {
 
-	GRBenv* modelenv = GRBgetenv(_model);
-	GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_MIPFOCUS, focus));
+    GRBenv* modelenv = GRBgetenv(_model);
+    GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_MIPFOCUS, focus));
 }
 
 void
 GurobiBackend::setNumThreads(unsigned int numThreads) {
 
-	GRBenv* modelenv = GRBgetenv(_model);
-	GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_THREADS, numThreads));
+    GRBenv* modelenv = GRBgetenv(_model);
+    GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_THREADS, numThreads));
 }
 
 void
 GurobiBackend::setVerbose(bool verbose) {
 
-	GRBenv* modelenv = GRBgetenv(_model);
+    GRBenv* modelenv = GRBgetenv(_model);
 
-	// setup GRB environment
-	if (verbose) {
-		GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_OUTPUTFLAG, 1));
-	} else {
-		GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_OUTPUTFLAG, 0));
-	}
+    // setup GRB environment
+    if (verbose) {
+        GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_OUTPUTFLAG, 1));
+    } else {
+        GRB_CHECK(GRBsetintparam(modelenv, GRB_INT_PAR_OUTPUTFLAG, 0));
+    }
 }
 
 void
 GurobiBackend::dumpProblem(std::string filename) {
 
-	// append a random number to avoid overwrites by subsequent calls
-	std::stringstream s;
-	s << rand() << "_" << filename;
+    // append a random number to avoid overwrites by subsequent calls
+    std::stringstream s;
+    s << rand() << "_" << filename;
 
-	GRB_CHECK(GRBwrite(_model, s.str().c_str()));
+    GRB_CHECK(GRBwrite(_model, s.str().c_str()));
 }
 
 void
 GurobiBackend::grbCheck(const char* call, const char* file, int line, int error) {
 
-	if (error) {
+    if (error) {
 
-		std::stringstream s;
-		s << "Gurobi error in " << file << ":" << line << ": "
-		  << GRBgeterrormsg(_env);
+        std::stringstream s;
+        s << "Gurobi error in " << file << ":" << line << ": "
+          << GRBgeterrormsg(_env);
 
-		throw std::runtime_error(s.str());
-	}
+        throw std::runtime_error(s.str());
+    }
 }
 
 #endif // HAVE_GUROBI

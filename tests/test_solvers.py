@@ -3,6 +3,7 @@ from __future__ import annotations
 import operator
 import os
 from typing import Iterable, NamedTuple, Sequence
+from unittest.mock import Mock
 
 import ilpy
 import numpy.testing as npt
@@ -78,7 +79,13 @@ CASES = [
 def test_solve(preference: ilpy.Preference, case: Case) -> None:
     kwargs = case._asdict()
     expectation = kwargs.pop("expectation")
-    npt.assert_allclose(ilpy.solve(**kwargs, preference=preference), expectation)
+    mock = Mock()
+    npt.assert_allclose(
+        ilpy.solve(**kwargs, preference=preference, on_event=mock), expectation
+    )
+    if preference == ilpy.Preference.Scip:
+        assert mock.call_count > 0
+    assert all("event_type" in x.args[0] for x in mock.call_args_list)
 
 
 @pytest.mark.skipif(gb is None, reason="Gurobipy not installed")

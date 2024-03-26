@@ -4,6 +4,7 @@ from libcpp.memory cimport shared_ptr
 from libcpp.map cimport map
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
+from cpython.object cimport PyObject
 
 cdef extern from "impl/solvers/Relation.h":
     cdef enum Relation:
@@ -99,6 +100,7 @@ cdef extern from "impl/solvers/SolverBackend.h":
         void setNumThreads(unsigned int)
         void setVerbose(bool)
         bool solve(Solution& solution, string& message) except +
+        void setEventCallback(PyObject* callback)
 
 cdef extern from "impl/solvers/ScipBackend.cpp":
     pass

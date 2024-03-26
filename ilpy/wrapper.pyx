@@ -6,6 +6,7 @@ from libcpp.memory cimport shared_ptr
 from libcpp.map cimport map as cppmap
 from libcpp.string cimport string
 from cython.operator cimport dereference as deref
+from cpython.object cimport PyObject
 from . cimport decl
 from typing import Iterable, Mapping, Sequence
 
@@ -291,6 +292,12 @@ cdef class Solver:
 
     def set_verbose(self, verbose):
         deref(self.p).setVerbose(verbose)
+
+    def set_event_callback(self, callback):
+        if callback is not None and not callable(callback):
+            raise TypeError("callback must be callable")
+        cdef PyObject* callback_ptr = <PyObject*>callback
+        deref(self.p).setEventCallback(callback_ptr)
 
     def solve(self):
         solution = Solution(self.num_variables)
