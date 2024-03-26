@@ -1,11 +1,8 @@
 #ifndef INFERENCE_SOLVER_BACKEND_H__
 #define INFERENCE_SOLVER_BACKEND_H__
 
-#ifdef NO_PYTHON
-typedef void PyObject;
-#else
 #include <Python.h>
-#endif
+#include <variant>
 
 #include "Objective.h"
 #include "Constraints.h"
@@ -126,15 +123,25 @@ public:
 	 * Get the event callback function or nullptr if no callback is set.
 	 * 
 	*/
-	void emitEvent(const std::map<std::string, std::string>& payload) const {
-		if (_callback == nullptr) {
-			return;
-		}
+	void emitEventData(
+		const std::map<std::string, std::variant<std::string, double>>& payload) const {
+		if (_callback == nullptr) { return; }
 		if (PyCallable_Check(_callback)) {
 			PyObject* dict = PyDict_New();
 			for (const auto& pair : payload) {
 				PyObject* pyKey = PyUnicode_FromString(pair.first.c_str());
-				PyObject* pyValue = PyUnicode_FromString(pair.second.c_str());
+				PyObject* pyValue = std::visit(
+					[](auto&& arg) -> PyObject* {
+						using T = std::decay_t<decltype(arg)>;
+						if constexpr (std::is_same_v<T, std::string>) {
+							return PyUnicode_FromString(arg.c_str());
+						} else if constexpr (std::is_same_v<T, double>) {
+							return PyFloat_FromDouble(arg);
+						} else {
+							throw std::runtime_error("Unsupported type");
+						}
+					},
+					pair.second);
 				PyDict_SetItem(dict, pyKey, pyValue);
 				Py_DECREF(pyKey);
 				Py_DECREF(pyValue);
@@ -148,7 +155,7 @@ public:
 		} else {
 			throw std::runtime_error("Callback is not callable");
 		}
-    }
+	}
 
 	/**
 	 * Solve the problem.

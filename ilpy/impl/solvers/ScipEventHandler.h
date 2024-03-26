@@ -1,8 +1,4 @@
-#ifdef NO_PYTHON
-typedef void PyObject;
-#else
 #include <Python.h>
-#endif
 
 #include <stdexcept>
 
@@ -105,21 +101,13 @@ class EventhdlrNewSol : public scip::ObjEventhdlr {
     return SCIP_OKAY;
   }
 
-  virtual SCIP_DECL_EVENTEXIT(scip_exit) {
-    return SCIP_OKAY;
-  }
+  virtual SCIP_DECL_EVENTEXIT(scip_exit) { return SCIP_OKAY; }
 
   virtual SCIP_DECL_EVENTEXEC(scip_exec) {
-    std::string eventTypeName = getEventTypeName(SCIPeventGetType(event));
-
-    std::map<std::string, std::string> payload;
-    payload["event_type"] = eventTypeName;
-    payload["gap"] = std::to_string(SCIPgetGap(scip));
-    payload["nodes"] = std::to_string(SCIPgetNNodes(scip));
-    payload["lp_iterations"] = std::to_string(SCIPgetNLPIterations(scip));
-    payload["dualbound"] = std::to_string(SCIPgetDualbound(scip));
-    payload["primalbound"] = std::to_string(SCIPgetPrimalbound(scip));
-    _backend->emitEvent(payload);
+    _backend->emitEventData({{"event_type", getEventTypeName(SCIPeventGetType(event))},
+                             {"gap", SCIPgetGap(scip)},
+                             {"dualbound", SCIPgetDualbound(scip)},
+                             {"primalbound", SCIPgetPrimalbound(scip)}});
 
     return SCIP_OKAY;
   }
