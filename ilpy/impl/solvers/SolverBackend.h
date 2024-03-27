@@ -10,7 +10,7 @@
 #include "VariableType.h"
 
 
-PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, double, int>>& map) {
+PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, double, int, long long>>& map) {
     PyObject* dict = PyDict_New();
     if (!dict) return nullptr; // check for successful allocation
 
@@ -22,6 +22,8 @@ PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, do
 			pyValue = PyFloat_FromDouble(*val);
 		} else if (auto val = std::get_if<int>(&pair.second)) {
 			pyValue = PyLong_FromLong(*val);
+		} else if (auto val = std::get_if<long long>(&pair.second)) {
+			pyValue = PyLong_FromLongLong(*val);
 		} else {
 			Py_DECREF(dict);
 			throw std::runtime_error("Unsupported type");
@@ -178,7 +180,7 @@ public:
 	 * 
 	*/
 	void emitEventData(
-		const std::map<std::string, std::variant<std::string, double, int>>& map) {
+		const std::map<std::string, std::variant<std::string, double, int, long long>>& map) {
 		
 		// auto it = map.find("gap");
 		// if (it != map.end()) {
