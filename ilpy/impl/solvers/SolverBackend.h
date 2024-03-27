@@ -9,8 +9,9 @@
 #include "Solution.h"
 #include "VariableType.h"
 
+using EventDataMap = std::map<std::string, std::variant<std::string, double, int, long long>>;
 
-PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, double, int, long long>>& map) {
+PyObject* mapToPyObject(const EventDataMap& map) {
     PyObject* dict = PyDict_New();
     if (!dict) return nullptr; // check for successful allocation
 
@@ -179,8 +180,7 @@ public:
 	 * Get the event callback function or nullptr if no callback is set.
 	 * 
 	*/
-	void emitEventData(
-		const std::map<std::string, std::variant<std::string, double, int, long long>>& map) {
+	void emitEventData(const EventDataMap& map) {
 		
 		// auto it = map.find("gap");
 		// if (it != map.end()) {

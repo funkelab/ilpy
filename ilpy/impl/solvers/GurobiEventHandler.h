@@ -44,7 +44,7 @@ int __stdcall eventCallback(CB_ARGS) {
     }
 
     // Create a map to store the event data
-    std::map<std::string, std::variant<std::string, double, int, long long>> map;
+    EventDataMap map;
 
     // all events will have these fields
     double runtime, work;
