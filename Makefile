@@ -1,4 +1,4 @@
-.PHONY: default install-dev tests clean
+.PHONY: default install-dev tests clean build docs
 
 default:
 	pip install .
@@ -17,3 +17,6 @@ clean:
 
 build:
 	python setup.py build_ext --inplace
+
+docs:
+	cd docs && make html

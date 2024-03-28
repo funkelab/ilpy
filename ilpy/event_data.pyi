@@ -1,6 +1,8 @@
 from typing import Literal, TypedDict
 
-class _GurobiData(TypedDict):
+__all__ = ["EventData", "GurobiData", "SCIPData"]
+
+class _GurobiData(TypedDict, total=False):
     backend: Literal["gurobi"]
     runtime: float  # Elapsed solver runtime (seconds).
     work: float  # Elapsed solver work (work units).
@@ -58,3 +60,36 @@ GurobiData = (
     | GurobiMipNode
     | GurobiMessage
 )
+
+class _SCIPData(TypedDict, total=False):
+    backend: Literal["scip"]
+
+class SCIPPresolve(_SCIPData):
+    event_type: Literal["PRESOLVEROUND"]
+    nativeconss: int
+    nbinvars: int
+    nintvars: int
+    nimplvars: int
+    nenabledconss: int
+    upperbound: float
+    nactiveconss: int
+    cutoffbound: float
+    nfixedvars: int
+
+class SCIPBestSol(_SCIPData):
+    event_type: Literal["BESTSOLFOUND"]
+    avgdualbound: float
+    avglowerbound: float
+    dualbound: float
+    gap: float
+    lowerbound: float
+    nactiveconss: int
+    nbestsolsfound: int
+    nenabledconss: int
+    nlimsolsfound: int
+    nsolsfound: int
+    primalbound: float
+
+SCIPData = SCIPPresolve | SCIPBestSol
+
+EventData = GurobiData | SCIPData

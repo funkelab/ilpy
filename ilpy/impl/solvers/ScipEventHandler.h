@@ -149,8 +149,6 @@ class EventhdlrNewSol : public scip::ObjEventhdlr {
             map["nenabledconss"] = SCIPgetNEnabledConss(scip);
             map["upperbound"] = SCIPgetUpperbound(scip);
             map["nactiveconss"] = SCIPgetNActiveConss(scip);
-            map["nenabledconss"] = SCIPgetNEnabledConss(scip);
-            map["nactiveconss"] = SCIPgetNActiveConss(scip);
             map["cutoffbound"] = SCIPgetCutoffbound(scip);
             map["nfixedvars"] = static_cast<int>(SCIPgetNFixedVars(scip));
 
@@ -159,8 +157,8 @@ class EventhdlrNewSol : public scip::ObjEventhdlr {
             map["avglowerbound"] = SCIPgetAvgLowerbound(scip);
             map["dualbound"] = SCIPgetDualbound(scip);
             map["lowerbound"] = SCIPgetLowerbound(scip);
-            map["dualboundroot"] = SCIPgetDualboundRoot(scip);
-            map["lowerboundroot"] = SCIPgetLowerboundRoot(scip);
+            // map["dualboundroot"] = SCIPgetDualboundRoot(scip);
+            // map["lowerboundroot"] = SCIPgetLowerboundRoot(scip);
             map["gap"] = SCIPgetGap(scip);
             map["nsolsfound"] = SCIPgetNSolsFound(scip);
             map["nlimsolsfound"] = SCIPgetNLimSolsFound(scip);
@@ -168,7 +166,6 @@ class EventhdlrNewSol : public scip::ObjEventhdlr {
             map["primalbound"] = SCIPgetPrimalbound(scip);
             map["nactiveconss"] = SCIPgetNActiveConss(scip);
             map["nenabledconss"] = SCIPgetNEnabledConss(scip);
-            map["nactiveconss"] = SCIPgetNActiveConss(scip);
         }
 
         // map["deterministictime"] = SCIPgetDeterministicTime(scip);

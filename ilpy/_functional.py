@@ -31,6 +31,10 @@ def solve(
 ) -> list[float]:
     """Solve an objective subject to constraints.
 
+    This is a functional interface to the solver. It creates a solver instance
+    and sets the objective and constraints, then solves the problem and returns
+    the solution.
+
     Parameters
     ----------
     objective : Sequence[float] | Expression | Objective
@@ -58,9 +62,28 @@ def solve(
         Backend preference, either an `ilpy.Preference` or a string in
         {"any", "cplex", "gurobi", "scip"}.  By default, `Preference.Any`.
     on_event : Callable[[Mapping], None], optional
-        A callback function that is called when an event occurs, by default None.
-        The callback function should accept a dict which will contain event
-        metadata.
+        A callback function that is called when an event occurs, by default None. The
+        callback function should accept a dict which will contain statics about the
+        solving or presolving process. You can import `ilpy.EventData` from ilpy and use
+        it to provide dict key hints in your IDE, but `EventData` is not available at
+        runtime.
+        See SCIP and Gurobi documentation for details what each value means.
+
+        For example::
+
+            import ilpy
+
+            if TYPE_CHECKING:
+                from ilpy import EventData
+
+            def callback(data: EventData) -> None:
+                # backend and event_type are guaranteed to be present
+                # they will narrow down the available keys
+                if data["backend"] == "gurobi":
+                    if data["event_type"] == "MIP":
+                        print(data["gap"])
+
+            ilpy.solve(..., on_event=callback)
 
     Returns
     -------
