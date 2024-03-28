@@ -1,7 +1,14 @@
+from typing import TYPE_CHECKING
+
 from . import wrapper
 from ._functional import solve
 from .expressions import Expression, Variable
 from .wrapper import *  # noqa: F403
+
+if TYPE_CHECKING:
+    from .event_data import EventData as EventData
+    from .event_data import GurobiData as GurobiData
+    from .event_data import SCIPData as SCIPData
 
 __version__ = "0.3.1"
 __all__ = [  # noqa: F405

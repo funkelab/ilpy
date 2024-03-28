@@ -9,8 +9,9 @@
 #include "Solution.h"
 #include "VariableType.h"
 
+using EventDataMap = std::map<std::string, std::variant<std::string, double, int, long long>>;
 
-PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, double>>& map) {
+PyObject* mapToPyObject(const EventDataMap& map) {
     PyObject* dict = PyDict_New();
     if (!dict) return nullptr; // check for successful allocation
 
@@ -20,6 +21,10 @@ PyObject* mapToPyObject(const std::map<std::string, std::variant<std::string, do
 			pyValue = PyUnicode_FromString(val->c_str());
 		} else if (auto val = std::get_if<double>(&pair.second)) {
 			pyValue = PyFloat_FromDouble(*val);
+		} else if (auto val = std::get_if<int>(&pair.second)) {
+			pyValue = PyLong_FromLong(*val);
+		} else if (auto val = std::get_if<long long>(&pair.second)) {
+			pyValue = PyLong_FromLongLong(*val);
 		} else {
 			Py_DECREF(dict);
 			throw std::runtime_error("Unsupported type");
@@ -164,11 +169,18 @@ public:
 	}
 
 	/**
+	 * Return true if a callback has been set
+	 * 
+	*/
+	bool hasEventCallback() {
+		return _callback != nullptr;
+	}
+
+	/**
 	 * Get the event callback function or nullptr if no callback is set.
 	 * 
 	*/
-	void emitEventData(
-		const std::map<std::string, std::variant<std::string, double>>& map) {
+	void emitEventData(const EventDataMap& map) {
 		
 		// auto it = map.find("gap");
 		// if (it != map.end()) {
@@ -185,6 +197,7 @@ public:
 
 			PyObject* result = PyObject_CallFunctionObjArgs(_callback, dict, nullptr);
 			if (result == nullptr) {
+				fprintf(stderr, "In ilpy callback -- ");
 				PyErr_Print();
 			}
 			Py_XDECREF(result);
