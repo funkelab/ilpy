@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from .event_data import GurobiData as GurobiData
     from .event_data import SCIPData as SCIPData
 
-__version__ = "0.4.0"
+__version__ = "0.4.0.dev0"
 __all__ = [  # noqa: F405
     "Any",
     "Binary",
