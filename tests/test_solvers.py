@@ -85,7 +85,10 @@ def test_solve(preference: ilpy.Preference, case: Case) -> None:
     )
     if preference == ilpy.Preference.Scip:
         assert mock.call_count > 0
-    assert all("event_type" in x.args[0] for x in mock.call_args_list)
+    assert all(
+        "event_type" in x.args[0] and "backend" in x.args[0]
+        for x in mock.call_args_list
+    )
 
 
 @pytest.mark.skipif(gb is None, reason="Gurobipy not installed")

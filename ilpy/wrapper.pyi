@@ -1,5 +1,5 @@
 from enum import IntEnum, auto
-from typing import TYPE_CHECKING, Callable, Iterable, Mapping, Sequence, TypedDict
+from typing import TYPE_CHECKING, Callable, Iterable, Mapping, Sequence
 
 if TYPE_CHECKING:
     LinearCoeffs = Sequence[float] | Mapping[int, float]
@@ -105,12 +105,6 @@ class Constraints:
     def add(self, constraint: Constraint | Expression) -> None: ...
     def add_all(self, constraints: Constraints) -> None: ...
     def __len__(self) -> int: ...
-
-class EventData(TypedDict, total=False):
-    event_type: str
-    dualbound: float
-    primalbound: float
-    gap: float
 
 class Solver:
     def __init__(

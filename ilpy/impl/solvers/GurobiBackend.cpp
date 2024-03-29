@@ -6,6 +6,7 @@
 #include <stdexcept>
 
 #include "GurobiBackend.h"
+#include "GurobiEventHandler.h"
 
 #define GRB_CHECK(call) \
         grbCheck(#call, __FILE__, __LINE__, call)
@@ -212,31 +213,6 @@ GurobiBackend::addConstraint(const Constraint& constraint) {
     delete[] qvals;
 }
 
-// Static member function
-int __stdcall GurobiBackend::eventCallback(CB_ARGS) {
-    // Cast usrdata back to a GurobiBackend pointer
-    GurobiBackend* backend = static_cast<GurobiBackend*>(usrdata);
-
-    // Only retrieve the primal and dual objective values in the GRB_CB_MIP and GRB_CB_MIPSOL states
-    if (where == GRB_CB_MIP) {
-        double bestbd, incumbent, gap;
-
-        GRBcbget(cbdata, where, GRB_CB_MIP_OBJBST, &incumbent);
-        GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &bestbd);
-        
-        // calculate the gap
-        gap = 100 * (fabs(bestbd - incumbent) / (std::numeric_limits<double>::epsilon() + fabs(incumbent)));
-
-        backend->emitEventData({
-            {"event_type", static_cast<double>(where)},
-            {"dualbound", bestbd},
-            {"primalbound", incumbent},
-            {"gap", gap}
-        });
-    }
-
-    return 0;
-}
 
 bool
 GurobiBackend::solve(Solution& x, std::string& msg) {
