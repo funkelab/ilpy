@@ -22,7 +22,6 @@ dependencies = []
 dev = [
     "ruff",
     "mypy",
-    "black",
     "pytest",
     "pytest-cov",
     "cython",
@@ -51,6 +50,8 @@ readme = { file = ["README.md"] }
 [tool.ruff]
 target-version = "py38"
 src = ["ilpy"]
+
+[tool.ruff.lint]
 select = [
     "F",   # pyflakes
     "W",   # pyflakes
