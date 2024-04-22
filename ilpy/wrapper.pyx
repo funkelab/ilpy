@@ -1,4 +1,7 @@
 # distutils: language = c++
+import os
+import warnings
+
 from typing import TYPE_CHECKING
 
 from libc.stdint cimport uint32_t
@@ -242,6 +245,18 @@ cdef class Constraints:
     def __len__(self):
         return self.p.size()
 
+DEFAULT_PREF = Preference.Any
+env_pref = os.environ.get("ILPY_PREFERENCE")
+if env_pref:
+    for p in Preference:
+        if p.name.lower() == env_pref.lower():
+            DEFAULT_PREF = p
+            break
+    else:
+        warnings.warn(
+            f"Unknown ILPY_PREFERENCE {env_pref!r}, using default {DEFAULT_PREF.name}"
+        )
+
 cdef class Solver:
 
     cdef shared_ptr[decl.SolverBackend] p
@@ -252,7 +267,7 @@ cdef class Solver:
             num_variables,
             default_variable_type,
             dict variable_types=None,
-            Preference preference=Preference.Any):
+            Preference preference=DEFAULT_PREF):
         cdef decl.SolverFactory factory
         cdef cppmap[unsigned int, decl.VariableType] vtypes
         if variable_types is not None:
