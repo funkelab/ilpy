@@ -253,7 +253,9 @@ if env_pref:
             DEFAULT_PREF = p
             break
     else:
-        warnings.warn(f"Unknown ILPY_PREFERENCE {env_pref!r}, using default {DEFAULT_PREF.name}")
+        warnings.warn(
+            f"Unknown ILPY_PREFERENCE {env_pref!r}, using default {DEFAULT_PREF.name}"
+        )
 
 cdef class Solver:
 
