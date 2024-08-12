@@ -1,4 +1,5 @@
 import operator
+import sys
 
 import pytest
 from ilpy.expressions import Expression, Variable, _get_coefficients
@@ -161,3 +162,16 @@ def test_adding() -> None:
     solver.set_objective(u)
     solver.add_constraint(u >= 0)
     solver.set_constraints(constraints)
+
+
+def test_recursion() -> None:
+    from ilpy.expressions import recursion_limit_raised_by
+
+    reclimit = sys.getrecursionlimit()
+    s = sum(Variable(str(x), index=x) for x in range(reclimit + 5001))
+    SOME_MAX = 1000
+    expr = s <= SOME_MAX
+    with pytest.raises(RecursionError):
+        expr.as_constraint()
+    with recursion_limit_raised_by():
+        assert isinstance(expr.as_constraint(), Constraint)
