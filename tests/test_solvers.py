@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import operator
 import os
-from typing import Iterable, NamedTuple, Sequence
+from collections.abc import Iterable, Sequence
+from typing import NamedTuple
 from unittest.mock import Mock
 
 import ilpy

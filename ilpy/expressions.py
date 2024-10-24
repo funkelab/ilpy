@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import ast
-from typing import Any, ClassVar, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, ClassVar, Union
 
 from ilpy.wrapper import Constraint, Objective, Relation, Sense
 
