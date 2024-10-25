@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import ast
 import sys
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import Any, ClassVar, Iterator, Sequence, Union
+from typing import Any, ClassVar, Union
 
 from ilpy.wrapper import Constraint, Objective, Relation, Sense
 

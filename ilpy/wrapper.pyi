@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Mapping, Sequence
 from enum import IntEnum, auto
-from typing import TYPE_CHECKING, Callable, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     LinearCoeffs = Sequence[float] | Mapping[int, float]
