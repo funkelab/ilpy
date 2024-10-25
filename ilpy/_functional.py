@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence, Tuple
+from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Literal
 
 from .expressions import Expression
 from .wrapper import (
@@ -14,7 +15,7 @@ from .wrapper import (
 )
 
 if TYPE_CHECKING:
-    ConstraintTuple = Tuple[list[float], Relation | str, float]
+    ConstraintTuple = tuple[list[float], Relation | str, float]
     SenseType = Sense | Literal["minimize", "maximize"]
     VariableTypeType = VariableType | Literal["continuous", "binary", "integer"]
     PreferenceType = Preference | Literal["any", "cplex", "gurobi", "scip"]
