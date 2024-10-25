@@ -25,6 +25,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "cython",
+    "setuptools==69.5.1",
     "numpy",
     "gurobipy",  # used on CI to confirm equality of results
 ]
