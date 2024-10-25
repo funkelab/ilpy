@@ -1,12 +1,25 @@
 from __future__ import annotations
 
 import ast
-from collections.abc import Sequence
+import sys
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from typing import Any, ClassVar, Union
 
 from ilpy.wrapper import Constraint, Objective, Relation, Sense
 
 Number = Union[float, int]
+
+
+@contextmanager
+def recursion_limit_raised_by(N: int = 5000) -> Iterator[None]:
+    """Temporarily increase the recursion limit by N."""
+    old_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(old_limit + N)
+    try:
+        yield
+    finally:
+        sys.setrecursionlimit(old_limit)
 
 
 class Expression(ast.AST):
@@ -266,13 +279,24 @@ def _get_coeff_indices(
     l_coeffs: dict[int, float] = {}
     q_coeffs: dict[tuple[int, int], float] = {}
     constant = 0.0
-    for var, coefficient in _get_coefficients(expr).items():
-        if var is None:
-            constant = coefficient
-        elif isinstance(var, tuple):
-            q_coeffs[(_ensure_index(var[0]), _ensure_index(var[1]))] = coefficient
-        elif coefficient != 0:
-            l_coeffs[_ensure_index(var)] = coefficient
+    try:
+        with recursion_limit_raised_by(5000):
+            for var, coefficient in _get_coefficients(expr).items():
+                if var is None:
+                    constant = coefficient
+                elif isinstance(var, tuple):
+                    q_coeffs[(_ensure_index(var[0]), _ensure_index(var[1]))] = (
+                        coefficient
+                    )
+                elif coefficient != 0:
+                    l_coeffs[_ensure_index(var)] = coefficient
+    except RecursionError as e:
+        raise RecursionError(
+            "RecursionError when casting an ilpy.Expression to a Constraint or "
+            "Objective. If you really want an expression this large, you may raise the "
+            "limit temporarily with `ilpy.expressions.recursion_limit_raised_by` (or "
+            "manually with `sys.setrecursionlimit`)"
+        ) from e
     return l_coeffs, q_coeffs, constant
 
 
