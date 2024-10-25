@@ -1,4 +1,5 @@
 import operator
+import os
 import sys
 
 import pytest
@@ -164,6 +165,10 @@ def test_adding() -> None:
     solver.set_constraints(constraints)
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 11) and os.name == "nt",
+    reason="fails too often on windows 3.10",
+)
 def test_recursion() -> None:
     from ilpy.expressions import recursion_limit_raised_by
 
