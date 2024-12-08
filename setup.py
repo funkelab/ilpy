@@ -6,11 +6,12 @@ from setuptools import setup
 from setuptools.extension import Extension
 
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
-if not CONDA_PREFIX:
-    raise ValueError("CONDA_PREFIX not set, did you active a conda environment?")
+if CONDA_PREFIX:
+    os.environ["PATH"] += os.pathsep + CONDA_PREFIX
+else:
+    print("CONDA_PREFIX not set!, did you active a conda environment?")
 
 # gurobi seems to be putting its libraries in the top of the conda env
-os.environ["PATH"] += os.pathsep + CONDA_PREFIX
 print("CONDA_PREFIX:", CONDA_PREFIX)
 print("PATH:", os.environ["PATH"])
 
@@ -40,7 +41,7 @@ for prefix in ("lib", ""):
     if found := util.find_library(gurobi_lib):
         print("FOUND GUROBI library: ", found)
         libraries.append(gurobi_lib)
-        compile_args.append("/DHAVE_GUROBI" if os.name == 'nt' else "-DHAVE_GUROBI")
+        compile_args.append("/DHAVE_GUROBI" if os.name == "nt" else "-DHAVE_GUROBI")
         break
 else:
     print("WARNING: GUROBI library not found")
