@@ -60,15 +60,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          use-mamba: true
-          channels: conda-forge,gurobi,defaults
           channel-priority: true
 
       - name: install build deps
-        run: mamba install scip=9.1.0 gurobi gcovr
+        run: conda install -c conda-forge scip=9.1.0 gcovr
+
+      - name: install gurobi
+        if: runner.os != 'Windows'
+        run: conda install -c gurobi gurobi=11.0.3
 
       - name: add gurobi license
-        shell: bash
         id: write-license
         env:
           LICENSE: ${{ secrets.GRB_LICENSE_FILE   }}
@@ -78,6 +79,7 @@ jobs:
 
       - name: install package
         run: |
+          conda list
           python -m pip install -U pip
           python -m pip install -e .[dev]
           python setup.py build_ext --inplace  # required for C coverage

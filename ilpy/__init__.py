@@ -33,11 +33,11 @@ __all__ = [  # noqa: F405
     "Scip",
     "Sense",
     "Solution",
-    "solve",
     "Solver",
     "Solver",
     "Variable",
     "VariableType",
+    "solve",
 ]
 
 

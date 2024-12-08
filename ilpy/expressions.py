@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 import sys
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any, ClassVar, Union
 
@@ -22,7 +22,7 @@ def recursion_limit_raised_by(N: int = 5000) -> Iterator[None]:
         sys.setrecursionlimit(old_limit)
 
 
-class Expression(ast.AST):
+class Expression(ast.expr):
     """Base class for all expression nodes.
 
     Expressions allow ilpy to represent mathematical expressions in an
@@ -147,8 +147,8 @@ class Compare(Expression, ast.Compare):
     def __init__(
         self,
         left: Expression,
-        ops: Sequence[ast.cmpop],
-        comparators: Sequence[Expression | Number],
+        ops: list[ast.cmpop],
+        comparators: list[Expression | Number],
         **kwargs: Any,
     ) -> None:
         super().__init__(

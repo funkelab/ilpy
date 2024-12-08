@@ -14,26 +14,29 @@ authors = [
     { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
 ]
 dynamic = ["version", "readme"]
-dependencies = []
+# these are required... but hard to install from pypi
+# we list them here for completeness, but it's up to the user to install them :(
+dependencies = [
+    # "gurobi==11.0.3",
+    # "scip==9.1.0",
+]
 
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
 dev = [
-    "ruff",
-    "mypy",
-    "pytest",
-    "pytest-cov",
     "cython",
-    "setuptools==71.1.0",
+    "gurobipy==11.0.3; sys_platform!='windows' and python_version<'3.12'", # used to confirm equality of results
+    "ipython",
+    "mypy",
     "numpy",
-    "gurobipy",  # used on CI to confirm equality of results
+    "pre-commit",
+    "pytest-cov",
+    "pytest",
+    "ruff",
+    "setuptools==71.1.0",
 ]
-docs = [
-    "sphinx",
-    "sphinx_rtd_theme",
-    "sphinx-autodoc-typehints",
-]
+docs = ["sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
 
 [project.urls]
 homepage = "https://github.com/funkelab/ilpy"

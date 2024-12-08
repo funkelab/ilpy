@@ -52,7 +52,7 @@ ScipBackend::initialize(
 	// delete previous variables
 	freeVariables();
 
-	for (int i = 0; i < _numVariables; i++) {
+	for (unsigned int i = 0; i < _numVariables; i++) {
 
 		SCIP_VAR* v;
 		std::string name("x");
