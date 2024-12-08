@@ -69,11 +69,10 @@ jobs:
       
       - name: create windows .lib
         if: runner.os == 'Windows'
-        shell: cmd
         run: | 
           echo %CONDA_PREFIX%
-          dir %CONDA_PREFIX%\gurobi110.dll
-          call generate_lib.bat
+          ls $CONDA_PREFIX
+          cmd.exe /c "generate_lib.bat"
 
       - name: add gurobi license
         id: write-license
