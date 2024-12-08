@@ -16,17 +16,16 @@ conda install -c funkelab ilpy
 
 ## Local development
 
-ilpy links against SCIP, so you must have SCIP installed in your environment.
-(You can install via conda)
+Clone the repo and install in editable mode.
 
-```bash
-conda install scip==9.1.0
-```
-
-Then clone the repo and install in editable mode.
+Note, `ilpy` links against SCIP, so you must have SCIP installed in your environment,
+in order to build:
 
 ```bash
 git clone <your-fork>
 cd ilpy
+
+conda create -n ilpy -c conda-forge -c gurobi python scip==9.1.0 gurobi==11.0.3
+conda activate ilpy
 pip install -e .[dev]
 ```

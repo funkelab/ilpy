@@ -25,15 +25,16 @@ dependencies = [
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
 dev = [
-    "ruff",
-    "mypy",
-    "pytest",
-    "ipython",
-    "pytest-cov",
     "cython",
-    "setuptools==71.1.0",
-    "numpy",
     "gurobipy",           # used on CI to confirm equality of results
+    "ipython",
+    "mypy",
+    "numpy",
+    "pre-commit",
+    "pytest-cov",
+    "pytest",
+    "ruff",
+    "setuptools==71.1.0",
 ]
 docs = ["sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
 

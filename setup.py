@@ -20,7 +20,7 @@ CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
 
 libraries = ["libscip"] if os.name == "nt" else ["scip"]
 include_dirs = ["ilpy/impl"]
-library_dirs = []
+library_dirs = [CONDA_PREFIX] if CONDA_PREFIX else []
 if os.name == "nt":
     compile_args = ["/O2", "/DHAVE_SCIP", "/std:c++17", "/wd4702"]
 else:
