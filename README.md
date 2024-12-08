@@ -29,3 +29,10 @@ conda create -n ilpy -c conda-forge -c gurobi python scip==9.1.0 gurobi==11.0.3
 conda activate ilpy
 pip install -e .[dev]
 ```
+
+If you make local change and want to rebuild the extension quickly, you can run:
+
+```bash
+rm -rf build
+python setup.py build_ext --inplace
+```
