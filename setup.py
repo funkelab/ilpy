@@ -1,3 +1,4 @@
+import glob
 import os
 from ctypes import util
 from itertools import product
@@ -5,6 +6,41 @@ from itertools import product
 from Cython.Build import cythonize
 from setuptools import setup
 from setuptools.extension import Extension
+
+print("PATH:", os.environ["PATH"])
+print("CONDA_PREFIX:", os.environ.get("CONDA_PREFIX"))
+
+
+def assert_gurobi_and_scip() -> None:
+    # Get the Conda environment prefix
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if not conda_prefix:
+        raise RuntimeError("CONDA_PREFIX is not set. Ensure Conda is active in CI.")
+
+    # Paths to check
+    gurobi_dll_path = os.path.join(conda_prefix, "Library", "bin", "gurobi*.dll")
+    scip_header_path = os.path.join(
+        conda_prefix, "Library", "include", "scip", "scipdefplugins.h"
+    )
+
+    # Verify Gurobi DLL
+    gurobi_found = any(os.path.exists(path) for path in glob.glob(gurobi_dll_path))
+    if not gurobi_found:
+        raise FileNotFoundError(
+            f"Gurobi DLL not found in {gurobi_dll_path}. Ensure Gurobi is installed."
+        )
+
+    # Verify SCIP header
+    if not os.path.exists(scip_header_path):
+        raise FileNotFoundError(
+            f"SCIP header 'scipdefplugins.h' not found in {scip_header_path}. "
+            "Ensure SCIP is installed."
+        )
+
+    print("All required files are present.")
+
+if os.name == "nt":
+    assert_gurobi_and_scip()
 
 # enable test coverage tracing if CYTHON_TRACE is set to a non-zero value
 CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
