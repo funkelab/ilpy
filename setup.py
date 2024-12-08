@@ -11,11 +11,10 @@ CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
 libraries = ["libscip"] if os.name == "nt" else ["scip"]
 include_dirs = ["ilpy/impl"]
 library_dirs = []
-compile_args = ["-O3", "-DHAVE_SCIP", "-Wno-unreachable-code"]
 if os.name == "nt":
-    compile_args.append("/std:c++17")
+    compile_args = ["/O2", "/DHAVE_SCIP", "/std:c++17", "/wd4702"]
 else:
-    compile_args.append("-std=c++17")
+    compile_args = ["-O3", "-DHAVE_SCIP", "-std=c++17", "-Wno-unreachable-code"]
 
 # include conda environment windows include/lib if it exists
 # this will be done automatically by conda build, but is useful if someone
