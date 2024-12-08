@@ -71,8 +71,8 @@ jobs:
         if: runner.os == 'Windows'
         run: | 
           echo %CONDA_PREFIX%
-          ls $CONDA_PREFIX
           cmd.exe /c "generate_lib.bat"
+          ls $CONDA_PREFIX
 
       - name: add gurobi license
         id: write-license
