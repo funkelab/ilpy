@@ -7,13 +7,11 @@ from setuptools.extension import Extension
 
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
 if CONDA_PREFIX:
+    # gurobi seems to be putting its libraries in the top of the conda env
     os.environ["PATH"] += os.pathsep + CONDA_PREFIX
 else:
     print("CONDA_PREFIX not set!, did you active a conda environment?")
 
-# gurobi seems to be putting its libraries in the top of the conda env
-print("CONDA_PREFIX:", CONDA_PREFIX)
-print("PATH:", os.environ["PATH"])
 
 # enable test coverage tracing if CYTHON_TRACE is set to a non-zero value
 CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))

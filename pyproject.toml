@@ -26,7 +26,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "cython",
-    "gurobipy",           # used on CI to confirm equality of results
+    "gurobipy==11.0.3; sys_platform!='windows' and python_version<'3.12'", # used to confirm equality of results
     "ipython",
     "mypy",
     "numpy",
