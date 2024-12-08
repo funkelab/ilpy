@@ -66,6 +66,14 @@ jobs:
         run: |
           conda install -c conda-forge -c gurobi gurobi=11.0.3 scip=9.1.0 gcovr
           find $CONDA_PREFIX -name "*gurobi*"
+      
+      - name: create windows .lib
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: | 
+          echo %CONDA_PREFIX%
+          dir %CONDA_PREFIX%\gurobi110.dll
+          call generat_lib.bat
 
       - name: add gurobi license
         id: write-license
