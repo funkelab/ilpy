@@ -11,6 +11,40 @@ print("PATH:", os.environ["PATH"])
 print("CONDA_PREFIX:", os.environ.get("CONDA_PREFIX"))
 
 
+def debug_conda_env() -> None:
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if not conda_prefix:
+        raise RuntimeError("No active Conda environment found. Ensure Conda is active.")
+    print()
+    # Check Gurobi DLL directory
+    if os.name == "nt":
+        bin_dir = os.path.join(conda_prefix, "Library", "bin")
+    else:
+        bin_dir = os.path.join(conda_prefix, "lib")
+    print(f"Inspecting bin directory: {bin_dir}")
+    if os.path.exists(bin_dir):
+        for file in glob.glob(os.path.join(bin_dir, "*gurobi*")):
+            print(f"  Found: {file}")
+        for file in glob.glob(os.path.join(bin_dir, "*scip*")):
+            print(f"  Found: {file}")
+    else:
+        print("Gurobi bin directory does not exist!")
+
+    print()
+    # Check SCIP include directory
+    if os.name == "nt":
+        inc_dir = os.path.join(conda_prefix, "Library", "include")
+    else:
+        inc_dir = os.path.join(conda_prefix, "include")
+    print(f"Inspecting include directory: {inc_dir}")
+    if os.path.exists(inc_dir):
+        for file in glob.glob(os.path.join(inc_dir, "**/*scip/")):
+            print(f"  Found: {file}")
+    else:
+        print("SCIP include directory does not exist!")
+    print()
+
+
 def assert_gurobi_and_scip() -> None:
     # Get the Conda environment prefix
     conda_prefix = os.environ.get("CONDA_PREFIX")
@@ -39,6 +73,8 @@ def assert_gurobi_and_scip() -> None:
 
     print("All required files are present.")
 
+
+debug_conda_env()
 if os.name == "nt":
     assert_gurobi_and_scip()
 
