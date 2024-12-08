@@ -64,8 +64,7 @@ jobs:
 
       - name: install build deps
         run: |
-          conda install -c conda-forge scip=9.1.0 gcovr
-          conda install -c gurobi gurobi=12.0.0
+          conda install -c conda-forge -c gurobi gurobi=12.0.0 scip=9.1.0 gcovr
 
       - name: add gurobi license
         shell: bash
@@ -78,6 +77,7 @@ jobs:
 
       - name: install package
         run: |
+          conda list
           python -m pip install -U pip
           python -m pip install -e .[dev]
           python setup.py build_ext --inplace  # required for C coverage
