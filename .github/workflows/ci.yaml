@@ -60,11 +60,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           miniforge-version: latest
-          channels: conda-forge,gurobi,defaults
           channel-priority: true
 
       - name: install build deps
-        run: conda install scip=9.1.0 gurobi=12.0.0 gcovr
+        run: |
+          conda install -c conda-forge scip=9.1.0 gcovr
+          conda install -c gurobi gurobi=12.0.0
 
       - name: add gurobi license
         shell: bash
