@@ -142,7 +142,7 @@ GurobiBackend::setConstraints(const Constraints &constraints)
     if (numConstrs > 0)
     {
         int *constraintIndicies = new int[numConstrs];
-        for (unsigned int i = 0; i < numConstrs; i++)
+        for (int i = 0; i < numConstrs; i++)
             constraintIndicies[i] = i;
 
         GRB_CHECK(GRBdelconstrs(_model, numConstrs, constraintIndicies));

@@ -23,6 +23,7 @@ dev = [
     "ruff",
     "mypy",
     "pytest",
+    "ipython",
     "pytest-cov",
     "cython",
     "setuptools==71.1.0",

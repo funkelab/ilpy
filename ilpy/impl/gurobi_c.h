@@ -1,4 +1,4 @@
-/* Copyright 2022, Gurobi Optimization, LLC */
+/* Copyright 2024, Gurobi Optimization, LLC */
  
 #ifndef _GUROBI_C_H
 #define _GUROBI_C_H
@@ -40,9 +40,9 @@ typedef struct _GRBenv GRBenv;
 
 /* Version numbers */
 
-#define GRB_VERSION_MAJOR     9
-#define GRB_VERSION_MINOR     5
-#define GRB_VERSION_TECHNICAL 1
+#define GRB_VERSION_MAJOR     12
+#define GRB_VERSION_MINOR     0
+#define GRB_VERSION_TECHNICAL 0
 
 /* Default and max priority for Compute Server jobs */
 
@@ -57,8 +57,9 @@ typedef struct _GRBenv GRBenv;
 
 #define DEFAULT_CS_HANGUP 60
 
-/* Error codes */
+/* Error codes: adjust MIN/MAX if adding new codes */
 
+#define GRB_C_MIN_ERROR                    10001
 #define GRB_ERROR_OUT_OF_MEMORY            10001
 #define GRB_ERROR_NULL_ARGUMENT            10002
 #define GRB_ERROR_INVALID_ARGUMENT         10003
@@ -91,6 +92,7 @@ typedef struct _GRBenv GRBenv;
 #define GRB_ERROR_CSWORKER                 10030
 #define GRB_ERROR_TUNE_MODEL_TYPES         10031
 #define GRB_ERROR_SECURITY                 10032
+#define GRB_C_MAX_ERROR                    10032
 
 /* Constraint senses */
 
@@ -251,15 +253,24 @@ int __stdcall
   GRBgetlogcallbackfuncenv(GRBenv         *env,
                            int (__stdcall **cbP)(LOGCB_ARGS),
                            void           **logdataP);
+
+int __stdcall
+  GRBcbproceed(void *cbdata);
 int __stdcall
   GRBcbget(void *cbdata, int where, int what, void *resultP);
+int __stdcall
+  GRBcbsetintparam(void *cbdata, const char *paramname, int newvalue);
+int __stdcall
+  GRBcbsetdblparam(void *cbdata, const char *paramname, double newvalue);
+int __stdcall
+  GRBcbsetstrparam(void *cbdata, const char *paramname, const char *newvalue);
 int __stdcall
   GRBcbsetparam(void *cbdata, const char *paramname, const char *newvalue);
 int __stdcall
   GRBcbsolution(void *cbdata, const double *solution, double *objvalP);
 int __stdcall
   GRBcbcut(void *cbdata, int cutlen, const int *cutind, const double *cutval,
-          char cutsense, double cutrhs);
+           char cutsense, double cutrhs);
 int __stdcall
   GRBcblazy(void *cbdata, int lazylen, const int *lazyind,
             const double *lazyval, char lazysense, double lazyrhs);
@@ -287,11 +298,9 @@ int __stdcall
 #define GRB_INT_ATTR_MODELSENSE    "ModelSense"    /* 1=min, -1=max */
 #define GRB_DBL_ATTR_OBJCON        "ObjCon"        /* Objective constant */
 #define GRB_INT_ATTR_IS_MIP        "IsMIP"         /* Is model a MIP? */
-#define GRB_INT_ATTR_IS_QP         "IsQP"          /* Model has quadratic obj? */
+#define GRB_INT_ATTR_IS_QP         "IsQP"          /* Is model a QP/MIQP (without Q/NL constraints)? */
 #define GRB_INT_ATTR_IS_QCP        "IsQCP"         /* Model has quadratic constr? */
 #define GRB_INT_ATTR_IS_MULTIOBJ   "IsMultiObj"    /* Model has multiple objectives? */
-#define GRB_STR_ATTR_SERVER        "Server"        /* Name of Compute Server */
-#define GRB_STR_ATTR_JOBID         "JobID"         /* Compute Server job ID */
 #define GRB_INT_ATTR_LICENSE_EXPIRATION "LicenseExpiration" /* License expiration date */
 #define GRB_INT_ATTR_NUMTAGGED     "NumTagged"     /* number of tagged elements in model */
 #define GRB_INT_ATTR_FINGERPRINT   "Fingerprint"   /* fingerprint computed from the model data and attributes influencing the optimization process */
@@ -343,9 +352,10 @@ int __stdcall
 /* General function constraint attributes */
 
 #define GRB_INT_ATTR_FUNCPIECES      "FuncPieces"       /* An option for PWL translation */
-#define GRB_DBL_ATTR_FUNCPIECEERROR  "FuncPieceError"    /* An option for PWL translation */
+#define GRB_DBL_ATTR_FUNCPIECEERROR  "FuncPieceError"   /* An option for PWL translation */
 #define GRB_DBL_ATTR_FUNCPIECELENGTH "FuncPieceLength"  /* An option for PWL translation */
 #define GRB_DBL_ATTR_FUNCPIECERATIO  "FuncPieceRatio"   /* An option for PWL translation */
+#define GRB_INT_ATTR_FUNCNONLINEAR   "FuncNonlinear"    /* An option for PWL translation */
 
 /* Model statistics */
 
@@ -391,7 +401,8 @@ int __stdcall
 
 #define GRB_DBL_ATTR_X         "X"         /* Solution value */
 #define GRB_DBL_ATTR_XN        "Xn"        /* Alternate MIP solution, depends on solutionnumber */
-#define GRB_DBL_ATTR_BARX      "BarX"      /* Best barrier iterate */
+#define GRB_DBL_ATTR_BARX      "BarX"      /* Best barrier primal iterate */
+#define GRB_DBL_ATTR_BARPI     "BarPi"     /* Best barrier dual iterate */
 #define GRB_DBL_ATTR_RC        "RC"        /* Reduced costs */
 #define GRB_DBL_ATTR_VDUALNORM "VDualNorm" /* Dual norm square */
 #define GRB_INT_ATTR_VBASIS    "VBasis"    /* Variable basis status */
@@ -527,6 +538,12 @@ int __stdcall
 #define GRB_INT_ATTR_NUMSTART     "NumStart"     /* number of MIP starts */
 
 
+/* Memory consumption statistics */
+
+#define GRB_DBL_ATTR_MEMUSED      "MemUsed"        /* current amount of allocated memory (in GB) in master environment */
+#define GRB_DBL_ATTR_MAXMEMUSED   "MaxMemUsed"     /* maximum amount of allocated memory (in GB) in master environment */
+
+
 /* Alternate define */
 
 #define GRB_DBL_ATTR_Xn "Xn"
@@ -539,17 +556,42 @@ int __stdcall
 #define GRB_GENCONSTR_AND         3
 #define GRB_GENCONSTR_OR          4
 #define GRB_GENCONSTR_NORM        5
-#define GRB_GENCONSTR_INDICATOR   6
-#define GRB_GENCONSTR_PWL         7
-#define GRB_GENCONSTR_POLY        8
-#define GRB_GENCONSTR_EXP         9
-#define GRB_GENCONSTR_EXPA       10
-#define GRB_GENCONSTR_LOG        11
-#define GRB_GENCONSTR_LOGA       12
-#define GRB_GENCONSTR_POW        13
-#define GRB_GENCONSTR_SIN        14
-#define GRB_GENCONSTR_COS        15
-#define GRB_GENCONSTR_TAN        16
+#define GRB_GENCONSTR_NL          6
+#define GRB_GENCONSTR_INDICATOR   7
+#define GRB_GENCONSTR_PWL         8
+#define GRB_GENCONSTR_POLY        9
+#define GRB_GENCONSTR_EXP        10
+#define GRB_GENCONSTR_EXPA       11
+#define GRB_GENCONSTR_LOG        12
+#define GRB_GENCONSTR_LOGA       13
+#define GRB_GENCONSTR_POW        14
+#define GRB_GENCONSTR_SIN        15
+#define GRB_GENCONSTR_COS        16
+#define GRB_GENCONSTR_TAN        17
+#define GRB_GENCONSTR_LOGISTIC   18
+
+#define NUMGENCONSTYPES          19
+
+/* Operation codes for genconstrNL */
+
+#define GRB_OPCODE_CONSTANT      0
+#define GRB_OPCODE_VARIABLE      1
+#define GRB_OPCODE_PLUS          2
+#define GRB_OPCODE_MINUS         3
+#define GRB_OPCODE_MULTIPLY      4
+#define GRB_OPCODE_DIVIDE        5
+#define GRB_OPCODE_UMINUS        6
+#define GRB_OPCODE_SQUARE        7
+#define GRB_OPCODE_SQRT          8
+#define GRB_OPCODE_SIN           9
+#define GRB_OPCODE_COS           10
+#define GRB_OPCODE_TAN           11
+#define GRB_OPCODE_POW           12
+#define GRB_OPCODE_EXP           13
+#define GRB_OPCODE_LOG           14
+#define GRB_OPCODE_LOG2          15
+#define GRB_OPCODE_LOG10         16
+#define GRB_OPCODE_LOGISTIC      17
 
 /*
    CALLBACKS
@@ -614,6 +656,8 @@ int __stdcall
 #define GRB_CB_MSG_STRING  6001
 #define GRB_CB_RUNTIME     6002
 #define GRB_CB_WORK        6003
+#define GRB_CB_MEMUSED     6004
+#define GRB_CB_MAXMEMUSED  6005
 
 #define GRB_CB_BARRIER_ITRCNT  7001
 #define GRB_CB_BARRIER_PRIMOBJ 7002
@@ -625,6 +669,23 @@ int __stdcall
 #define GRB_CB_MULTIOBJ_OBJCNT  8001
 #define GRB_CB_MULTIOBJ_SOLCNT  8002
 #define GRB_CB_MULTIOBJ_SOL     8003
+#define GRB_CB_MULTIOBJ_ITRCNT  8004
+#define GRB_CB_MULTIOBJ_OBJBST  8005 /* if single objective is an LP we
+                                      * still do not have a "_OBJVAL", the
+                                      * user can query the _OBJBST/_OBJBND
+                                      * values instead */
+#define GRB_CB_MULTIOBJ_OBJBND  8006
+#define GRB_CB_MULTIOBJ_STATUS  8007
+#define GRB_CB_MULTIOBJ_MIPGAP  8008
+#define GRB_CB_MULTIOBJ_NODCNT  8009
+#define GRB_CB_MULTIOBJ_NODLFT  8010
+#define GRB_CB_MULTIOBJ_RUNTIME 8011
+#define GRB_CB_MULTIOBJ_WORK    8012
+/* TODO maybe we should also support, think about in MIP/LP cases if not applicable
+#define GRB_CB_MULTIOBJ_PRIMINF 8012
+#define GRB_CB_MULTIOBJ_DUALINF 8013
+#define GRB_CB_MULTIOBJ_ISPERT  8014
+*/
 
 #define GRB_CB_IIS_CONSTRMIN    9001
 #define GRB_CB_IIS_CONSTRMAX    9002
@@ -632,6 +693,8 @@ int __stdcall
 #define GRB_CB_IIS_BOUNDMIN     9004
 #define GRB_CB_IIS_BOUNDMAX     9005
 #define GRB_CB_IIS_BOUNDGUESS   9006
+
+/* FeasRelax method parameter values */
 
 #define GRB_FEASRELAX_LINEAR      0
 #define GRB_FEASRELAX_QUADRATIC   1
@@ -672,6 +735,9 @@ int __stdcall
   GRBgetgenconstrNorm(GRBmodel *model, int genconstr, int *resvarP,
                       int *nvarsP, int *vars, double *whichP);
 int __stdcall
+GRBgetgenconstrNL(GRBmodel *model, int genconstr, int *resvarP, int *nnodesP,
+                  int *opcode, double *data, int *parent);
+int __stdcall
   GRBgetgenconstrIndicator(GRBmodel *model, int genconstr, int *binvarP, int *binvalP,
                            int *nvarsP, int *vars, double *vals,
                            char *senseP, double *rhsP);
@@ -694,6 +760,9 @@ int __stdcall
   GRBgetgenconstrExp(GRBmodel *model, int genconstr, int *xvarP, int *yvarP);
 int __stdcall
   GRBgetgenconstrLog(GRBmodel *model, int genconstr, int *xvarP, int *yvarP);
+int __stdcall
+  GRBgetgenconstrLogistic(GRBmodel *model, int genconstr, int *xvarP,
+                          int *yvarP);
 int __stdcall
   GRBgetgenconstrSin(GRBmodel *model, int genconstr, int *xvarP, int *yvarP);
 int __stdcall
@@ -726,6 +795,8 @@ int __stdcall
 GRBmodel * __stdcall
   GRBcopymodel(GRBmodel *model);
 int __stdcall
+  GRBcopymodeltoenv(GRBmodel *model, GRBenv *env, GRBmodel **resultP);
+int __stdcall
   GRBfixmodel(GRBmodel *model, GRBmodel **fixedP);
 int __stdcall
   GRBfeasrelax(GRBmodel *model, int relaxobjtype, int minrelax,
@@ -733,6 +804,8 @@ int __stdcall
                double *feasobjP);
 int __stdcall
   GRBsinglescenariomodel(GRBmodel *model, GRBmodel **singlescenarioP);
+int __stdcall
+  GRBconverttofixed(GRBmodel *model);
 
 /* Undocumented routines */
 
@@ -740,8 +813,6 @@ int __stdcall
   GRBgetcbwhatinfo(void *cbdata, int what, int *typeP, int *sizeP);
 int __stdcall
   GRBrelaxmodel(GRBmodel *model, GRBmodel **relaxedP);
-int __stdcall
-  GRBconverttofixed(GRBmodel *model);
 int __stdcall
   GRBpresolvemodel(GRBmodel *model, GRBmodel **presolvedP);
 int __stdcall
@@ -764,26 +835,27 @@ int __stdcall
 #define THREADCREATECB_ARGS void **threadP, void (*start_routine)(void *), void *arg, void *syscbusrdata
 #define THREADJOINCB_ARGS void *thread, void *syscbusrdata
 
-int __stdcall
-  GRBloadenvsyscb(GRBenv **envP, const char *logfilename,
-                  void * (__stdcall *malloccb)(MALLOCCB_ARGS),
-                  void * (__stdcall *calloccb)(CALLOCCB_ARGS),
-                  void * (__stdcall *realloccb)(REALLOCCB_ARGS),
-                  void (__stdcall *freecb)(FREECB_ARGS),
-                  int (__stdcall *threadcreatecb)(THREADCREATECB_ARGS),
-                  void (__stdcall *threadjoincb)(THREADJOINCB_ARGS),
-                  void *syscbusrdata);
-
+#define GRBemptyenvadv(envP, malloccb, callocbc, realloccb, freecb, threadcreatecb, threadjoincb, syscbusrdata) GRBemptyenvadvinternal(envP, -1, GRB_VERSION_MAJOR, GRB_VERSION_MINOR, GRB_VERSION_TECHNICAL, malloccb, callocbc, realloccb, freecb, threadcreatecb, threadjoincb, syscbusrdata)
 
 int __stdcall
-  GRBemptyenvadv(GRBenv **envP, int apitype, int major, int minor, int tech,
-                 void * (__stdcall *malloccb)(MALLOCCB_ARGS),
-                 void * (__stdcall *calloccb)(CALLOCCB_ARGS),
-                 void * (__stdcall *realloccb)(REALLOCCB_ARGS),
-                 void   (__stdcall *freecb)(FREECB_ARGS),
-                 int    (__stdcall *threadcreatecb)(THREADCREATECB_ARGS),
-                 void   (__stdcall *threadjoincb)(THREADJOINCB_ARGS),
-                 void              *syscbusrdata);
+  GRBemptyenvadvnocheck(GRBenv **envP,
+                        void * (__stdcall *malloccb)(MALLOCCB_ARGS),
+                        void * (__stdcall *calloccb)(CALLOCCB_ARGS),
+                        void * (__stdcall *realloccb)(REALLOCCB_ARGS),
+                        void   (__stdcall *freecb)(FREECB_ARGS),
+                        int    (__stdcall *threadcreatecb)(THREADCREATECB_ARGS),
+                        void   (__stdcall *threadjoincb)(THREADJOINCB_ARGS),
+                        void              *syscbusrdata);
+
+int __stdcall
+  GRBemptyenvadvinternal(GRBenv **envP, int apitype, int major, int minor, int tech,
+                         void * (__stdcall *malloccb)(MALLOCCB_ARGS),
+                         void * (__stdcall *calloccb)(CALLOCCB_ARGS),
+                         void * (__stdcall *realloccb)(REALLOCCB_ARGS),
+                         void   (__stdcall *freecb)(FREECB_ARGS),
+                         int    (__stdcall *threadcreatecb)(THREADCREATECB_ARGS),
+                         void   (__stdcall *threadjoincb)(THREADJOINCB_ARGS),
+                         void              *syscbusrdata);
 
 int __stdcall
   GRBreadmodel(GRBenv *env, const char *filename, GRBmodel **modelP);
@@ -886,6 +958,10 @@ int __stdcall
   GRBaddgenconstrNorm(GRBmodel *model, const char *name,
                       int resvar, int nvars, const int *vars, double which);
 int __stdcall
+GRBaddgenconstrNL(GRBmodel *model,
+                  const char *name, int resvar, int nnodes, const int *opcode,
+                  const double *data, const int *parent);
+int __stdcall
   GRBaddgenconstrIndicator(GRBmodel *model, const char *name,
                            int binvar, int binval, int nvars, const int *vars,
                            const double *vals, char sense, double rhs);
@@ -921,6 +997,9 @@ int __stdcall
   GRBaddgenconstrTan(GRBmodel *model, const char *name, int xvar,
                      int yvar, const char *options);
 int __stdcall
+  GRBaddgenconstrLogistic(GRBmodel *model, const char *name, int xvar,
+                          int yvar, const char *options);
+int __stdcall
   GRBaddqconstr(GRBmodel *model, int numlnz, int *lind, double *lval,
                 int numqnz, int *qrow, int *qcol, double *qval,
                 char sense, double rhs, const char *QCname);
@@ -953,10 +1032,7 @@ int __stdcall
   GRBupdatemodel(GRBmodel *model);
 
 int __stdcall
-GRBreset(GRBmodel *model, int clearall);
-
-int __stdcall
-  GRBresetmodel(GRBmodel *model);
+  GRBreset(GRBmodel *model, int clearall);
 
 int __stdcall
   GRBfreemodel(GRBmodel *model);
@@ -997,6 +1073,9 @@ int __stdcall
 int __stdcall
   GRBcbstoponemultiobj(GRBmodel *model, void *cbdata, int objnum);
 
+int __stdcall
+  GRBsingularvectors(GRBmodel *model, double *left, double *right);
+
 /* Model status codes */
 
 #define GRB_LOADED          1
@@ -1015,6 +1094,7 @@ int __stdcall
 #define GRB_INPROGRESS     14
 #define GRB_USER_OBJ_LIMIT 15
 #define GRB_WORK_LIMIT     16
+#define GRB_MEM_LIMIT      17
 
 /* Basis status info */
 
@@ -1042,6 +1122,7 @@ int __stdcall
 #define GRB_DBL_PAR_TIMELIMIT      "TimeLimit"
 #define GRB_DBL_PAR_WORKLIMIT      "WorkLimit"
 #define GRB_DBL_PAR_MEMLIMIT       "MemLimit"
+#define GRB_DBL_PAR_SOFTMEMLIMIT   "SoftMemLimit"
 #define GRB_DBL_PAR_BESTOBJSTOP    "BestObjStop"
 #define GRB_DBL_PAR_BESTBDSTOP     "BestBdStop"
 
@@ -1057,17 +1138,18 @@ int __stdcall
 
 /* Simplex */
 
-#define GRB_INT_PAR_METHOD         "Method"
-#define GRB_DBL_PAR_PERTURBVALUE   "PerturbValue"
-#define GRB_DBL_PAR_OBJSCALE       "ObjScale"
-#define GRB_INT_PAR_SCALEFLAG      "ScaleFlag"
-#define GRB_INT_PAR_SIMPLEXPRICING "SimplexPricing"
-#define GRB_INT_PAR_QUAD           "Quad"
-#define GRB_INT_PAR_NORMADJUST     "NormAdjust"
-#define GRB_INT_PAR_SIFTING        "Sifting"
-#define GRB_INT_PAR_SIFTMETHOD     "SiftMethod"
-#define GRB_INT_PAR_LPWARMSTART    "LPWarmStart"
-#define GRB_INT_PAR_NETWORKALG     "NetworkAlg"
+#define GRB_INT_PAR_METHOD            "Method"
+#define GRB_INT_PAR_CONCURRENTMETHOD  "ConcurrentMethod"
+#define GRB_DBL_PAR_PERTURBVALUE      "PerturbValue"
+#define GRB_DBL_PAR_OBJSCALE          "ObjScale"
+#define GRB_INT_PAR_SCALEFLAG         "ScaleFlag"
+#define GRB_INT_PAR_SIMPLEXPRICING    "SimplexPricing"
+#define GRB_INT_PAR_QUAD              "Quad"
+#define GRB_INT_PAR_NORMADJUST        "NormAdjust"
+#define GRB_INT_PAR_SIFTING           "Sifting"
+#define GRB_INT_PAR_SIFTMETHOD        "SiftMethod"
+#define GRB_INT_PAR_LPWARMSTART       "LPWarmStart"
+#define GRB_INT_PAR_NETWORKALG        "NetworkAlg"
 
 /* Barrier */
 
@@ -1097,6 +1179,7 @@ int __stdcall
 #define GRB_INT_PAR_NODEMETHOD         "NodeMethod"
 #define GRB_DBL_PAR_NORELHEURTIME      "NoRelHeurTime"
 #define GRB_DBL_PAR_NORELHEURWORK      "NoRelHeurWork"
+#define GRB_INT_PAR_OBBT               "OBBT"
 #define GRB_INT_PAR_PUMPPASSES         "PumpPasses"
 #define GRB_INT_PAR_RINS               "RINS"
 #define GRB_STR_PAR_SOLFILES           "SolFiles"
@@ -1131,6 +1214,8 @@ int __stdcall
 #define GRB_INT_PAR_BQPCUTS         "BQPCuts"
 #define GRB_INT_PAR_PSDCUTS         "PSDCuts"
 #define GRB_INT_PAR_LIFTPROJECTCUTS "LiftProjectCuts"
+#define GRB_INT_PAR_MIXINGCUTS      "MixingCuts"
+#define GRB_INT_PAR_DUALIMPLIEDCUTS "DualImpliedCuts"
 
 #define GRB_INT_PAR_CUTAGGPASSES    "CutAggPasses"
 #define GRB_INT_PAR_CUTPASSES       "CutPasses"
@@ -1168,8 +1253,11 @@ int __stdcall
 #define GRB_STR_PAR_WLSACCESSID       "WLSAccessID"
 #define GRB_STR_PAR_WLSSECRET         "WLSSecret"
 #define GRB_INT_PAR_WLSTOKENDURATION  "WLSTokenDuration"
+#define GRB_DBL_PAR_WLSTOKENREFRESH   "WLSTokenRefresh"
 #define GRB_STR_PAR_WLSTOKEN          "WLSToken"
 #define GRB_INT_PAR_LICENSEID         "LicenseID"
+#define GRB_STR_PAR_WLSPROXY          "WLSProxy"
+#define GRB_STR_PAR_WLSCONFIG         "WLSConfig"
 
 
 /* Other */
@@ -1208,7 +1296,9 @@ int __stdcall
 #define GRB_INT_PAR_RECORD            "Record"
 #define GRB_STR_PAR_RESULTFILE        "ResultFile"
 #define GRB_INT_PAR_SEED              "Seed"
+#define GRB_INT_PAR_SOLUTIONTARGET    "SolutionTarget"
 #define GRB_INT_PAR_THREADS           "Threads"
+#define GRB_INT_PAR_THREADLIMIT       "ThreadLimit"
 #define GRB_DBL_PAR_TUNETIMELIMIT     "TuneTimeLimit"
 #define GRB_INT_PAR_TUNERESULTS       "TuneResults"
 #define GRB_INT_PAR_TUNECRITERION     "TuneCriterion"
@@ -1219,6 +1309,7 @@ int __stdcall
 #define GRB_DBL_PAR_TUNETARGETMIPGAP  "TuneTargetMIPGap"
 #define GRB_DBL_PAR_TUNETARGETTIME    "TuneTargetTime"
 #define GRB_INT_PAR_TUNEMETRIC        "TuneMetric"
+#define GRB_INT_PAR_TUNEDYNAMICJOBS   "TuneDynamicJobs"
 #define GRB_INT_PAR_UPDATEMODE        "UpdateMode"
 #define GRB_INT_PAR_OBJNUMBER         "ObjNumber"
 #define GRB_INT_PAR_MULTIOBJMETHOD    "MultiObjMethod"
@@ -1236,26 +1327,29 @@ int __stdcall
 #define GRB_DBL_PAR_FUNCPIECEERROR    "FuncPieceError"
 #define GRB_DBL_PAR_FUNCPIECERATIO    "FuncPieceRatio"
 #define GRB_DBL_PAR_FUNCMAXVAL        "FuncMaxVal"
+#define GRB_INT_PAR_FUNCNONLINEAR     "FuncNonlinear"
 #define GRB_STR_PAR_DUMMY             "Dummy"
-
-/* Deprecated */
-
 #define GRB_STR_PAR_JOBID             "JobID"
 
 
 /* Parameter enumerations */
 
-/* All *CUTS parameters */
+/* Cuts parameter values */
+
 #define GRB_CUTS_AUTO          -1
 #define GRB_CUTS_OFF            0
 #define GRB_CUTS_CONSERVATIVE   1
 #define GRB_CUTS_AGGRESSIVE     2
 #define GRB_CUTS_VERYAGGRESSIVE 3
 
+/* Presolve parameter values */
+
 #define GRB_PRESOLVE_AUTO        -1
 #define GRB_PRESOLVE_OFF          0
 #define GRB_PRESOLVE_CONSERVATIVE 1
 #define GRB_PRESOLVE_AGGRESSIVE   2
+
+/* Method parameter values */
 
 #define GRB_METHOD_NONE                            -1
 #define GRB_METHOD_AUTO                            -1
@@ -1264,20 +1358,34 @@ int __stdcall
 #define GRB_METHOD_BARRIER                          2
 #define GRB_METHOD_CONCURRENT                       3
 #define GRB_METHOD_DETERMINISTIC_CONCURRENT         4
-#define GRB_METHOD_DETERMINISTIC_CONCURRENT_SIMPLEX 5
+#define GRB_METHOD_DETERMINISTIC_CONCURRENT_SIMPLEX 5 /* Deprecated since v11 */
+
+#define GRB_CONCURRENTMETHOD_AUTO                -1
+#define GRB_CONCURRENTMETHOD_BARRIER_PRIMAL_DUAL  0
+#define GRB_CONCURRENTMETHOD_BARRIER_DUAL         1
+#define GRB_CONCURRENTMETHOD_BARRIER_PRIMAL       2
+#define GRB_CONCURRENTMETHOD_PRIMAL_DUAL          3
+
+/* BarHomogeneous parameter values */
 
 #define GRB_BARHOMOGENEOUS_AUTO -1
 #define GRB_BARHOMOGENEOUS_OFF   0
 #define GRB_BARHOMOGENEOUS_ON    1
+
+/* BarOrder parameter values */
+
+#define GRB_BARORDER_AUTOMATIC       -1
+#define GRB_BARORDER_AMD              0
+#define GRB_BARORDER_NESTEDDISSECTION 1
+
+/* MIPFocus parameter values */
 
 #define GRB_MIPFOCUS_BALANCED    0
 #define GRB_MIPFOCUS_FEASIBILITY 1
 #define GRB_MIPFOCUS_OPTIMALITY  2
 #define GRB_MIPFOCUS_BESTBOUND   3
 
-#define GRB_BARORDER_AUTOMATIC       -1
-#define GRB_BARORDER_AMD              0
-#define GRB_BARORDER_NESTEDDISSECTION 1
+/* SimplexPricing parameter values */
 
 #define GRB_SIMPLEXPRICING_AUTO           -1
 #define GRB_SIMPLEXPRICING_PARTIAL         0
@@ -1285,17 +1393,23 @@ int __stdcall
 #define GRB_SIMPLEXPRICING_DEVEX           2
 #define GRB_SIMPLEXPRICING_STEEPEST_QUICK  3
 
+/* VarBranch parameter values */
+
 #define GRB_VARBRANCH_AUTO          -1
 #define GRB_VARBRANCH_PSEUDO_REDUCED 0
 #define GRB_VARBRANCH_PSEUDO_SHADOW  1
 #define GRB_VARBRANCH_MAX_INFEAS     2
 #define GRB_VARBRANCH_STRONG         3
 
+/* PartitionPlace parameter values */
+
 #define GRB_PARTITION_EARLY     16
 #define GRB_PARTITION_ROOTSTART 8
 #define GRB_PARTITION_ROOTEND   4
 #define GRB_PARTITION_NODES     2
 #define GRB_PARTITION_CLEANUP   1
+
+/* Callback phase values */
 
 #define GRB_PHASE_MIP_NOREL   0
 #define GRB_PHASE_MIP_SEARCH  1
@@ -1304,11 +1418,7 @@ int __stdcall
 int __stdcall
   GRBcheckmodel(GRBmodel *model);
 void __stdcall
-  GRBsetsignal(GRBmodel *model);
-void __stdcall
   GRBterminate(GRBmodel *model);
-void __stdcall
-  GRBcbproceed(GRBmodel *model);
 int __stdcall
   GRBreplay(const char *filename);
 int __stdcall
@@ -1324,23 +1434,17 @@ void __stdcall
 void __stdcall
   GRBclean3(int *lenP, int *ind0, int *ind1, double *val);
 
+int __stdcall
+  GRBprintquality(GRBmodel *model);
+
 /* Logging */
 
 void __stdcall
   GRBmsg(GRBenv *env, const char *message);
 
 
-/* The following four routines are deprecated in Gurobi 2.0.
-   Use the 'LogFile' parameter to control logging instead. */
-
-int __stdcall
-  GRBgetlogfile(GRBenv *env, FILE **logfileP);
-
-
 /* Parameter routines */
 
-int __stdcall
-  GRBfixtuneparam(GRBenv *env, const char *paramname);
 int __stdcall
   GRBgetintparam(GRBenv *env, const char *paramname, int *valueP);
 int __stdcall
@@ -1380,9 +1484,15 @@ int __stdcall
 int __stdcall
   GRBreadparams(GRBenv *env, const char *filename);
 int __stdcall
+  GRBreadconcurrentsettings(GRBmodel *model, const char *filename);
+int __stdcall
+  GRBreadmultiobjsettings(GRBmodel *model, const char *filename);
+int __stdcall
+  GRBreadtunebasesettings(GRBenv *env, const char *filename);
+int __stdcall
   GRBgetnumparams(GRBenv *env);
 int __stdcall
-  GRBgetparamname(GRBenv *env, int i, char **paramnameP);
+  GRBgetparamname(GRBenv *env, int parnum, char **paramnameP);
 int __stdcall
   GRBgetnumattributes(GRBmodel *model);
 int __stdcall
@@ -1390,10 +1500,13 @@ int __stdcall
 
 /* Environment routines */
 
+#define GRBloadenv(envP, logfilename) GRBloadenvinternal(envP, logfilename, GRB_VERSION_MAJOR, GRB_VERSION_MINOR, GRB_VERSION_TECHNICAL)
+#define GRBemptyenv(envP) GRBemptyenvinternal(envP, GRB_VERSION_MAJOR, GRB_VERSION_MINOR, GRB_VERSION_TECHNICAL)
+
 int __stdcall
-  GRBloadenv(GRBenv **envP, const char *logfilename);
+GRBloadenvinternal(GRBenv **envP, const char *logfilename, int major, int minor, int tech);
 int __stdcall
-  GRBemptyenv(GRBenv **envP);
+GRBemptyenvinternal(GRBenv **envP, int major, int minor, int tech);
 int __stdcall
   GRBstartenv(GRBenv *env);
 int __stdcall
@@ -1402,33 +1515,9 @@ int __stdcall
                 const char *server, const char *router,
                 const char *password, const char *group,
                 int priority, int idletimeout,
-                const char *accessid, const char *secretkey,
+                const char *cloudaccessid, const char *cloudsecretkey,
                 int (__stdcall *cb)(CB_ARGS), void *usrdata,
                 int (__stdcall *logcb)(LOGCB_ARGS), void *logdata);
-GRB_DEPRECATED("Replaced by GRBemptyenv() and parameter settings",
-int __stdcall
-  GRBloadclientenv(GRBenv **envP, const char *logfilename,
-                   const char *computeserver, const char *router,
-                   const char *password, const char *group, int CStlsinsecure,
-                   int priority, double timeout));
-int __stdcall
-  GRBloadclientenvadv(GRBenv **envP, const char *logfilename,
-                      const char *computeserver, const char *router,
-                      const char *password, const char *group, int CStlsinsecure,
-                      int priority, double timeout, int apitype,
-                      int major, int minor, int tech,
-                      int (__stdcall *cb)(CB_ARGS), void *usrdata);
-GRB_DEPRECATED("Replaced by GRBemptyenv() and parameter settings",
-int __stdcall
-  GRBloadcloudenv(GRBenv **envP, const char *logfilename,
-                  const char *accessID, const char *secretKey,
-                  const char *pool, int priority));
-int __stdcall
-  GRBloadcloudenvadv(GRBenv **envP, const char *logfilename,
-                     const char *accessID, const char *secretKey,
-                     const char *pool, int priority, int apitype, int major,
-                     int minor, int tech,
-                     int (__stdcall *cb)(CB_ARGS), void *usrdata);
 GRBenv *__stdcall
   GRBgetenv(GRBmodel *model);
 GRBenv *__stdcall
@@ -1461,6 +1550,9 @@ void __stdcall
 void __stdcall
   GRBversion(int *majorP, int *minorP, int *technicalP);
 
+void __stdcall
+  GRBgetdistro(char *str);
+
 char * __stdcall
   GRBplatform(void);
 
@@ -1470,18 +1562,8 @@ char * __stdcall
 int __stdcall
   GRBlisttokens(void);
 
-/* Tuning */
-
-void __stdcall
-  GRBprinttuneparams(void);
 int __stdcall
-  GRBtunemodel(GRBmodel *model);
-int __stdcall
-  GRBtunemodels(GRBenv *env, int nummodels, GRBmodel **models);
-int __stdcall
-  GRBgettuneresult(GRBmodel *model, int i);
-int __stdcall
-  GRBgettunelog(GRBmodel *model, int i, char **logP);
+  GRBgetwlstokenlifespan(GRBenv *env, int *lifespanP);
 
 /* Used in Matlab API */
 void __stdcall
@@ -1544,6 +1626,20 @@ int __stdcall
 
 int __stdcall
   GRBprefetchattr(GRBmodel *model, const char *attrname);
+/* Tuning */
+
+int __stdcall
+  GRBtunemodel(GRBmodel *model);
+int __stdcall
+  GRBtunemodels(GRBenv *env, int nummodels, GRBmodel **models);
+int __stdcall
+  GRBgettuneresult(GRBmodel *model, int i);
+int __stdcall
+  GRBgettunelog(GRBmodel *model, int i, char **logP);
+int __stdcall
+  GRBwritetunelog(GRBmodel *model, int result, const char *filename);
+void __stdcall
+  GRBtuneparamsPrint(void);
  
 #ifdef __cplusplus
 }
