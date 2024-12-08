@@ -33,12 +33,12 @@ def debug_conda_env() -> None:
     print()
     # Check SCIP include directory
     if os.name == "nt":
-        inc_dir = os.path.join(conda_prefix, "Library", "include")
+        inc_dir = os.path.join(conda_prefix, "Library", "include", "scip")
     else:
-        inc_dir = os.path.join(conda_prefix, "include")
+        inc_dir = os.path.join(conda_prefix, "include", "scip")
     print(f"Inspecting include directory: {inc_dir}")
     if os.path.exists(inc_dir):
-        for file in glob.glob(os.path.join(inc_dir, "**/*scip/")):
+        for file in glob.glob(os.path.join(inc_dir, "*")):
             print(f"  Found: {file}")
     else:
         print("SCIP include directory does not exist!")
