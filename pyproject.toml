@@ -17,7 +17,7 @@ dynamic = ["version", "readme"]
 # these are required... but hard to install from pypi
 # we list them here for completeness, but it's up to the user to install them :(
 dependencies = [
-    # "gurobi==12.0.0",
+    # "gurobi==11.0.3",
     # "scip==9.1.0",
 ]
 

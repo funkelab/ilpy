@@ -129,21 +129,19 @@ def find_conda_gurobi() -> "tuple[str, str] | tuple[None, None]":
             os.environ["PATH"] += os.pathsep + lib_path  # Dynamically add to PATH
 
     # Search for Gurobi in the active Conda environment
-    for v, prefix in product(range(100, 150, 10), ("lib", "")):
-        gurobi_lib = f"{prefix}gurobi{v}"
+    for prefix in ("lib", ""):
+        gurobi_lib = f"{prefix}gurobi110"
         if found := util.find_library(gurobi_lib):
             return gurobi_lib, found
 
     return (None, None)
 
 
-for v, prefix in product(range(100, 150, 10), ("lib", "")):
-    GUROBI_LIB, lib_path = find_conda_gurobi()
-    if GUROBI_LIB is not None:
-        print(f"FOUND GUROBI library {GUROBI_LIB!r}: {lib_path}")
-        libraries.append(GUROBI_LIB)
-        compile_args.append("/DHAVE_GUROBI" if os.name == "nt" else "-DHAVE_GUROBI")
-        break
+GUROBI_LIB, lib_path = find_conda_gurobi()
+if GUROBI_LIB is not None:
+    print(f"FOUND GUROBI library {GUROBI_LIB!r}: {lib_path}")
+    libraries.append(GUROBI_LIB)
+    compile_args.append("/DHAVE_GUROBI" if os.name == "nt" else "-DHAVE_GUROBI")
 else:
     print("WARNING: GUROBI library not found")
 
