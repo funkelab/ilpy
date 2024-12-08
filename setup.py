@@ -1,6 +1,6 @@
-from itertools import product
 import os
 from ctypes import util
+from itertools import product
 
 from Cython.Build import cythonize
 from setuptools import setup
@@ -8,6 +8,10 @@ from setuptools.extension import Extension
 
 # enable test coverage tracing if CYTHON_TRACE is set to a non-zero value
 CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
+if not (CONDA_PREFIX := os.environ.get("CONDA_PREFIX")):
+    raise RuntimeError(
+        "No active Conda environment found. Activate an environment before running."
+    )
 
 libraries = ["libscip"] if os.name == "nt" else ["scip"]
 include_dirs = ["ilpy/impl"]
@@ -20,25 +24,25 @@ else:
 # include conda environment windows include/lib if it exists
 # this will be done automatically by conda build, but is useful if someone
 # tries to build this directly with pip install in a conda environment
-if os.name == "nt" and "CONDA_PREFIX" in os.environ:
-    include_dirs.append(os.path.join(os.environ["CONDA_PREFIX"], "Library", "include"))
-    library_dirs.append(os.path.join(os.environ["CONDA_PREFIX"], "Library", "lib"))
+if os.name == "nt":
+    include = os.path.join(CONDA_PREFIX, "Library", "include")
+    include_dirs.append(include)
+    library_dirs.append(os.path.join(CONDA_PREFIX, "Library", "lib"))
+    if not os.path.exists(include):
+        print(
+            "WARNING: Conda include directory not found. "
+            "Ensure you have the Conda environment activated."
+        )
 
 # look for various gurobi versions, which are annoyingly
 # suffixed with the version number, and wildcards don't work
 
 
-def find_conda_gurobi() -> tuple[str, str] | tuple[None, None]:
-    conda_prefix = os.environ.get("CONDA_PREFIX")
-    if not conda_prefix:
-        raise RuntimeError(
-            "No active Conda environment found. Activate an environment before running."
-        )
-
+def find_conda_gurobi() -> "tuple[str, str] | tuple[None, None]":
     # Construct the potential library paths
     library_paths = [
-        os.path.join(conda_prefix, "Library", "bin"),  # Windows DLLs
-        os.path.join(conda_prefix, "lib"),  # macOS/Linux
+        os.path.join(str(CONDA_PREFIX), "Library", "bin"),  # Windows DLLs
+        os.path.join(str(CONDA_PREFIX), "lib"),  # macOS/Linux
     ]
 
     for lib_path in library_paths:
