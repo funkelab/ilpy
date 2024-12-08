@@ -73,7 +73,7 @@ jobs:
         run: | 
           echo %CONDA_PREFIX%
           dir %CONDA_PREFIX%\gurobi110.dll
-          call generat_lib.bat
+          call generate_lib.bat
 
       - name: add gurobi license
         id: write-license
