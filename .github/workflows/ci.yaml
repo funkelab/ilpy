@@ -65,9 +65,9 @@ jobs:
       - name: install build deps
         run: |
           conda install -c conda-forge -c gurobi gurobi=11.0.3 scip=9.1.0 gcovr
+          find $CONDA_PREFIX -name "*gurobi*"
 
       - name: add gurobi license
-        shell: bash
         id: write-license
         env:
           LICENSE: ${{ secrets.GRB_LICENSE_FILE   }}
