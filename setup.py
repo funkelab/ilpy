@@ -27,6 +27,9 @@ def debug_conda_env() -> None:
             print(f"  Found: {file}")
         for file in glob.glob(os.path.join(bin_dir, "*scip*")):
             print(f"  Found: {file}")
+        # print the whole damn directory
+        for file in glob.glob(os.path.join(bin_dir, "*")):
+            print(f"  Found: {file}")
     else:
         print("Gurobi bin directory does not exist!")
 
@@ -42,6 +45,10 @@ def debug_conda_env() -> None:
             print(f"  Found: {file}")
     else:
         print("SCIP include directory does not exist!")
+        # print parent directory
+        print(f"  Parent directory: {os.path.dirname(inc_dir)}")
+        for file in glob.glob(os.path.join(os.path.dirname(inc_dir), "*")):
+            print(f"  Found: {file}")
     print()
 
 
