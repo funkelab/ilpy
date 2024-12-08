@@ -31,7 +31,7 @@ for v in range(100, 150):
     if (gurolib := util.find_library(GUROBI_LIB)) is not None:
         print("FOUND GUROBI library: ", gurolib)
         libraries.append(GUROBI_LIB)
-        compile_args.append("-DHAVE_GUROBI")
+        compile_args.append("/DHAVE_GUROBI" if os.name == "nt" else "-DHAVE_GUROBI")
         break
 else:
     print("WARNING: GUROBI library not found")
