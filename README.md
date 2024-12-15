@@ -16,10 +16,11 @@ conda install -c funkelab ilpy
 
 ## Local development
 
-Clone the repo and install in editable mode.
-
-Note, `ilpy` links against SCIP, so you must have SCIP installed in your environment,
-in order to build:
+Clone the repo and install build-time dependencies.
+Note: ilpy uses dynamic runtime linking, so it's not necessary to have
+gurobi or scip installed at runtime, but if you want to build the backend
+extensions that support those solvers, you will need to have them installed
+at build time.
 
 ```bash
 git clone <your-fork>
@@ -27,6 +28,11 @@ cd ilpy
 
 conda create -n ilpy -c conda-forge -c gurobi python scip==9.1.0 gurobi==11.0.3
 conda activate ilpy
+```
+
+Install the package in editable mode with development dependencies:
+
+```bash
 pip install -e .[dev]
 ```
 
@@ -36,3 +42,5 @@ If you make local change and want to rebuild the extension quickly, you can run:
 rm -rf build
 python setup.py build_ext --inplace
 ```
+
+... or simply `make build` if running in a unix-like environment
