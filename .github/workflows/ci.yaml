@@ -65,7 +65,7 @@ jobs:
           channel-priority: true
 
       - name: install build deps
-        run: mamba install scip=9.1.0 gurobi gcovr
+        run: mamba install scip=9.1.0 gurobi==11.0.3 gcovr
 
       - name: add gurobi license
         shell: bash

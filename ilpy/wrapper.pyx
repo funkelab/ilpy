@@ -279,8 +279,9 @@ cdef class Solver:
 
     def __repr__(self) -> str:
         backend = deref(self.p).getName().decode()
-        return f"<{self.__class__.__name__}[{backend}] - {self.num_variables} variables>"
-        
+        name = self.__class__.__name__
+        return f"<{name}[{backend}] - {self.num_variables} variables>"
+
     def set_objective(self, objective: Objective | "Expression"):
         cdef Objective obj
         if hasattr(objective, "as_objective"):
