@@ -79,6 +79,7 @@ for backend_name, lib_name in [("Gurobi", "gurobi110"), ("Scip", "scip")]:
         library_dirs=library_dirs,
         extra_compile_args=compile_args,
         define_macros=define_macros,
+        extra_link_args=["/DLL" if os.name == "nt" else "-shared"],
     )
     ext_modules.append(ext)
 
@@ -86,7 +87,9 @@ for backend_name, lib_name in [("Gurobi", "gurobi110"), ("Scip", "scip")]:
 ################ Custom build_ext command ################
 
 # Custom build_ext command to remove platform-specific tags ("cpython-312-darwin")
-# from the generated shared libraries.  This makes it easier to discover them
+# from the generated shared libraries.  This makes it easier to discover them.
+# also removes the export PyInit_ symbol for windows.
+# (point is, these are NOT actually python modules, they are shared libraries)
 
 
 class CustomBuildExt(build_ext):  # type: ignore
@@ -95,8 +98,14 @@ class CustomBuildExt(build_ext):  # type: ignore
         if "ilpybackend-" in filename:
             parts = filename.split(".")
             if len(parts) > 2:  # Example: mymodule.cpython-312-darwin.ext
-                filename = f"{parts[0]}.{parts[-1]}"
+                ext = 'dll' if os.name == 'nt' else 'so'
+                filename = f"{parts[0]}.{ext}"
         return filename
+
+    def get_export_symbols(self, ext):
+        if "ilpybackend" in ext.name:
+            return ['createSolverBackend']
+        return super().get_export_symbols(ext)
 
 
 setup(ext_modules=ext_modules, cmdclass={"build_ext": CustomBuildExt})
