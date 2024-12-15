@@ -1,7 +1,5 @@
 #include <config.h>
 
-#ifdef HAVE_SCIP
-
 #include <sstream>
 #include <stdexcept> // for std::runtime_error
 
@@ -341,5 +339,7 @@ ScipBackend::scipVarType(VariableType type, double& lb, double& ub) {
     throw std::runtime_error("Unhandled VariableType passed to ScipBackend::scipVarType");
 }
 
-#endif // HAVE_SCIP
-
+// Factory function to create ScipBackend
+extern "C" SolverBackend* createSolverBackend() {
+    return new ScipBackend();
+}

@@ -2,7 +2,6 @@
 #define SCIP_SOLVER_H__
 
 #include <config.h>
-#ifdef HAVE_SCIP
 
 #include <string>
 
@@ -34,6 +33,10 @@ public:
 	ScipBackend();
 
 	virtual ~ScipBackend();
+
+    std::string getName() const override {
+        return "Scip";
+    }
 
 	///////////////////////////////////
 	// solver backend implementation //
@@ -98,7 +101,8 @@ private:
 	std::vector<SCIP_CONS*> _constraints;
 };
 
-#endif // HAVE_SCIP
+// Factory function to create ScipBackend
+extern "C" SolverBackend* createSolverBackend();
 
 #endif // SCIP_SOLVER_H__
 

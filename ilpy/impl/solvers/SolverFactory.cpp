@@ -1,71 +1,72 @@
 #include "SolverFactory.h"
-
-#include <config.h>
-#include <stdexcept>
+#include "SolverBackend.h"
 #include <iostream>
+#include <memory>
+#include <stdexcept>
 
-#ifdef HAVE_GUROBI
-#include "GurobiBackend.h"
+// Platform-specific includes andmacros for dynamic library functions
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#define DLOPEN(lib) LoadLibrary(lib)
+#define DLSYM(handle, symbol) GetProcAddress((HMODULE)handle, symbol)
+#define DLCLOSE(handle) FreeLibrary((HMODULE)handle)
+#define DLERROR() "Failed to load library or symbol (Windows-specific)"
+#else
+#include <dlfcn.h>
+#define DLOPEN(lib) dlopen(lib, RTLD_LAZY)
+#define DLSYM(handle, symbol) dlsym(handle, symbol)
+#define DLCLOSE(handle) dlclose(handle)
+#define DLERROR() dlerror()
 #endif
 
-#ifdef HAVE_CPLEX
-#include "CplexBackend.h"
-#endif
-
-#ifdef HAVE_SCIP
-#include "ScipBackend.h"
+// Platform-specific library names
+#if defined(_WIN32) || defined(_WIN64)
+#define GUROBI_LIB_NAME "ilpy_gurobi.dll"
+#define SCIP_LIB_NAME "ilpy_scip.dll"
+#elif defined(__APPLE__)
+#define GUROBI_LIB_NAME "ilpy_gurobi.cpython-312-darwin.so"
+#define SCIP_LIB_NAME "ilpy_scip.cpython-312-darwin.so"
+#else
+#define GUROBI_LIB_NAME "ilpy_gurobi.so"
+#define SCIP_LIB_NAME "ilpy_scip.so"
 #endif
 
 std::shared_ptr<SolverBackend>
 SolverFactory::createSolverBackend(Preference preference) const {
+  const char *libName = nullptr;
 
-// by default, create a gurobi backend
-#ifdef HAVE_GUROBI
+  // Determine which library to load
+  if (preference == Gurobi || preference == Any) {
+    libName = GUROBI_LIB_NAME;
+  } else if (preference == Scip || preference == Any) {
+    libName = SCIP_LIB_NAME;
+  } else {
+    throw std::runtime_error("No solver available.");
+  }
 
-	if (preference == Any || preference == Gurobi)
-		try {
+  // Load the library
+  void *handle = DLOPEN(libName);
+  if (!handle) {
+    std::cerr << "Failed to load library: " << libName << " - " << DLERROR()
+              << std::endl;
+    throw std::runtime_error("Library load failed.");
+  }
 
-			return std::make_shared<GurobiBackend>();
+  // Retrieve the common factory function
+  auto createSolverBackend =
+      (SolverBackend * (*)()) DLSYM(handle, "createSolverBackend");
+  if (!createSolverBackend) {
+    std::cerr << "Failed to find symbol 'createSolverBackend' in " << libName
+              << " - " << DLERROR() << std::endl;
+    DLCLOSE(handle);
+    throw std::runtime_error("Symbol lookup failed.");
+  }
 
-		} catch (const std::exception& e) {
-
-			std::cout << "Could not create Gurobi backend: " << e.what() << std::endl;
-		}
-
-#endif
-
-// if this is not available, create a CPLEX backend
-#ifdef HAVE_CPLEX
-
-	if (preference == Any || preference == Cplex)
-		try {
-
-			return std::make_shared<CplexBackend>();
-
-		} catch (const std::exception& e) {
-
-			std::cout << "Could not create CPLEX backend: " << e.what() << std::endl;
-		}
-
-#endif
-
-// if this is not available, create a SCIP backend
-#ifdef HAVE_SCIP
-
-	if (preference == Any || preference == Scip)
-
-		try {
-
-			return std::make_shared<ScipBackend>();
-
-		} catch (const std::exception& e) {
-
-			std::cout << "Could not create SCIP backend: " << e.what() << std::endl;
-		}
-
-#endif
-
-// if this is not available as well, throw an exception
-
-	throw std::runtime_error("No solver available.");
+  try {
+    return std::shared_ptr<SolverBackend>(createSolverBackend());
+  } catch (const std::exception &e) {
+    std::cerr << "Failed to create solver backend: " << e.what() << std::endl;
+    DLCLOSE(handle);
+    throw;
+  }
 }

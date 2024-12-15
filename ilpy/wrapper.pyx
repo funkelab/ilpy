@@ -277,6 +277,10 @@ cdef class Solver:
         self.num_variables = num_variables
         deref(self.p).initialize(num_variables, default_variable_type, vtypes)
 
+    def __repr__(self) -> str:
+        backend = deref(self.p).getName().decode()
+        return f"<{self.__class__.__name__}[{backend}] - {self.num_variables} variables>"
+        
     def set_objective(self, objective: Objective | "Expression"):
         cdef Objective obj
         if hasattr(objective, "as_objective"):

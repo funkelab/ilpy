@@ -1,6 +1,5 @@
 #include <config.h>
 
-#ifdef HAVE_GUROBI
 
 #include <sstream>
 #include <stdexcept>
@@ -350,4 +349,7 @@ GurobiBackend::grbCheck(const char* call, const char* file, int line, int error)
     }
 }
 
-#endif // HAVE_GUROBI
+// Factory function to create GurobiBackend
+extern "C" SolverBackend* createSolverBackend() {
+    return new GurobiBackend();
+}

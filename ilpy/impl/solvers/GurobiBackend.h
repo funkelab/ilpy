@@ -1,8 +1,6 @@
 #ifndef GUROBI_SOLVER_H__
 #define GUROBI_SOLVER_H__
 
-#ifdef HAVE_GUROBI
-
 #include <string>
 
 extern "C" {
@@ -35,6 +33,10 @@ public:
 	GurobiBackend();
 
 	virtual ~GurobiBackend();
+
+    std::string getName() const override {
+        return "Gurobi";
+    }
 
 	///////////////////////////////////
 	// solver backend implementation //
@@ -108,7 +110,8 @@ private:
 	bool _absoluteGap;
 };
 
-#endif // HAVE_GUROBI
+// Factory function to create GurobiBackend
+extern "C" SolverBackend* createSolverBackend();
 
 #endif // GUROBI_SOLVER_H__
 
