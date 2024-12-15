@@ -79,7 +79,7 @@ for backend_name, lib_name in [("Gurobi", "gurobi110"), ("Scip", "scip")]:
         library_dirs=library_dirs,
         extra_compile_args=compile_args,
         define_macros=define_macros,
-        extra_link_args=["/DLL" if os.name == "nt" else "-shared"],
+        extra_link_args=["/DLL"] if os.name == "nt" else [],
     )
     ext_modules.append(ext)
 
@@ -98,14 +98,14 @@ class CustomBuildExt(build_ext):  # type: ignore
         if "ilpybackend-" in filename:
             parts = filename.split(".")
             if len(parts) > 2:  # Example: mymodule.cpython-312-darwin.ext
-                ext = 'dll' if os.name == 'nt' else 'so'
+                ext = "dll" if os.name == "nt" else "so"
                 filename = f"{parts[0]}.{ext}"
         return filename
 
-    def get_export_symbols(self, ext):
+    def get_export_symbols(self, ext: Extension) -> list[str]:
         if "ilpybackend" in ext.name:
-            return ['createSolverBackend']
-        return super().get_export_symbols(ext)
+            return ["createSolverBackend"]
+        return super().get_export_symbols(ext)  # type: ignore
 
 
 setup(ext_modules=ext_modules, cmdclass={"build_ext": CustomBuildExt})
