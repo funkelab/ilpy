@@ -32,6 +32,9 @@
 #define SCIP_LIB_NAME "ilpy_scip.so"
 #endif
 
+// Load a library and return a handle
+// This function attempts to locate the ilpy.wrapper module and load the library
+// from the same directory.
 void *loadLibrary(const std::string &libName) {
   // Get the path to the `ilpy.wrapper` module
   PyObject *module = PyImport_ImportModule("ilpy.wrapper");
@@ -63,42 +66,67 @@ void *loadLibrary(const std::string &libName) {
   return handle;
 }
 
-std::shared_ptr<SolverBackend>
-SolverFactory::createSolverBackend(Preference preference) const {
-  const char *libName = nullptr;
-
-  // Determine which library to load
-  if (preference == Gurobi || preference == Any) {
-    libName = GUROBI_LIB_NAME;
-  } else if (preference == Scip || preference == Any) {
-    libName = SCIP_LIB_NAME;
-  } else {
-    throw std::runtime_error("No solver available.");
-  }
-
+// Free function for loading a backend
+std::shared_ptr<SolverBackend> loadBackend(const char *libName) {
   // Load the library
   void *handle = loadLibrary((std::string)libName);
   if (!handle) {
-    std::cerr << "Failed to load library: " << libName << " - " << DLERROR()
-              << std::endl;
-    throw std::runtime_error("Library load failed.");
+    throw std::runtime_error(std::string("Failed to load library: ") + libName +
+                             " - " + DLERROR());
   }
 
-  // Retrieve the common factory function
+  // Retrieve the factory function
   auto createSolverBackend =
       (SolverBackend * (*)()) DLSYM(handle, "createSolverBackend");
   if (!createSolverBackend) {
-    std::cerr << "Failed to find symbol 'createSolverBackend' in " << libName
-              << " - " << DLERROR() << std::endl;
     DLCLOSE(handle);
-    throw std::runtime_error("Symbol lookup failed.");
+    throw std::runtime_error(
+        std::string("Failed to find symbol 'createSolverBackend' in ") +
+        libName + " - " + DLERROR());
   }
 
+  // Create the backend
   try {
     return std::shared_ptr<SolverBackend>(createSolverBackend());
-  } catch (const std::exception &e) {
-    std::cerr << "Failed to create solver backend: " << e.what() << std::endl;
+  } catch (...) {
     DLCLOSE(handle);
     throw;
   }
+}
+
+/**
+ * Create a solver backend based on the given preference.
+ *
+ * @param preference The preferred solver backend. If Any, the first available
+ *                  backend will be used.
+ *
+ * @return A shared pointer to the created solver backend.
+ */
+std::shared_ptr<SolverBackend>
+SolverFactory::createSolverBackend(Preference preference) const {
+  std::vector<const char *> libraries;
+
+  // Determine which libraries to try based on preference
+  if (preference == Gurobi) {
+    libraries.push_back(GUROBI_LIB_NAME);
+  } else if (preference == Scip) {
+    libraries.push_back(SCIP_LIB_NAME);
+  } else if (preference == Any) {
+    libraries = {GUROBI_LIB_NAME, SCIP_LIB_NAME}; // Specify the order
+  } else {
+    throw std::runtime_error("Invalid solver preference.");
+  }
+
+  // Attempt to load backends in order
+  for (const char *libName : libraries) {
+    try {
+      return loadBackend(libName);
+    } catch (const std::exception &e) {
+      std::cerr << "Warning: Failed to load backend from " << libName << ": "
+                << e.what() << std::endl;
+    }
+  }
+
+  // If no backends were successfully loaded
+  throw std::runtime_error("No suitable solver backend available.");
 }
