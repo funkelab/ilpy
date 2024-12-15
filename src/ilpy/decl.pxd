@@ -109,4 +109,4 @@ cdef extern from "impl/solvers/SolverFactory.cpp":
 
 cdef extern from "impl/solvers/SolverFactory.h":
     cdef cppclass SolverFactory:
-        shared_ptr[SolverBackend] createSolverBackend(Preference) except +
+        shared_ptr[SolverBackend] createSolverBackend(const string& directory, Preference) except +

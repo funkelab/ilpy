@@ -13,7 +13,7 @@ CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
 define_macros = [("CYTHON_TRACE", CYTHON_TRACE)]
 
 
-include_dirs = ["ilpy/impl"]
+include_dirs = ["src/ilpy/impl"]
 library_dirs = []
 if os.name == "nt":
     compile_args = ["/O2", "/std:c++17", "/wd4702"]
@@ -34,7 +34,7 @@ if os.name == "nt" and "CONDA_PREFIX" in os.environ:
 
 wrapper = Extension(
     "ilpy.wrapper",
-    sources=["ilpy/wrapper.pyx"],
+    sources=["src/ilpy/wrapper.pyx"],
     extra_compile_args=compile_args,
     include_dirs=include_dirs,
     define_macros=define_macros,
@@ -51,9 +51,9 @@ ext_modules: list[Extension] = cythonize(
 
 
 BACKEND_SOURCES = [
-    "ilpy/impl/solvers/Solution.cpp",
-    "ilpy/impl/solvers/Constraint.cpp",
-    "ilpy/impl/solvers/Objective.cpp",
+    "src/ilpy/impl/solvers/Solution.cpp",
+    "src/ilpy/impl/solvers/Constraint.cpp",
+    "src/ilpy/impl/solvers/Objective.cpp",
 ]
 
 
@@ -62,40 +62,30 @@ def _find_lib(lib: str) -> str | None:
     for prefix in ("lib", ""):
         libname = f"{prefix}{lib}"  # only using gurobi 11 at the moment
         if found := util.find_library(libname):
-            print("FOUND library: ", found, libname)
+            print(f"FOUND library: {found} @ {libname}")
             return libname
     return None
 
 
-if gurobi_lib := _find_lib("gurobi110"):
-    gurobi_backend = Extension(
-        name="ilpy.ilpybackend-gurobi",
-        sources=["ilpy/impl/solvers/GurobiBackend.cpp", *BACKEND_SOURCES],
+for backend_name, lib_name in [
+    ("Gurobi", "gurobi110"),
+    ("Scip", "scip")
+]:
+    if not (libname := _find_lib(lib_name)):
+        print(f"{backend_name} library NOT found, skipping {backend_name} backend")
+        continue
+    ext = Extension(
+        name=f"ilpy.ilpybackend-{backend_name.lower()}",
+        sources=[f"src/ilpy/impl/solvers/{backend_name}Backend.cpp", *BACKEND_SOURCES],
         include_dirs=include_dirs,
-        libraries=[gurobi_lib],
+        libraries=[libname],
         library_dirs=library_dirs,
         extra_compile_args=compile_args,
         define_macros=define_macros,
     )
-    ext_modules.append(gurobi_backend)
-else:
-    print("Gurobi library NOT found, skipping Gurobi backend")
-
-
-if scip_lib := _find_lib("scip"):
-    scip_backend = Extension(
-        name="ilpy.ilpybackend-scip",
-        sources=["ilpy/impl/solvers/ScipBackend.cpp", *BACKEND_SOURCES],
-        include_dirs=include_dirs,
-        libraries=["scip"],
-        library_dirs=library_dirs,
-        extra_compile_args=compile_args,
-        define_macros=define_macros,
-    )
-    ext_modules.append(scip_backend)
-else:
-    print("SCIP library NOT found, skipping SCIP backend")
-
+    ext_modules.append(ext)
+    
+    
 
 ################ Custom build_ext command ################
 

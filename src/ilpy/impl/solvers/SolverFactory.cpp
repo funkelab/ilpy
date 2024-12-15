@@ -1,6 +1,5 @@
 #include "SolverFactory.h"
 #include "SolverBackend.h"
-#include <Python.h> // For Py_GetPath
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -30,46 +29,12 @@
 #define SCIP_LIB_NAME "ilpybackend-scip.so"
 #endif
 
-// Load a library and return a handle
-// This function attempts to locate the ilpy.wrapper module and load the library
-// from the same directory.
-void *loadLibrary(const std::string &libName) {
-  // Get the path to the `ilpy.wrapper` module
-  PyObject *module = PyImport_ImportModule("ilpy.wrapper");
-  if (!module) {
-    throw std::runtime_error("Failed to import ilpy.wrapper module");
-  }
-  PyObject *module_path = PyObject_GetAttrString(module, "__file__");
-  if (!module_path) {
-    Py_DECREF(module);
-    throw std::runtime_error("Failed to get ilpy.wrapper module path");
-  }
-  std::string path(PyUnicode_AsUTF8(module_path));
-  Py_DECREF(module_path);
-  Py_DECREF(module);
-
-  // Strip the module filename to get the directory
-  auto pos = path.find_last_of('/');
-  std::string dir = path.substr(0, pos);
-
-  // Append the library name to the directory
-  std::string fullPath = dir + "/" + libName;
-
-  // Load the library
-  void *handle = DLOPEN(fullPath.c_str());
-  if (!handle) {
-    throw std::runtime_error("Failed to load library: " + fullPath + " - " +
-                             DLERROR());
-  }
-  return handle;
-}
-
 // Free function for loading a backend
-std::shared_ptr<SolverBackend> loadBackend(const char *libName) {
+std::shared_ptr<SolverBackend> loadBackend(const char *libPath) {
   // Load the library
-  void *handle = loadLibrary((std::string)libName);
+  void *handle = DLOPEN(libPath);
   if (!handle) {
-    throw std::runtime_error(std::string("Failed to load library: ") + libName +
+    throw std::runtime_error(std::string("Failed to load library: ") + libPath +
                              " - " + DLERROR());
   }
 
@@ -80,7 +45,7 @@ std::shared_ptr<SolverBackend> loadBackend(const char *libName) {
     DLCLOSE(handle);
     throw std::runtime_error(
         std::string("Failed to find symbol 'createSolverBackend' in ") +
-        libName + " - " + DLERROR());
+        libPath + " - " + DLERROR());
   }
 
   // Create the backend
@@ -101,31 +66,35 @@ std::shared_ptr<SolverBackend> loadBackend(const char *libName) {
  * @return A shared pointer to the created solver backend.
  */
 std::shared_ptr<SolverBackend>
-SolverFactory::createSolverBackend(Preference preference) const {
-  std::vector<const char *> libraries;
+SolverFactory::createSolverBackend(const std::string &directory,
+                                   Preference preference) const {
+  std::vector<std::string> libraries;
 
   // Determine which libraries to try based on preference
   if (preference == Gurobi) {
-    libraries.push_back(GUROBI_LIB_NAME);
+    libraries.push_back(directory + "/" + GUROBI_LIB_NAME);
   } else if (preference == Scip) {
-    libraries.push_back(SCIP_LIB_NAME);
+    libraries.push_back(directory + "/" + SCIP_LIB_NAME);
   } else if (preference == Any) {
-    libraries = {GUROBI_LIB_NAME, SCIP_LIB_NAME}; // Specify the order
+    libraries = {directory + "/" + GUROBI_LIB_NAME,
+                 directory + "/" + SCIP_LIB_NAME};
   } else {
     throw std::runtime_error("Invalid solver preference.");
   }
 
   // Attempt to load backends in order
-  for (const char *libName : libraries) {
+  for (const auto& libPath : libraries) {
     try {
-      return loadBackend(libName);
+      std::cout << "Trying to load backend from " << libPath << std::endl;
+      return loadBackend(libPath.c_str());
     } catch (const std::exception &e) {
-      std::cerr << "Warning: Failed to load backend from " << libName << ": "
+      std::cerr << "Warning: Failed to load backend from " << libPath << ": "
                 << e.what() << std::endl;
     }
   }
 
   // If no backends were successfully loaded
-  throw std::runtime_error("No suitable solver backend available for preference " +
-                           preferenceToString(preference));
+  throw std::runtime_error(
+      "No suitable solver backend available for preference " +
+      preferenceToString(preference));
 }
