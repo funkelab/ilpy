@@ -1,5 +1,6 @@
 #include "SolverFactory.h"
 #include "SolverBackend.h"
+#include <Python.h> // For Py_GetPath
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -24,12 +25,43 @@
 #define GUROBI_LIB_NAME "ilpy_gurobi.dll"
 #define SCIP_LIB_NAME "ilpy_scip.dll"
 #elif defined(__APPLE__)
-#define GUROBI_LIB_NAME "ilpy_gurobi.cpython-312-darwin.so"
-#define SCIP_LIB_NAME "ilpy_scip.cpython-312-darwin.so"
+#define GUROBI_LIB_NAME "ilpybackend-gurobi.so"
+#define SCIP_LIB_NAME "ilpybackend-scip.so"
 #else
 #define GUROBI_LIB_NAME "ilpy_gurobi.so"
 #define SCIP_LIB_NAME "ilpy_scip.so"
 #endif
+
+void *loadLibrary(const std::string &libName) {
+  // Get the path to the `ilpy.wrapper` module
+  PyObject *module = PyImport_ImportModule("ilpy.wrapper");
+  if (!module) {
+    throw std::runtime_error("Failed to import ilpy.wrapper module");
+  }
+  PyObject *module_path = PyObject_GetAttrString(module, "__file__");
+  if (!module_path) {
+    Py_DECREF(module);
+    throw std::runtime_error("Failed to get ilpy.wrapper module path");
+  }
+  std::string path(PyUnicode_AsUTF8(module_path));
+  Py_DECREF(module_path);
+  Py_DECREF(module);
+
+  // Strip the module filename to get the directory
+  auto pos = path.find_last_of('/');
+  std::string dir = path.substr(0, pos);
+
+  // Append the library name to the directory
+  std::string fullPath = dir + "/" + libName;
+
+  // Load the library
+  void *handle = DLOPEN(fullPath.c_str());
+  if (!handle) {
+    throw std::runtime_error("Failed to load library: " + fullPath + " - " +
+                             dlerror());
+  }
+  return handle;
+}
 
 std::shared_ptr<SolverBackend>
 SolverFactory::createSolverBackend(Preference preference) const {
@@ -45,7 +77,7 @@ SolverFactory::createSolverBackend(Preference preference) const {
   }
 
   // Load the library
-  void *handle = DLOPEN(libName);
+  void *handle = loadLibrary((std::string)libName);
   if (!handle) {
     std::cerr << "Failed to load library: " << libName << " - " << DLERROR()
               << std::endl;

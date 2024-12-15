@@ -2,6 +2,7 @@ import os
 
 from Cython.Build import cythonize
 from setuptools import setup
+from setuptools.command.build_ext import build_ext
 from setuptools.extension import Extension
 
 # enable test coverage tracing if CYTHON_TRACE is set to a non-zero value
@@ -22,20 +23,20 @@ BACKEND_SOURCES = [
 
 # Define the wrapper library for GurobiBackend
 gurobi_backend = Extension(
-    name="ilpy.ilpy_gurobi",  # This name is used for the resulting library
+    name="ilpy.ilpybackend-gurobi",
     sources=["ilpy/impl/solvers/GurobiBackend.cpp", *BACKEND_SOURCES],
-    include_dirs=["ilpy/impl"],  # Include directories for headers
-    libraries=["gurobi110"],  # Link against Gurobi
+    include_dirs=["ilpy/impl"],
+    libraries=["gurobi110"],
     extra_compile_args=compile_args,
     define_macros=define_macros,
 )
 
 # Define the wrapper library for ScipBackend
 scip_backend = Extension(
-    name="ilpy.ilpy_scip",  # This name is used for the resulting library
+    name="ilpy.ilpybackend-scip",
     sources=["ilpy/impl/solvers/ScipBackend.cpp", *BACKEND_SOURCES],
-    include_dirs=["ilpy/impl"],  # Include directories for headers
-    libraries=["scip"],  # Link against scip
+    include_dirs=["ilpy/impl"],
+    libraries=["scip"],
     extra_compile_args=compile_args,
     define_macros=define_macros,
 )
@@ -49,16 +50,27 @@ wrapper = Extension(
     define_macros=define_macros,
 )
 
+
+class CustomBuildExt(build_ext):  # type: ignore
+    # Custom build_ext command to remove platform-specific tags ("cpython-312-darwin")
+    # from the generated shared libraries.  This makes it easier to discover them
+    def get_ext_filename(self, fullname: str) -> str:
+        filename: str = super().get_ext_filename(fullname)
+        if "ilpybackend-" in filename:
+            parts = filename.split(".")
+            if len(parts) > 2:  # Example: mymodule.cpython-312-darwin.ext
+                filename = f"{parts[0]}.{parts[-1]}"
+        return filename
+
+
 setup(
     ext_modules=[
         *cythonize(
             [wrapper],
-            compiler_directives={
-                "linetrace": CYTHON_TRACE,
-                "language_level": "3",
-            },
+            compiler_directives={"linetrace": CYTHON_TRACE, "language_level": "3"},
         ),
         gurobi_backend,
         scip_backend,
     ],
+    cmdclass={"build_ext": CustomBuildExt},
 )
