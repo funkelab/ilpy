@@ -67,10 +67,7 @@ def _find_lib(lib: str) -> str | None:
     return None
 
 
-for backend_name, lib_name in [
-    ("Gurobi", "gurobi110"),
-    ("Scip", "scip")
-]:
+for backend_name, lib_name in [("Gurobi", "gurobi110"), ("Scip", "scip")]:
     if not (libname := _find_lib(lib_name)):
         print(f"{backend_name} library NOT found, skipping {backend_name} backend")
         continue
@@ -84,8 +81,7 @@ for backend_name, lib_name in [
         define_macros=define_macros,
     )
     ext_modules.append(ext)
-    
-    
+
 
 ################ Custom build_ext command ################
 
