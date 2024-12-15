@@ -59,7 +59,7 @@ void *loadLibrary(const std::string &libName) {
   void *handle = DLOPEN(fullPath.c_str());
   if (!handle) {
     throw std::runtime_error("Failed to load library: " + fullPath + " - " +
-                             dlerror());
+                             DLERROR());
   }
   return handle;
 }
@@ -126,5 +126,6 @@ SolverFactory::createSolverBackend(Preference preference) const {
   }
 
   // If no backends were successfully loaded
-  throw std::runtime_error("No suitable solver backend available.");
+  throw std::runtime_error("No suitable solver backend available for preference " +
+                           preferenceToString(preference));
 }
