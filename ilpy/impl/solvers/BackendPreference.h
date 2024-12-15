@@ -1,7 +1,0 @@
-#ifndef CANDIDATE_MC_SOLVER_BACKEND_FACTORY_H__
-#define CANDIDATE_MC_SOLVER_BACKEND_FACTORY_H__
-
-enum Preference { Any, Cplex, Gurobi, Scip };
-
-#endif // CANDIDATE_MC_SOLVER_BACKEND_FACTORY_H__
-

@@ -1,7 +1,3 @@
-#include <config.h>
-
-#ifdef HAVE_SCIP
-
 #include <sstream>
 #include <stdexcept> // for std::runtime_error
 
@@ -52,7 +48,7 @@ ScipBackend::initialize(
 	// delete previous variables
 	freeVariables();
 
-	for (int i = 0; i < _numVariables; i++) {
+	for (unsigned int i = 0; i < _numVariables; i++) {
 
 		SCIP_VAR* v;
 		std::string name("x");
@@ -341,5 +337,7 @@ ScipBackend::scipVarType(VariableType type, double& lb, double& ub) {
     throw std::runtime_error("Unhandled VariableType passed to ScipBackend::scipVarType");
 }
 
-#endif // HAVE_SCIP
-
+// Factory function to create ScipBackend
+extern "C" SolverBackend* createSolverBackend() {
+    return new ScipBackend();
+}

@@ -1,5 +1,3 @@
-#include <config.h>
-
 #ifdef HAVE_CPLEX
 
 #include <string>

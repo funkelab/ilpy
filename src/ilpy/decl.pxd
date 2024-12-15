@@ -92,6 +92,7 @@ cdef extern from "impl/solvers/SolverBackend.h":
         void initialize(
             unsigned int, VariableType, map[unsigned int, VariableType]&
         ) except +
+        string getName()
         void setObjective(Objective&)
         void setConstraints(Constraints&)
         void addConstraint(Constraint&)
@@ -102,15 +103,11 @@ cdef extern from "impl/solvers/SolverBackend.h":
         bool solve(Solution& solution, string& message) except +
         void setEventCallback(PyObject* callback)
 
-cdef extern from "impl/solvers/ScipBackend.cpp":
-    pass
-
-cdef extern from "impl/solvers/GurobiBackend.cpp":
-    pass
 
 cdef extern from "impl/solvers/SolverFactory.cpp":
     pass
 
 cdef extern from "impl/solvers/SolverFactory.h":
     cdef cppclass SolverFactory:
-        shared_ptr[SolverBackend] createSolverBackend(Preference) except +
+        shared_ptr[SolverBackend] createSolverBackend(
+            const string& directory, Preference) except +

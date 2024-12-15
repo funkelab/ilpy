@@ -1,7 +1,3 @@
-#include <config.h>
-
-#ifdef HAVE_GUROBI
-
 #include <sstream>
 #include <stdexcept>
 
@@ -142,7 +138,7 @@ GurobiBackend::setConstraints(const Constraints &constraints)
     if (numConstrs > 0)
     {
         int *constraintIndicies = new int[numConstrs];
-        for (unsigned int i = 0; i < numConstrs; i++)
+        for (int i = 0; i < numConstrs; i++)
             constraintIndicies[i] = i;
 
         GRB_CHECK(GRBdelconstrs(_model, numConstrs, constraintIndicies));
@@ -350,4 +346,7 @@ GurobiBackend::grbCheck(const char* call, const char* file, int line, int error)
     }
 }
 
-#endif // HAVE_GUROBI
+// Factory function to create GurobiBackend
+extern "C" SolverBackend* createSolverBackend() {
+    return new GurobiBackend();
+}

@@ -1,21 +1,25 @@
+from __future__ import annotations
+
 import os
 from ctypes import util
 
 from Cython.Build import cythonize
 from setuptools import setup
+from setuptools.command.build_ext import build_ext
 from setuptools.extension import Extension
 
 # enable test coverage tracing if CYTHON_TRACE is set to a non-zero value
 CYTHON_TRACE = int(os.getenv("CYTHON_TRACE") in ("1", "True"))
+define_macros = [("CYTHON_TRACE", CYTHON_TRACE)]
 
-libraries = ["libscip"] if os.name == "nt" else ["scip"]
-include_dirs = ["ilpy/impl"]
+
+include_dirs = ["src/ilpy/impl"]
 library_dirs = []
-compile_args = ["-O3", "-DHAVE_SCIP"]
 if os.name == "nt":
-    compile_args.append("/std:c++17")
+    compile_args = ["/O2", "/std:c++17", "/wd4702"]
 else:
-    compile_args.append("-std=c++17")
+    compile_args = ["-O3", "-std=c++17", "-Wno-unreachable-code"]
+
 
 # include conda environment windows include/lib if it exists
 # this will be done automatically by conda build, but is useful if someone
@@ -24,37 +28,84 @@ if os.name == "nt" and "CONDA_PREFIX" in os.environ:
     include_dirs.append(os.path.join(os.environ["CONDA_PREFIX"], "Library", "include"))
     library_dirs.append(os.path.join(os.environ["CONDA_PREFIX"], "Library", "lib"))
 
-# look for various gurobi versions, which are annoyingly
-# suffixed with the version number, and wildcards don't work
 
-for v in range(80, 200):
-    GUROBI_LIB = f"libgurobi{v}" if os.name == "nt" else f"gurobi{v}"
-    if (gurolib := util.find_library(GUROBI_LIB)) is not None:
-        print("FOUND GUROBI library: ", gurolib)
-        libraries.append(GUROBI_LIB)
-        compile_args.append("-DHAVE_GUROBI")
-        break
-else:
-    print("WARNING: GUROBI library not found")
+################ Main wrapper extension ################
 
 
 wrapper = Extension(
     "ilpy.wrapper",
-    sources=["ilpy/wrapper.pyx"],
+    sources=["src/ilpy/wrapper.pyx"],
     extra_compile_args=compile_args,
     include_dirs=include_dirs,
-    libraries=libraries,
-    library_dirs=library_dirs,
-    language="c++",
-    define_macros=[("CYTHON_TRACE", CYTHON_TRACE)],
+    define_macros=define_macros,
 )
 
-setup(
-    ext_modules=cythonize(
-        [wrapper],
-        compiler_directives={
-            "linetrace": CYTHON_TRACE,
-            "language_level": "3",
-        },
-    )
+
+ext_modules: list[Extension] = cythonize(
+    [wrapper],
+    compiler_directives={"linetrace": CYTHON_TRACE, "language_level": "3"},
 )
+
+
+################ Backend extensions ################
+
+
+BACKEND_SOURCES = [
+    "src/ilpy/impl/solvers/Solution.cpp",
+    "src/ilpy/impl/solvers/Constraint.cpp",
+    "src/ilpy/impl/solvers/Objective.cpp",
+]
+
+
+def _find_lib(lib: str) -> str | None:
+    """Platform-independent library search."""
+    for prefix in ("lib", ""):
+        libname = f"{prefix}{lib}"  # only using gurobi 11 at the moment
+        if found := util.find_library(libname):
+            print(f"FOUND library: {found} @ {libname}")
+            return libname
+    return None
+
+
+for backend_name, lib_name in [("Gurobi", "gurobi110"), ("Scip", "scip")]:
+    if not (libname := _find_lib(lib_name)):
+        print(f"{backend_name} library NOT found, skipping {backend_name} backend")
+        continue
+    ext = Extension(
+        name=f"ilpy.ilpybackend-{backend_name.lower()}",
+        sources=[f"src/ilpy/impl/solvers/{backend_name}Backend.cpp", *BACKEND_SOURCES],
+        include_dirs=include_dirs,
+        libraries=[libname],
+        library_dirs=library_dirs,
+        extra_compile_args=compile_args,
+        define_macros=define_macros,
+        extra_link_args=["/DLL"] if os.name == "nt" else [],
+    )
+    ext_modules.append(ext)
+
+
+################ Custom build_ext command ################
+
+# Custom build_ext command to remove platform-specific tags ("cpython-312-darwin")
+# from the generated shared libraries.  This makes it easier to discover them.
+# also removes the export PyInit_ symbol for windows.
+# (point is, these are NOT actually python modules, they are shared libraries)
+
+
+class CustomBuildExt(build_ext):  # type: ignore
+    def get_ext_filename(self, fullname: str) -> str:
+        filename: str = super().get_ext_filename(fullname)
+        if "ilpybackend-" in filename:
+            parts = filename.split(".")
+            if len(parts) > 2:  # Example: mymodule.cpython-312-darwin.ext
+                ext = "dll" if os.name == "nt" else "so"
+                filename = f"{parts[0]}.{ext}"
+        return filename
+
+    def get_export_symbols(self, ext: Extension) -> list[str]:
+        if "ilpybackend" in ext.name:
+            return ["createSolverBackend"]
+        return super().get_export_symbols(ext)  # type: ignore
+
+
+setup(ext_modules=ext_modules, cmdclass={"build_ext": CustomBuildExt})

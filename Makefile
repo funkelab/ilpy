@@ -16,6 +16,7 @@ clean:
 	rm -rf ilpy/*.so
 
 build:
+	make clean
 	python setup.py build_ext --inplace
 
 docs:

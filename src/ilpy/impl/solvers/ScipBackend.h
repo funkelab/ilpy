@@ -1,9 +1,6 @@
 #ifndef SCIP_SOLVER_H__
 #define SCIP_SOLVER_H__
 
-#include <config.h>
-#ifdef HAVE_SCIP
-
 #include <string>
 
 #include <scip/scip.h>
@@ -35,32 +32,36 @@ public:
 
 	virtual ~ScipBackend();
 
+    std::string getName() const override {
+        return "Scip";
+    }
+
 	///////////////////////////////////
 	// solver backend implementation //
 	///////////////////////////////////
 
 	void initialize(
 			unsigned int numVariables,
-			VariableType variableType);
+			VariableType variableType) override;
 
 	void initialize(
 			unsigned int                                numVariables,
 			VariableType                                defaultVariableType,
-			const std::map<unsigned int, VariableType>& specialVariableTypes);
+			const std::map<unsigned int, VariableType>& specialVariableTypes) override;
 
-	void setObjective(const Objective& objective);
+	void setObjective(const Objective& objective) override;
 
-	void setConstraints(const Constraints& constraints);
+	void setConstraints(const Constraints& constraints) override;
 
-	void addConstraint(const Constraint& constraint);
+	void addConstraint(const Constraint& constraint) override;
 
-	void setTimeout(double timeout);
+	void setTimeout(double timeout) override;
 
-	void setOptimalityGap(double gap, bool absolute=false);
+	void setOptimalityGap(double gap, bool absolute=false) override;
 
-	void setNumThreads(unsigned int numThreads);
+	void setNumThreads(unsigned int numThreads) override;
 
-	bool solve(Solution& solution, std::string& message);
+	bool solve(Solution& solution, std::string& message) override;
 
 	std::string solve(Solution& solution) {
 
@@ -69,16 +70,16 @@ public:
 		return message;
 	}
 
+	/**
+	 * Enable solver output.
+	 */
+	void setVerbose(bool verbose) override;
+
 private:
 
 	//////////////
 	// internal //
 	//////////////
-
-	/**
-	 * Enable solver output.
-	 */
-	void setVerbose(bool verbose);
 
 	void addMulEqualConstraint(unsigned int i, unsigned int j, SCIP_VAR* z_ij);
 
@@ -98,7 +99,8 @@ private:
 	std::vector<SCIP_CONS*> _constraints;
 };
 
-#endif // HAVE_SCIP
+// Factory function to create ScipBackend
+extern "C" SolverBackend* createSolverBackend();
 
 #endif // SCIP_SOLVER_H__
 

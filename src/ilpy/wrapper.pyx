@@ -12,6 +12,7 @@ from cython.operator cimport dereference as deref
 from cpython.object cimport PyObject
 from . cimport decl
 from typing import Iterable, Mapping, Sequence
+from pathlib import Path
 
 if TYPE_CHECKING:
     from .expressions import Expression  # no-cython-lint
@@ -269,13 +270,23 @@ cdef class Solver:
             dict variable_types=None,
             Preference preference=DEFAULT_PREF):
         cdef decl.SolverFactory factory
+        cdef string directory
         cdef cppmap[unsigned int, decl.VariableType] vtypes
         if variable_types is not None:
             for k, v in variable_types.items():
                 vtypes[k] = v
-        self.p = factory.createSolverBackend(preference)
+
+        # Use Python to locate the directory of the current package
+        directory = str(Path(__file__).parent.resolve()).encode()
+
+        self.p = factory.createSolverBackend(directory, preference)
         self.num_variables = num_variables
         deref(self.p).initialize(num_variables, default_variable_type, vtypes)
+
+    def __repr__(self) -> str:
+        backend = deref(self.p).getName().decode()
+        name = self.__class__.__name__
+        return f"<{name}[{backend}] - {self.num_variables} variables>"
 
     def set_objective(self, objective: Objective | "Expression"):
         cdef Objective obj

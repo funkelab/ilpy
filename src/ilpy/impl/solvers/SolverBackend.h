@@ -67,6 +67,11 @@ public:
 	}
 
 	/**
+	 * Get the name of the backend.
+	 */
+	virtual std::string getName() const = 0;
+
+	/**
 	 * Initialise the linear solver for the given type of variables.
 	 *
 	 * @param numVariables The number of variables in the problem.
