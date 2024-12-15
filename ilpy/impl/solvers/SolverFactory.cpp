@@ -21,15 +21,13 @@
 #endif
 
 // Platform-specific library names
+// These must match the names in setup.py
 #if defined(_WIN32) || defined(_WIN64)
-#define GUROBI_LIB_NAME "ilpy_gurobi.dll"
-#define SCIP_LIB_NAME "ilpy_scip.dll"
-#elif defined(__APPLE__)
+#define GUROBI_LIB_NAME "ilpybackend-gurobi.dll"
+#define SCIP_LIB_NAME "ilpybackend-scip.dll"
+#else
 #define GUROBI_LIB_NAME "ilpybackend-gurobi.so"
 #define SCIP_LIB_NAME "ilpybackend-scip.so"
-#else
-#define GUROBI_LIB_NAME "ilpy_gurobi.so"
-#define SCIP_LIB_NAME "ilpy_scip.so"
 #endif
 
 // Load a library and return a handle
