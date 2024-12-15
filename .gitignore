@@ -1,4 +1,4 @@
-ilpy/wrapper.cpp
+src/ilpy/wrapper.cpp
 *.so
 *.dylib
 *.dll
