@@ -1,6 +1,3 @@
-#include <config.h>
-
-
 #include <sstream>
 #include <stdexcept>
 

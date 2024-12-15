@@ -1,8 +1,6 @@
 #ifndef SCIP_SOLVER_H__
 #define SCIP_SOLVER_H__
 
-#include <config.h>
-
 #include <string>
 
 #include <scip/scip.h>

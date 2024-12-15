@@ -1,5 +1,3 @@
-#include <config.h>
-
 #include <sstream>
 #include <stdexcept> // for std::runtime_error
 
