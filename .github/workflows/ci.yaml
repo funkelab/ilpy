@@ -82,7 +82,7 @@ jobs:
           python -m pip install -U pip
           python -m pip install -e .[dev]
           python setup.py build_ext --inplace  # required for C coverage
-          ls -la ilpy
+          ls -la src/ilpy  # ensure the libraries are present
         env:
           CYTHON_TRACE: 1 # enable coverage of cython code
           CFLAGS: "-coverage" # enable coverage of C code
