@@ -44,37 +44,40 @@ public:
 
 	void initialize(
 			unsigned int numVariables,
-			VariableType variableType);
+			VariableType variableType) override;
 
 	void initialize(
 			unsigned int                                numVariables,
 			VariableType                                defaultVariableType,
-			const std::map<unsigned int, VariableType>& specialVariableTypes);
+			const std::map<unsigned int, VariableType>& specialVariableTypes) override;
 
-	void setObjective(const Objective& objective);
+	void setObjective(const Objective& objective) override;
 
-	void setConstraints(const Constraints& constraints);
+	void setConstraints(const Constraints& constraints) override;
 
-	void addConstraint(const Constraint& constraint);
+	void addConstraint(const Constraint& constraint) override;
 
-	void setTimeout(double timeout) { _timeout = timeout; }
+	void setTimeout(double timeout) override { _timeout = timeout; }
 
-	void setOptimalityGap(double gap, bool absolute=false) {
+	void setOptimalityGap(double gap, bool absolute=false) override {
 
 		_gap = gap;
 		_absoluteGap = absolute;
 	}
 
-	void setNumThreads(unsigned int numThreads);
+	void setNumThreads(unsigned int numThreads) override;
 
-	bool solve(Solution& solution, std::string& message);
+	bool solve(Solution& solution, std::string& message) override;
 
-	std::string solve(Solution& solution) {
+	std::string solve(Solution& solution) { 
 
 		std::string message;
 		solve(solution, message);
 		return message;
 	}
+
+	// enable solver output
+	void setVerbose(bool verbose) override;
 
 private:
 
@@ -88,8 +91,6 @@ private:
 	// set the mpi focus
 	void setMIPFocus(unsigned int focus);
 
-	// enable solver output
-	void setVerbose(bool verbose);
 
 	// check error status and throw exception, used by our macro GRB_CHECK
 	void grbCheck(const char* call, const char* file, int line, int error);

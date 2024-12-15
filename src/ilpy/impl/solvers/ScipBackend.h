@@ -42,26 +42,26 @@ public:
 
 	void initialize(
 			unsigned int numVariables,
-			VariableType variableType);
+			VariableType variableType) override;
 
 	void initialize(
 			unsigned int                                numVariables,
 			VariableType                                defaultVariableType,
-			const std::map<unsigned int, VariableType>& specialVariableTypes);
+			const std::map<unsigned int, VariableType>& specialVariableTypes) override;
 
-	void setObjective(const Objective& objective);
+	void setObjective(const Objective& objective) override;
 
-	void setConstraints(const Constraints& constraints);
+	void setConstraints(const Constraints& constraints) override;
 
-	void addConstraint(const Constraint& constraint);
+	void addConstraint(const Constraint& constraint) override;
 
-	void setTimeout(double timeout);
+	void setTimeout(double timeout) override;
 
-	void setOptimalityGap(double gap, bool absolute=false);
+	void setOptimalityGap(double gap, bool absolute=false) override;
 
-	void setNumThreads(unsigned int numThreads);
+	void setNumThreads(unsigned int numThreads) override;
 
-	bool solve(Solution& solution, std::string& message);
+	bool solve(Solution& solution, std::string& message) override;
 
 	std::string solve(Solution& solution) {
 
@@ -70,16 +70,16 @@ public:
 		return message;
 	}
 
+	/**
+	 * Enable solver output.
+	 */
+	void setVerbose(bool verbose) override;
+
 private:
 
 	//////////////
 	// internal //
 	//////////////
-
-	/**
-	 * Enable solver output.
-	 */
-	void setVerbose(bool verbose);
 
 	void addMulEqualConstraint(unsigned int i, unsigned int j, SCIP_VAR* z_ij);
 
