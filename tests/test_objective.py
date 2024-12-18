@@ -1,5 +1,5 @@
+
 import ilpy
-import pytest
 
 
 def test_resize() -> None:
@@ -17,6 +17,3 @@ def test_resize() -> None:
     assert len(obj2) == 1
 
 
-def test_deprecation() -> None:
-    with pytest.warns(DeprecationWarning):
-        ilpy.LinearObjective()

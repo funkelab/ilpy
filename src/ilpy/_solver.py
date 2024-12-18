@@ -1,17 +1,34 @@
-from collections.abc import Mapping
-from typing import Callable, NamedTuple, Sequence, SupportsIndex
+from collections.abc import Iterator, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Callable
 
 from ._components import Constraint, Constraints, Objective
 from ._constants import VariableType
 from .expressions import Expression
-from .solver_backends import SolverBackend, create_backend, Preference
+from .solver_backends import Preference, SolverBackend, create_backend
 
 
-class Solution(NamedTuple):
+@dataclass
+class Solution:
     variable_values: Sequence[float]
     objective_value: float
     status: str
     time: float
+
+    def __array__(self) -> Sequence[float]:
+        return self.variable_values
+
+    def __iter__(self) -> Iterator[float]:
+        return iter(self.variable_values)
+
+    def get_value(self) -> float:
+        return self.objective_value
+
+    def __getitem__(self, key: int) -> float:
+        return self.variable_values[key]
+
+    def __setitem__(self, key: int, value: float) -> None:
+        self.variable_values[key] = value  # type: ignore
 
 
 class Solver:

@@ -91,7 +91,7 @@ class GurobiSolver(SolverBackend):
     def solve(self) -> Solution:
         self._model.optimize()  # TODO: event callback
         return Solution(
-            [var.X for var in self._vars.values()],
+            [var.x for var in self._vars.values()],
             self._model.ObjVal,
             str(self._model.Status),  # fixme
             time=0,

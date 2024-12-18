@@ -3,7 +3,7 @@ import os
 import sys
 
 import pytest
-from ilpy.expressions import Expression, Variable, _get_coefficients
+
 from ilpy import (
     Constraint,
     Constraints,
@@ -13,6 +13,7 @@ from ilpy import (
     Solver,
     VariableType,
 )
+from ilpy.expressions import Expression, Variable, _get_coefficients
 
 u = Variable("u")
 v = Variable("v")

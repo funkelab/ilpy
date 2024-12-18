@@ -147,8 +147,8 @@ class Objective:
             self.resize(i + 1)
         self._coeffs[i] = value
 
-    def get_coefficients(self) -> tuple[float, ...]:
-        return tuple(self._coeffs)
+    def get_coefficients(self) -> list[float]:
+        return list(self._coeffs)
 
     def __iter__(self) -> Iterator[float]:
         return iter(self._coeffs)

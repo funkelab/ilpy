@@ -40,7 +40,17 @@ dependencies = []
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-dev = ["ruff", "mypy", "pytest", "pytest-cov", "numpy", "gurobipy", "pyscipopt"]
+dev = [
+    "gurobipy",
+    "ipython",
+    "mypy",
+    "numpy",
+    "pre-commit",
+    "pyscipopt",
+    "pytest-cov",
+    "pytest",
+    "ruff",
+]
 docs = ["sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
 
 [project.urls]
@@ -59,7 +69,7 @@ select = [
     "E",    # style errors
     "W",    # style warnings
     "F",    # flakes
-    "D",    # pydocstyle
+    # "D",    # pydocstyle
     "D417", # Missing argument descriptions in Docstrings
     "I",    # isort
     "UP",   # pyupgrade

@@ -2,14 +2,19 @@ from enum import IntEnum, auto
 
 from ._base import SolverBackend
 
+__all__ = ["Preference", "SolverBackend", "create_backend"]
+
 
 class Preference(IntEnum):
+    """Preference for a solver backend."""
+
     Any = auto()
     Scip = auto()
     Gurobi = auto()
 
 
 def create_backend(preference: Preference) -> "SolverBackend":
+    """Create a solver backend based on the preference."""
     to_try = []
     if preference in (Preference.Any, Preference.Gurobi):
         to_try.append(("_gurobi", "GurobiSolver"))
