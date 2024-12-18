@@ -1,8 +1,8 @@
 from collections.abc import Mapping
-from typing import Callable
+from typing import Any, Callable, Literal
 
 from ilpy._components import Constraint, Constraints, Objective
-from ilpy._constants import Relation, Sense, VariableType
+from ilpy._constants import Relation, Sense, SolverStatus, VariableType
 from ilpy._solver import Solution
 
 from ._base import SolverBackend
@@ -21,6 +21,21 @@ VTYPE_MAP: Mapping[int, str] = {
     VariableType.Binary: "B",
     VariableType.Integer: "I",
 }
+STATUS_MAP: Mapping[int, SolverStatus] = {
+    scip.SCIP_STATUS.UNKNOWN: SolverStatus.UNKNOWN,
+    scip.SCIP_STATUS.OPTIMAL: SolverStatus.OPTIMAL,
+    scip.SCIP_STATUS.INFEASIBLE: SolverStatus.INFEASIBLE,
+    scip.SCIP_STATUS.UNBOUNDED: SolverStatus.UNBOUNDED,
+    scip.SCIP_STATUS.INFORUNBD: SolverStatus.INF_OR_UNBOUNDED,
+    scip.SCIP_STATUS.TIMELIMIT: SolverStatus.TIMELIMIT,
+    scip.SCIP_STATUS.NODELIMIT: SolverStatus.NODELIMIT,
+    scip.SCIP_STATUS.SOLLIMIT: SolverStatus.SOLUTIONLIMIT,
+    scip.SCIP_STATUS.USERINTERRUPT: SolverStatus.USERINTERRUPT,
+    scip.SCIP_STATUS.NUMERIC: SolverStatus.NUMERIC,
+    scip.SCIP_STATUS.SUBOPTIMAL: SolverStatus.SUBOPTIMAL,
+}
+
+INF = float("inf")
 
 
 class ScipSolver(SolverBackend):
@@ -35,16 +50,57 @@ class ScipSolver(SolverBackend):
         vtype = VTYPE_MAP[default_variable_type]
         self._vars = []
         for i in range(num_variables):
-            # lb=None means -inf
-            self._vars.append(model.addVar(vtype=vtype, lb=None, name=f"x_{i}"))
+            self._vars.append(model.addVar(vtype=vtype, lb=-INF, name=f"x_{i}"))
         self._event_callback: Callable[[Mapping[str, float | str]], None] | None = None
+        self.use_epigraph_reformulation = False
 
-    def set_objective(self, objective: Objective) -> None:
+    def set_objective(
+        self, objective: Objective, *, use_epigraph: bool | None = None
+    ) -> None:
+        # Create linear part of the objective
+        obj = scip.quicksum(coef * var for coef, var in zip(objective, self._vars))
+        obj = obj + objective.get_constant()
         sense = "minimize" if objective.get_sense() == Sense.Minimize else "maximize"
-        obj = sum(coef * var for coef, var in zip(objective, self._vars))
-        for (i, j), qcoef in objective.get_quadratic_coefficients().items():
-            obj = obj + qcoef * self._vars[i] * self._vars[j]
+
+        # Add quadratic terms using auxiliary variables
+        if quad_coeffs := objective.get_quadratic_coefficients():
+            if use_epigraph is None:
+                use_epigraph = self.use_epigraph_reformulation
+            if use_epigraph:
+                for (i, j), qcoef in quad_coeffs.items():
+                    obj += qcoef * self._vars[i] * self._vars[j]
+                self._set_nonlinear_objective(obj, sense)  # type: ignore [arg-type]
+                return
+            else:
+                self._add_quad_auxiliary_variables(quad_coeffs)
+
         self._model.setObjective(obj, sense=sense)
+
+    def _set_nonlinear_objective(
+        self, expr: Any, sense: Literal["minimize", "maximize"]
+    ) -> None:
+        """Handles epigraph reformulation for nonlinear objectives."""
+        new_obj = self._model.addVar(lb=-INF, obj=1)  # Surrogate objective variable
+        if sense == "minimize":
+            self._model.addCons(expr <= new_obj)
+            self._model.setMinimize()
+        elif sense == "maximize":
+            self._model.addCons(expr >= new_obj)
+            self._model.setMaximize()
+
+    def _add_quad_auxiliary_variables(
+        self, quad_coeffs: Mapping[tuple[int, int], float]
+    ) -> None:
+        for (i, j), value in quad_coeffs.items():
+            if value != 0:
+                # create z_ij and add val * z_ij to objective
+                # z_ij cand be unbounded and real, it inherits all other
+                # bounds/integrality from the x_i * x_j = z_ij constraint below
+                z_ij = self._model.addVar(
+                    name=f"z_{i},{j}", lb=-INF, ub=INF, obj=value, vtype="C"
+                )
+                # add the constraint x_i * x_j - z_ij = 0
+                self._model.addCons(self._vars[i] * self._vars[j] - z_ij == 0)
 
     def set_constraints(self, constraints: Constraints) -> None:
         for constraint in constraints:
@@ -55,7 +111,7 @@ class ScipSolver(SolverBackend):
         qcoefs = constraint.get_quadratic_coefficients()
         relation = constraint.get_relation()
         value = constraint.get_value()
-        left = sum(lcoef * self._vars[idx] for idx, lcoef in coefs.items())
+        left = scip.quicksum(lcoef * self._vars[idx] for idx, lcoef in coefs.items())
         for (i, j), qcoef in qcoefs.items():
             left = left + qcoef * self._vars[i] * self._vars[j]
         if relation == Relation.LessEqual:
@@ -76,6 +132,7 @@ class ScipSolver(SolverBackend):
 
     def set_verbose(self, verbose: bool) -> None:
         pass
+
     def set_event_callback(
         self, callback: Callable[[Mapping[str, float | str]], None] | None
     ) -> None:
@@ -83,9 +140,12 @@ class ScipSolver(SolverBackend):
 
     def solve(self) -> Solution:
         self._model.optimize()  # TODO: event callback
+
+        status = STATUS_MAP.get(self._model.getStatus(), SolverStatus.OTHER)
+
         return Solution(
             [self._model.getVal(var) for var in self._vars],
             self._model.getObjVal(),
-            self._model.getStatus(),
+            status,
             time=self._model.getSolvingTime(),
         )

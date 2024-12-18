@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from ._components import Constraint, Constraints, Objective
-from ._constants import VariableType
+from ._constants import SolverStatus, VariableType
 from .expressions import Expression
 from .solver_backends import Preference, SolverBackend, create_backend
 
@@ -12,7 +12,7 @@ from .solver_backends import Preference, SolverBackend, create_backend
 class Solution:
     variable_values: Sequence[float]
     objective_value: float
-    status: str
+    status: SolverStatus
     time: float
 
     def __array__(self) -> Sequence[float]:

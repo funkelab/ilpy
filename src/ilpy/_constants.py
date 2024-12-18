@@ -1,4 +1,4 @@
-from enum import IntEnum, auto
+from enum import Enum, IntEnum, auto
 
 
 class VariableType(IntEnum):
@@ -16,3 +16,18 @@ class Relation(IntEnum):
     LessEqual = auto()
     Equal = auto()
     GreaterEqual = auto()
+
+
+class SolverStatus(Enum):
+    UNKNOWN = "unknown"
+    OPTIMAL = "optimal"
+    INFEASIBLE = "infeasible"
+    UNBOUNDED = "unbounded"
+    INF_OR_UNBOUNDED = "infeasible_or_unbounded"
+    TIMELIMIT = "time_limit"
+    NODELIMIT = "node_limit"
+    SOLUTIONLIMIT = "solution_limit"
+    USERINTERRUPT = "user_interrupt"
+    NUMERIC = "numeric_issue"
+    SUBOPTIMAL = "suboptimal"
+    OTHER = "other"

@@ -1,5 +1,5 @@
 from ._components import Constraint, Constraints, Objective
-from ._constants import Relation, Sense, VariableType
+from ._constants import Relation, Sense, SolverStatus, VariableType
 from ._functional import solve
 from ._solver import Solution, Solver
 from .expressions import Expression, Variable
@@ -21,6 +21,7 @@ __all__ = [
     "Solution",
     "Solver",
     "SolverBackend",
+    "SolverStatus",
     "Variable",
     "VariableType",
     "solve",

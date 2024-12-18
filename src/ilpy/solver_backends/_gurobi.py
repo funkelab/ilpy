@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from typing import Callable
 
 from ilpy._components import Constraint, Constraints, Objective
-from ilpy._constants import Relation, Sense, VariableType
+from ilpy._constants import Relation, Sense, SolverStatus, VariableType
 from ilpy._solver import Solution
 
 from ._base import SolverBackend
@@ -20,6 +20,20 @@ VTYPE_MAP: Mapping[int, str] = {
     VariableType.Continuous: gb.GRB.CONTINUOUS,
     VariableType.Binary: gb.GRB.BINARY,
     VariableType.Integer: gb.GRB.INTEGER,
+}
+
+STATUS_MAP: Mapping[int, SolverStatus] = {
+    gb.GRB.LOADED: SolverStatus.UNKNOWN,
+    gb.GRB.OPTIMAL: SolverStatus.OPTIMAL,
+    gb.GRB.INFEASIBLE: SolverStatus.INFEASIBLE,
+    gb.GRB.UNBOUNDED: SolverStatus.UNBOUNDED,
+    gb.GRB.INF_OR_UNBD: SolverStatus.INF_OR_UNBOUNDED,
+    gb.GRB.TIME_LIMIT: SolverStatus.TIMELIMIT,
+    gb.GRB.NODE_LIMIT: SolverStatus.NODELIMIT,
+    gb.GRB.SOLUTION_LIMIT: SolverStatus.SOLUTIONLIMIT,
+    gb.GRB.INTERRUPTED: SolverStatus.USERINTERRUPT,
+    gb.GRB.NUMERIC: SolverStatus.NUMERIC,
+    gb.GRB.SUBOPTIMAL: SolverStatus.SUBOPTIMAL,
 }
 
 
@@ -46,7 +60,7 @@ class GurobiSolver(SolverBackend):
             coef * var for coef, var in zip(objective, self._vars)
         )
         for (i, j), qcoef in objective.get_quadratic_coefficients().items():
-            obj = obj + qcoef * self._vars[i] * self._vars[j]
+            obj += qcoef * self._vars[i] * self._vars[j]
         self._model.setObjective(obj, sense)
 
     def set_constraints(self, constraints: Constraints) -> None:
@@ -90,9 +104,12 @@ class GurobiSolver(SolverBackend):
 
     def solve(self) -> Solution:
         self._model.optimize()  # TODO: event callback
-        return Solution(
-            [var.x for var in self._vars.values()],
-            self._model.ObjVal,
-            str(self._model.Status),  # fixme
-            time=0,
-        )
+
+        status = STATUS_MAP.get(self._model.Status, SolverStatus.OTHER)
+
+        if status == SolverStatus.OPTIMAL:
+            solution = [var.X for var in self._vars.values()]
+        else:
+            solution = [0] * len(self._vars)
+
+        return Solution(solution, self._model.ObjVal, status, time=self._model.Runtime)
