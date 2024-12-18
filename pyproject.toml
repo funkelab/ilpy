@@ -1,75 +1,110 @@
-# https://peps.python.org/pep-0517
+# https://peps.python.org/pep-0517/
 [build-system]
-requires = ["setuptools==71.1.0", "Cython"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+# https://hatch.pypa.io/latest/config/metadata/
+[tool.hatch.version]
+source = "vcs"
+
+# read more about configuring hatch at:
+# https://hatch.pypa.io/latest/config/build/
+[tool.hatch.build.targets.wheel]
+only-include = ["src"]
+sources = ["src"]
 
 # https://peps.python.org/pep-0621/
 [project]
 name = "ilpy"
-description = "Python wrappers for popular MIP solvers."
+dynamic = ["version"]
+description = "Unified interface for popular MIP solvers."
+readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
-authors = [
-    { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
-    { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
+license = { text = "BSD-3-Clause" }
+authors = [{ name = "Talley Lambert", email = "talley.lambert@gmail.com" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
 ]
-dynamic = ["version", "readme"]
 dependencies = []
 
-# extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
 dev = [
-    "ruff",
+    "ipython",
     "mypy",
-    "pytest",
-    "pytest-cov",
-    "cython",
-    "setuptools==71.1.0",
-    "numpy",
-    "gurobipy",  # used on CI to confirm equality of results
-]
-docs = [
-    "sphinx",
-    "sphinx_rtd_theme",
-    "sphinx-autodoc-typehints",
+    "pdbpp",  # https://github.com/pdbpp/pdbpp
+    "pre-commit",
+    "rich",  # https://github.com/Textualize/rich
+    "ruff",
 ]
 
 [project.urls]
-homepage = "https://github.com/funkelab/ilpy"
-repository = "https://github.com/funkelab/ilpy"
+homepage = "https://github.com/tlambert03/ilpy"
+repository = "https://github.com/tlambert03/ilpy"
 
-[tool.setuptools]
-packages = ["ilpy"]
-package-data = { "ilpy" = ["py.typed", "*.pyi"] }
-
-[tool.setuptools.dynamic]
-version = { attr = "ilpy.__version__" }
-readme = { file = ["README.md"] }
-
-# https://beta.ruff.rs/docs
+# https://docs.astral.sh/ruff
 [tool.ruff]
+line-length = 88
 target-version = "py39"
-src = ["ilpy"]
+src = ["src"]
 
+# https://docs.astral.sh/ruff/rules
 [tool.ruff.lint]
+pydocstyle = { convention = "numpy" }
 select = [
-    "F",   # pyflakes
-    "W",   # pyflakes
-    "E",   # pycodestyle
-    "I",   # isort
-    "UP",  # pyupgrade 
-    "RUF", # ruff specific rules
+    "E",    # style errors
+    "W",    # style warnings
+    "F",    # flakes
+    "D",    # pydocstyle
+    "D417", # Missing argument descriptions in Docstrings
+    "I",    # isort
+    "UP",   # pyupgrade
+    "C4",   # flake8-comprehensions
+    "B",    # flake8-bugbear
+    "A001", # flake8-builtins
+    "RUF",  # ruff-specific rules
+    "TCH",  # flake8-type-checking
+    "TID",  # flake8-tidy-imports
+]
+ignore = [
+    "D401", # First line should be in imperative mood (remove to opt in)
 ]
 
-[tool.mypy]
-files = "ilpy"
-strict = true                 # feel free to relax this if it's annoying
-disallow_any_generics = false
-ignore_missing_imports = true
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["D", "S"]
 
-# https://coverage.readthedocs.io/en/6.4/config.html
+# https://docs.astral.sh/ruff/formatter/
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = false  # default is false
+
+# https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+files = "src/**/"
+strict = true
+disallow_any_generics = false
+disallow_subclassing_any = false
+show_error_codes = true
+pretty = true
+
+# https://docs.pytest.org/
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+filterwarnings = ["error"]
+
+# https://coverage.readthedocs.io/
 [tool.coverage.report]
+show_missing = true
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
@@ -77,7 +112,15 @@ exclude_lines = [
     "except ImportError",
     "\\.\\.\\.",
     "raise NotImplementedError()",
+    "pass",
 ]
+
 [tool.coverage.run]
-source = ['ilpy']
-plugins = ["Cython.Coverage"]
+source = ["ilpy"]
+
+[tool.check-manifest]
+ignore = [
+    ".pre-commit-config.yaml",
+    ".ruff_cache/**/*",
+    "tests/**/*",
+]

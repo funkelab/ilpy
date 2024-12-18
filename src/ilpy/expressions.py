@@ -4,9 +4,12 @@ import ast
 import sys
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import Any, ClassVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Union
 
-from ilpy.wrapper import Constraint, Objective, Relation, Sense
+from ._constants import Relation, Sense
+
+if TYPE_CHECKING:
+    from ._components import Constraint, Objective
 
 Number = Union[float, int]
 
@@ -22,7 +25,7 @@ def recursion_limit_raised_by(N: int = 5000) -> Iterator[None]:
         sys.setrecursionlimit(old_limit)
 
 
-class Expression(ast.AST):
+class Expression(ast.expr):
     """Base class for all expression nodes.
 
     Expressions allow ilpy to represent mathematical expressions in an
@@ -38,6 +41,8 @@ class Expression(ast.AST):
 
     def as_constraint(self) -> Constraint:
         """Create an ilpy.Constraint object from this expression."""
+        from ._constraints import Constraint
+
         l_coeffs, q_coeffs, value = _get_coeff_indices(self)
         return Constraint.from_coefficients(
             coefficients=l_coeffs,
@@ -51,6 +56,7 @@ class Expression(ast.AST):
         if _get_relation(self) is not None:  # pragma: no cover
             # TODO: may be supported in the future, eg. for piecewise objectives?
             raise ValueError(f"Objective function cannot have comparisons: {self}")
+        from ._components import Objective
 
         l_coeffs, q_coeffs, value = _get_coeff_indices(self)
         return Objective.from_coefficients(
