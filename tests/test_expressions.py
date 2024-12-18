@@ -4,7 +4,7 @@ import sys
 
 import pytest
 from ilpy.expressions import Expression, Variable, _get_coefficients
-from ilpy.wrapper import (
+from ilpy import (
     Constraint,
     Constraints,
     Objective,

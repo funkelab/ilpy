@@ -1,10 +1,14 @@
-from abc import ABC, abstractmethod
-from collections.abc import Mapping
-from typing import Callable
+from __future__ import annotations
 
-from ilpy._components import Constraint, Constraints, Objective
-from ilpy._constants import VariableType
-from ilpy._solver import Solution
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from ilpy._components import Constraint, Constraints, Objective
+    from ilpy._constants import VariableType
+    from ilpy._solver import Solution
 
 
 class SolverBackend(ABC):

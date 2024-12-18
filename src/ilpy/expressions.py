@@ -41,7 +41,7 @@ class Expression(ast.expr):
 
     def as_constraint(self) -> Constraint:
         """Create an ilpy.Constraint object from this expression."""
-        from ._constraints import Constraint
+        from ._components import Constraint
 
         l_coeffs, q_coeffs, value = _get_coeff_indices(self)
         return Constraint.from_coefficients(
@@ -336,8 +336,8 @@ def _get_coefficients(
 
     Example:
 
-        >>> u = Variable('u')
-        >>> v = Variable('v')
+        >>> u = Variable("u")
+        >>> v = Variable("v")
         >>> _get_coefficients(2 * u - 5 * v <= 7)
         {u: 2, v: -5, None: -7}
 

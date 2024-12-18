@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import operator
 import os
-from collections.abc import Iterable, Sequence
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 from unittest.mock import Mock
 
-import ilpy
 import numpy.testing as npt
 import pytest
+
+import ilpy
 from ilpy.expressions import Expression, Variable
-from ilpy.wrapper import VariableType
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from ilpy._constants import VariableType
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)

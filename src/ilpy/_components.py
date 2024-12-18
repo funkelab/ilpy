@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Iterator, SupportsIndex
+from typing import TYPE_CHECKING, SupportsIndex
 
 from ilpy._constants import Sense
 
 from ._constants import Relation
-from ._solver import Solution
 from .expressions import Expression
 
 if TYPE_CHECKING:
+    from ._solver import Solution
+
     LinearCoeffs = Sequence[float] | Mapping[int, float]
     QCoeffs = Mapping[tuple[int, int], float] | Iterable[tuple[tuple[int, int], float]]
 

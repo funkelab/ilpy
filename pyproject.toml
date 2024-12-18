@@ -16,12 +16,14 @@ sources = ["src"]
 # https://peps.python.org/pep-0621/
 [project]
 name = "ilpy"
-dynamic = ["version"]
-description = "Unified interface for popular MIP solvers."
-readme = "README.md"
+description = "Python wrappers for popular MIP solvers."
 requires-python = ">=3.9"
-license = { text = "BSD-3-Clause" }
-authors = [{ name = "Talley Lambert", email = "talley.lambert@gmail.com" }]
+license = { text = "MIT" }
+authors = [
+    { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
+    { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
+]
+dynamic = ["version", "readme"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: BSD License",
@@ -35,25 +37,18 @@ classifiers = [
 ]
 dependencies = []
 
+# extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov"]
-dev = [
-    "ipython",
-    "mypy",
-    "pdbpp",  # https://github.com/pdbpp/pdbpp
-    "pre-commit",
-    "rich",  # https://github.com/Textualize/rich
-    "ruff",
-]
+dev = ["ruff", "mypy", "pytest", "pytest-cov", "numpy", "gurobipy", "pyscipopt"]
+docs = ["sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
 
 [project.urls]
-homepage = "https://github.com/tlambert03/ilpy"
-repository = "https://github.com/tlambert03/ilpy"
+homepage = "https://github.com/funkelab/ilpy"
+repository = "https://github.com/funkelab/ilpy"
 
 # https://docs.astral.sh/ruff
 [tool.ruff]
-line-length = 88
 target-version = "py39"
 src = ["src"]
 
@@ -72,7 +67,7 @@ select = [
     "B",    # flake8-bugbear
     "A001", # flake8-builtins
     "RUF",  # ruff-specific rules
-    "TCH",  # flake8-type-checking
+    "TC",   # flake8-type-checking
     "TID",  # flake8-tidy-imports
 ]
 ignore = [
@@ -85,7 +80,7 @@ ignore = [
 # https://docs.astral.sh/ruff/formatter/
 [tool.ruff.format]
 docstring-code-format = true
-skip-magic-trailing-comma = false  # default is false
+skip-magic-trailing-comma = false # default is false
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
@@ -117,10 +112,3 @@ exclude_lines = [
 
 [tool.coverage.run]
 source = ["ilpy"]
-
-[tool.check-manifest]
-ignore = [
-    ".pre-commit-config.yaml",
-    ".ruff_cache/**/*",
-    "tests/**/*",
-]

@@ -2,9 +2,9 @@ from collections.abc import Mapping
 from typing import Callable, NamedTuple, Sequence, SupportsIndex
 
 from ._components import Constraint, Constraints, Objective
-from ._constants import Preference, VariableType
+from ._constants import VariableType
 from .expressions import Expression
-from .solver_backends import SolverBackend, create_backend
+from .solver_backends import SolverBackend, create_backend, Preference
 
 
 class Solution(NamedTuple):
