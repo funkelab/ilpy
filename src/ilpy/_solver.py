@@ -1,11 +1,18 @@
-from collections.abc import Iterator, Mapping, Sequence
-from dataclasses import dataclass
-from typing import Any, Callable
+from __future__ import annotations
 
-from ._components import Constraint, Constraints, Objective
-from ._constants import SolverStatus, VariableType
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Callable
+
 from .expressions import Expression
 from .solver_backends import Preference, SolverBackend, create_backend
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping, Sequence
+
+    import numpy as np
+
+    from ._components import Constraint, Constraints, Objective
+    from ._constants import SolverStatus, VariableType
 
 
 @dataclass
@@ -16,7 +23,7 @@ class Solution:
     time: float
     native_status: Any = None
 
-    def __array__(self) -> Sequence[float]:
+    def __array__(self) -> np.ndarray:
         import numpy as np
 
         return np.asarray(self.variable_values)

@@ -1,11 +1,16 @@
-from collections.abc import Mapping
-from typing import Any, Callable, Literal
+from __future__ import annotations
 
-from ilpy._components import Constraint, Constraints, Objective
+from typing import TYPE_CHECKING, Any, Callable, Literal
+
 from ilpy._constants import Relation, Sense, SolverStatus, VariableType
 from ilpy._solver import Solution
 
 from ._base import SolverBackend
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from ilpy._components import Constraint, Constraints, Objective
 
 try:
     import pyscipopt as scip

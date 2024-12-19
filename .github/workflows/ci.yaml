@@ -55,7 +55,7 @@ jobs:
         run: uv python install
 
       - name: Install the project
-        run: uv sync --dev
+        run: uv sync --extra test
 
       - name: run tests
         run: uv run pytest --color yes -v --cov ilpy --cov-report=xml
