@@ -85,8 +85,7 @@ def test_solve(preference: ilpy.Preference, case: Case) -> None:
     mock = Mock()
     solution = ilpy.solve(**kwargs, preference=preference, on_event=mock)
     npt.assert_allclose(solution, expectation)
-    # if preference == ilpy.Preference.Scip:
-    # assert mock.call_count > 0
+    assert mock.call_count > 0
     assert all(
         "event_type" in x.args[0] and "backend" in x.args[0]
         for x in mock.call_args_list

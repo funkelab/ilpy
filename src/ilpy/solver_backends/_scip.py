@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 try:
     import pyscipopt as scip
+    from pyscipopt import SCIP_EVENTTYPE
 except ImportError:
     raise ImportError(
         "pyscipopt not installed, but required for GurobiSolver. "
@@ -46,7 +47,9 @@ STATUS_MAP: Mapping[str, SolverStatus] = {
     "unknown": SolverStatus.UNKNOWN,
     "userinterrupt": SolverStatus.USERINTERRUPT,
 }
-
+EVENT_NAME_MAP = {
+    val: name for name, val in SCIP_EVENTTYPE.__dict__.items() if name.isupper()
+}
 
 INF = float("inf")
 
@@ -59,6 +62,10 @@ class ScipSolver(SolverBackend):
         variable_types: Mapping[int, VariableType],
     ) -> None:
         self._model = model = scip.Model()
+        self._model.includeEventhdlr(
+            EventHandler(self), "EventHandler", "Handles custom events"
+        )
+
         # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
         vtype = VTYPE_MAP[default_variable_type]
         self._vars: list[scip.Variable] = []
@@ -180,3 +187,73 @@ class ScipSolver(SolverBackend):
 
     def native_model(self) -> Any:
         return self._model
+
+
+class EventHandler(scip.Eventhdlr):
+    def __init__(self, backend: ScipSolver):
+        """event handler to capture SCIP events and pass data to the backend."""
+        self.backend = backend
+
+    def eventinit(self) -> None:
+        """Initialize the event handler and register the desired events."""
+        # Register PRESOLVEROUND and BESTSOLFOUND events
+        self.model.catchEvent(SCIP_EVENTTYPE.PRESOLVEROUND, self)
+        self.model.catchEvent(SCIP_EVENTTYPE.BESTSOLFOUND, self)
+
+    def eventexit(self) -> None:
+        """Unregister events when the handler exits."""
+        self.model.dropEvent(SCIP_EVENTTYPE.PRESOLVEROUND, self)
+        self.model.dropEvent(SCIP_EVENTTYPE.BESTSOLFOUND, self)
+
+    def eventexec(self, event: scip.Event) -> None:
+        """Handle the event execution."""
+        # Get the event type
+        eventtype = event.getType()
+        m = self.model
+        event_type: str = EVENT_NAME_MAP.get(eventtype, "UNKNOWN")
+
+        event_data = {
+            "event_type": event_type,
+            "backend": "scip",
+            "deterministic_time": self.model.getSolvingTime(),
+        }
+
+        # Process PRESOLVEROUND event
+        if eventtype == SCIP_EVENTTYPE.PRESOLVEROUND:
+            event_data.update(
+                {
+                    "nativeconss": m.getNConss(),  # SCIPgetNConss
+                    "nbinvars": m.getNBinVars(),  # SCIPgetNBinVars
+                    "nintvars": m.getNIntVars(),  # SCIPgetNIntVars
+                    "nimplvars": m.getNImplVars(),  # SCIPgetNImplVars
+                    "nenabledconss": ...,  # SCIPgetNEnabledConss
+                    "upperbound": ...,  # SCIPgetUpperbound
+                    "nactiveconss": ...,  # SCIPgetNActiveConss
+                    "cutoffbound": ...,  # SCIPgetCutoffbound
+                    "nfixedvars": ...,  # SCIPgetNFixedVars
+                }
+            )
+
+        # Process BESTSOLFOUND event
+        elif eventtype == SCIP_EVENTTYPE.BESTSOLFOUND:
+            event_data.update(
+                {
+                    "avgdualbound": ...,  # SCIPgetAvgDualbound
+                    "avglowerbound": ...,  # SCIPgetAvgLowerbound
+                    "dualbound": m.getDualbound(),  # SCIPgetDualbound
+                    "gap": m.getGap(),  # SCIPgetGap
+                    "lowerbound": ...,  # SCIPgetLowerbound
+                    "nactiveconss": ...,  # SCIPgetNActiveConss
+                    "nbestsolsfound": m.getNBestSolsFound(),  # SCIPgetNBestSolsFound
+                    "nenabledconss": ...,  # SCIPgetNEnabledConss
+                    "nlimsolsfound": m.getNLimSolsFound(),  # SCIPgetNLimSolsFound
+                    "nlps": m.getNLPs(),  # SCIPgetNLPs
+                    "nnzs": ...,  # SCIPgetNNZs
+                    "nsolsfound": m.getNSolsFound(),  # SCIPgetNSolsFound
+                    "primalbound": m.getPrimalbound(),  # SCIPgetPrimalbound
+                    "transgap": ...,  # SCIPgetTransGap
+                }
+            )
+
+        # Emit the processed event data
+        self.backend.emit_event_data(event_data)  # type: ignore [arg-type]

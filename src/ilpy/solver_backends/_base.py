@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -9,9 +9,22 @@ if TYPE_CHECKING:
     from ilpy._components import Constraint, Constraints, Objective
     from ilpy._constants import VariableType
     from ilpy._solver import Solution
+    from ilpy.event_data import EventData
 
 
 class SolverBackend(ABC):
+    def __init__(self) -> None:
+        self._event_callback: Callable[[EventData], None] | None = None
+
+    def set_event_callback(
+        self, callback: Callable[[Mapping[str, float | str]], None] | None
+    ) -> None:
+        self._event_callback = cast("Callable[[EventData], None] | None", callback)
+
+    def emit_event_data(self, data: EventData) -> None:
+        if self._event_callback:
+            self._event_callback(data)
+
     @abstractmethod
     def initialize(
         self,
@@ -40,11 +53,6 @@ class SolverBackend(ABC):
 
     @abstractmethod
     def set_verbose(self, verbose: bool) -> None: ...
-
-    @abstractmethod
-    def set_event_callback(
-        self, callback: Callable[[Mapping[str, float | str]], None] | None
-    ) -> None: ...
 
     @abstractmethod
     def solve(self) -> Solution: ...

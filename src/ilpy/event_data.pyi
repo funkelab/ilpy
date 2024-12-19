@@ -1,6 +1,12 @@
-from typing import Literal, TypedDict
+from typing import Literal, TypeAlias, TypedDict
 
 __all__ = ["EventData", "GurobiData", "SCIPData"]
+
+GurobiEventType: TypeAlias = Literal[
+    "PRESOLVE", "SIMPLEX", "MIP", "MIPSOL", "MIPNODE", "MESSAGE", "UNKNOWN"
+]
+SCIPEventType: TypeAlias = Literal["PRESOLVEROUND", "BESTSOLFOUND"]
+EventType: TypeAlias = GurobiEventType | SCIPEventType
 
 class _GurobiData(TypedDict, total=False):
     backend: Literal["gurobi"]
@@ -71,7 +77,7 @@ class SCIPPresolve(_SCIPData):
     nbinvars: int
     nintvars: int
     nimplvars: int
-    nenabledconss: int
+    # nenabledconss: int
     upperbound: float
     nactiveconss: int
     cutoffbound: float

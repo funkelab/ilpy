@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, cast
+
+import numpy as np
 
 from ilpy._constants import Relation, Sense, SolverStatus, VariableType
 from ilpy._solver import Solution
@@ -11,9 +13,12 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from ilpy._components import Constraint, Constraints, Objective
+    from ilpy.event_data import GurobiData
 
 try:
     import gurobipy as gb
+    from gurobipy import GRB
+
 except ImportError:
     raise ImportError(
         "Gurobipy not installed, but required for GurobiSolver. "
@@ -22,36 +27,40 @@ except ImportError:
 
 # map ilpy variable types to gurobipy variable types
 VTYPE_MAP: Mapping[int, str] = {
-    VariableType.Continuous: gb.GRB.CONTINUOUS,
-    VariableType.Binary: gb.GRB.BINARY,
-    VariableType.Integer: gb.GRB.INTEGER,
+    VariableType.Continuous: GRB.CONTINUOUS,
+    VariableType.Binary: GRB.BINARY,
+    VariableType.Integer: GRB.INTEGER,
 }
 SENSE_MAP: Mapping[Sense, int] = {
-    Sense.Minimize: gb.GRB.MINIMIZE,
-    Sense.Maximize: gb.GRB.MAXIMIZE,
+    Sense.Minimize: GRB.MINIMIZE,
+    Sense.Maximize: GRB.MAXIMIZE,
 }
 
 STATUS_MAP: Mapping[int, SolverStatus] = {
-    gb.GRB.LOADED: SolverStatus.UNKNOWN,
-    gb.GRB.OPTIMAL: SolverStatus.OPTIMAL,
-    gb.GRB.INFEASIBLE: SolverStatus.INFEASIBLE,
-    gb.GRB.UNBOUNDED: SolverStatus.UNBOUNDED,
-    gb.GRB.INF_OR_UNBD: SolverStatus.INF_OR_UNBOUNDED,
-    gb.GRB.TIME_LIMIT: SolverStatus.TIMELIMIT,
-    gb.GRB.NODE_LIMIT: SolverStatus.NODELIMIT,
-    gb.GRB.SOLUTION_LIMIT: SolverStatus.SOLUTIONLIMIT,
-    gb.GRB.INTERRUPTED: SolverStatus.USERINTERRUPT,
-    gb.GRB.NUMERIC: SolverStatus.NUMERIC,
-    gb.GRB.SUBOPTIMAL: SolverStatus.SUBOPTIMAL,
+    GRB.LOADED: SolverStatus.UNKNOWN,
+    GRB.OPTIMAL: SolverStatus.OPTIMAL,
+    GRB.INFEASIBLE: SolverStatus.INFEASIBLE,
+    GRB.UNBOUNDED: SolverStatus.UNBOUNDED,
+    GRB.INF_OR_UNBD: SolverStatus.INF_OR_UNBOUNDED,
+    GRB.TIME_LIMIT: SolverStatus.TIMELIMIT,
+    GRB.NODE_LIMIT: SolverStatus.NODELIMIT,
+    GRB.SOLUTION_LIMIT: SolverStatus.SOLUTIONLIMIT,
+    GRB.INTERRUPTED: SolverStatus.USERINTERRUPT,
+    GRB.NUMERIC: SolverStatus.NUMERIC,
+    GRB.SUBOPTIMAL: SolverStatus.SUBOPTIMAL,
 }
 
 
 class GurobiSolver(SolverBackend):
     def __init__(self) -> None:
+        super().__init__()
         # we put this in __init__ instead of initialize so that it will raise an
         # exception inside of create_backend if the module is imported but the
         # license is not available
         self._model = gb.Model()
+        # 2 = non-convex quadratic problems are solved by means of translating them
+        # into bilinear form and applying spatial branching.
+        self._model.params.NonConvex = 2
 
     def initialize(
         self,
@@ -59,16 +68,15 @@ class GurobiSolver(SolverBackend):
         default_variable_type: VariableType,
         variable_types: Mapping[int, VariableType],  # TODO
     ) -> None:
+        self._reset()
+        # clear if we have any
         # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
         vtype = VTYPE_MAP[default_variable_type]
-        self._vars = self._model.addVars(
-            num_variables, lb=-gb.GRB.INFINITY, vtype=vtype
-        )
-        self._event_callback: Callable[[Mapping[str, float | str]], None] | None = None
+        self._vars = self._model.addVars(num_variables, lb=-GRB.INFINITY, vtype=vtype)
 
-        # 2 = non-convex quadratic problems are solved by means of translating them
-        # into bilinear form and applying spatial branching.
-        self._model.params.NonConvex = 2
+    def _reset(self) -> None:
+        self._model.remove(self._model.getVars())
+        self._model.remove(self._model.getConstrs())
 
     def set_objective(self, objective: Objective) -> None:
         obj: gb.LinExpr | gb.QuadExpr = gb.quicksum(
@@ -120,13 +128,12 @@ class GurobiSolver(SolverBackend):
     def set_verbose(self, verbose: bool) -> None:
         self._model.params.OutputFlag = 1 if verbose else 0
 
-    def set_event_callback(
-        self, callback: Callable[[Mapping[str, float | str]], None] | None
-    ) -> None:
-        self._event_callback = callback
+    def _solver_callback(self, model: gb.Model, where: int) -> None:
+        if data := _get_event_data(model, where):
+            self.emit_event_data(data)
 
     def solve(self) -> Solution:
-        self._model.optimize()  # TODO: event callback
+        self._model.optimize(self._solver_callback)
 
         native_status = self._model.Status
         status = STATUS_MAP.get(native_status, SolverStatus.OTHER)
@@ -156,3 +163,106 @@ class GurobiSolver(SolverBackend):
 
     def native_model(self) -> gb.Model:
         return self._model
+
+
+def get_event_type_name(where: int) -> str:
+    event_names = {
+        GRB.Callback.POLLING: "POLLING",
+        GRB.Callback.PRESOLVE: "PRESOLVE",
+        GRB.Callback.SIMPLEX: "SIMPLEX",
+        GRB.Callback.MIP: "MIP",
+        GRB.Callback.MIPSOL: "MIPSOL",
+        GRB.Callback.MIPNODE: "MIPNODE",
+        GRB.Callback.MESSAGE: "MESSAGE",
+        GRB.Callback.BARRIER: "BARRIER",
+        GRB.Callback.MULTIOBJ: "MULTIOBJ",
+        GRB.Callback.IIS: "IIS",
+    }
+    return event_names.get(where, "UNKNOWN")
+
+
+def _get_event_data(model: gb.Model, where: int) -> GurobiData | None:
+    # POLLING callback: only called if no other callbacks have been triggered recently
+    if where == GRB.Callback.POLLING:
+        return None
+
+    # Get the event type name
+    event_name = get_event_type_name(where)
+
+    # Initialize the event data dictionary
+    event_data = {"event_type": event_name, "backend": "gurobi"}
+
+    # Collect common callback data
+    runtime = model.cbGet(GRB.Callback.RUNTIME)
+    work = model.cbGet(GRB.Callback.WORK)
+    event_data.update({"runtime": runtime, "work": work})
+
+    if where == GRB.Callback.PRESOLVE:
+        # Presolve-specific data
+        event_data.update(
+            {
+                "pre_coldel": model.cbGet(GRB.Callback.PRE_COLDEL),
+                "pre_rowdel": model.cbGet(GRB.Callback.PRE_ROWDEL),
+                "pre_senchg": model.cbGet(GRB.Callback.PRE_SENCHG),
+                "pre_bndchg": model.cbGet(GRB.Callback.PRE_BNDCHG),
+                "pre_coechg": model.cbGet(GRB.Callback.PRE_COECHG),
+            }
+        )
+    elif where == GRB.Callback.SIMPLEX:
+        # Simplex-specific data
+        event_data.update(
+            {
+                "itrcnt": model.cbGet(GRB.Callback.SPX_ITRCNT),
+                "objval": model.cbGet(GRB.Callback.SPX_OBJVAL),
+                "priminf": model.cbGet(GRB.Callback.SPX_PRIMINF),
+                "dualinf": model.cbGet(GRB.Callback.SPX_DUALINF),
+                "ispert": model.cbGet(GRB.Callback.SPX_ISPERT),
+            }
+        )
+    elif where == GRB.Callback.MIP:
+        # MIP-specific data
+        objbst = model.cbGet(GRB.Callback.MIP_OBJBST)
+        objbnd = model.cbGet(GRB.Callback.MIP_OBJBND)
+        event_data.update(
+            {
+                "objbst": objbst,
+                "objbnd": objbnd,
+                "nodcnt": model.cbGet(GRB.Callback.MIP_NODCNT),
+                "solcnt": model.cbGet(GRB.Callback.MIP_SOLCNT),
+                "cutcnt": model.cbGet(GRB.Callback.MIP_CUTCNT),
+                "nodlft": model.cbGet(GRB.Callback.MIP_NODLFT),
+                "itrcnt": model.cbGet(GRB.Callback.MIP_ITRCNT),
+                "openscenarios": model.cbGet(GRB.Callback.MIP_OPENSCENARIOS),
+                "phase": model.cbGet(GRB.Callback.MIP_PHASE),
+                "primalbound": objbst,
+                "dualbound": objbnd,
+                "gap": 100
+                * (abs(objbnd - objbst) / (np.finfo(float).eps + abs(objbst))),
+            }
+        )
+    elif where == GRB.Callback.MIPSOL:
+        # New MIP solution-specific data
+        obj = model.cbGet(GRB.Callback.MIPSOL_OBJ)
+        objbst = model.cbGet(GRB.Callback.MIPSOL_OBJBST)
+        objbnd = model.cbGet(GRB.Callback.MIPSOL_OBJBND)
+        event_data.update(
+            {
+                "obj": obj,
+                "objbst": objbst,
+                "objbnd": objbnd,
+                "nodcnt": model.cbGet(GRB.Callback.MIPSOL_NODCNT),
+                "solcnt": model.cbGet(GRB.Callback.MIPSOL_SOLCNT),
+                "openscenarios": model.cbGet(GRB.Callback.MIPSOL_OPENSCENARIOS),
+                "phase": model.cbGet(GRB.Callback.MIPSOL_PHASE),
+                "primalbound": objbst,
+                "dualbound": objbnd,
+                "gap": 100
+                * (abs(objbnd - objbst) / (np.finfo(float).eps + abs(objbst))),
+            }
+        )
+    elif where == GRB.Callback.MESSAGE:
+        # Message-specific data
+        msg = model.cbGet(GRB.Callback.MSG_STRING)
+        event_data["message"] = msg
+
+    return cast("GurobiData", event_data)
