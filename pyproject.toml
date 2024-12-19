@@ -43,12 +43,11 @@ dependencies = [
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "gurobipy", "pyscipopt"]
+test = ["pytest", "pytest-cov", "gurobipy", "pyscipopt", "numpy"]
 dev = [
     "ilpy[test]",
     "ipython",
     "mypy",
-    "numpy",
     "pre-commit",
     "ruff",
     "pdbpp; sys_platform != 'win32'",
