@@ -34,6 +34,7 @@ class SolverStatus(Enum):
     SUBOPTIMAL = "suboptimal"
     OTHER = "other"
 
+
 # Gurobi Status	        PySCIPOpt Status	        Meaning
 # GRB.LOADED	        SCIP_STATUS_UNKNOWN	        Model loaded but not optimized yet.
 # GRB.OPTIMAL	        SCIP_STATUS_OPTIMAL	        Optimal solution found.

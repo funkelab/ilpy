@@ -74,6 +74,7 @@ def solve(
             if TYPE_CHECKING:
                 from ilpy import EventData
 
+
             def callback(data: EventData) -> None:
                 # backend and event_type are guaranteed to be present
                 # they will narrow down the available keys

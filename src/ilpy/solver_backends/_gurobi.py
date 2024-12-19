@@ -47,7 +47,7 @@ STATUS_MAP: Mapping[int, SolverStatus] = {
 
 
 class GurobiSolver(SolverBackend):
-    def __init__(self):
+    def __init__(self) -> None:
         # we put this in __init__ instead of initialize so that it will raise an
         # exception inside of create_backend if the module is imported but the
         # license is not available
