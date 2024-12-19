@@ -64,7 +64,13 @@ jobs:
       - name: upload coverage
         uses: codecov/codecov-action@v5
 
-  # we only deploy the sdist to PyPI, the wheel is still complicated
+  test-motile:
+    uses: pyapp-kit/workflows/.github/workflows/test-dependents.yml@v2
+    with:
+      dependency-repo: funkelab/motile
+      dependency-extras: "test"
+      python-version: "3.11"
+
   deploy:
     needs: test
     if: startsWith(github.ref, 'refs/tags')
