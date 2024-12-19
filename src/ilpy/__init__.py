@@ -18,8 +18,19 @@ if TYPE_CHECKING:
     from .event_data import GurobiData as GurobiData
     from .event_data import SCIPData as SCIPData
 
-Maximize = Sense.Maximize
+
+# make enums available at the module level
+Any = Preference.Any
+Scip = Preference.Scip
+Gurobi = Preference.Gurobi
+Continuous = VariableType.Continuous
+Integer = VariableType.Integer
+Binary = VariableType.Binary
 Minimize = Sense.Minimize
+Maximize = Sense.Maximize
+LessEqual = Relation.LessEqual
+Equal = Relation.Equal
+GreaterEqual = Relation.GreaterEqual
 
 __all__ = [
     "Constraint",
