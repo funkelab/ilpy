@@ -47,16 +47,23 @@ STATUS_MAP: Mapping[int, SolverStatus] = {
 
 
 class GurobiSolver(SolverBackend):
+    def __init__(self):
+        # we put this in __init__ instead of initialize so that it will raise an
+        # exception inside of create_backend if the module is imported but the
+        # license is not available
+        self._model = gb.Model()
+
     def initialize(
         self,
         num_variables: int,
         default_variable_type: VariableType,
         variable_types: Mapping[int, VariableType],  # TODO
     ) -> None:
-        self._model = model = gb.Model()
         # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
         vtype = VTYPE_MAP[default_variable_type]
-        self._vars = model.addVars(num_variables, lb=-gb.GRB.INFINITY, vtype=vtype)
+        self._vars = self._model.addVars(
+            num_variables, lb=-gb.GRB.INFINITY, vtype=vtype
+        )
         self._event_callback: Callable[[Mapping[str, float | str]], None] | None = None
 
         # 2 = non-convex quadratic problems are solved by means of translating them

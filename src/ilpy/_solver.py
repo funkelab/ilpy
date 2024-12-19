@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable
 
 from .expressions import Expression
-from .solver_backends import Preference, SolverBackend, create_backend
+from .solver_backends import Preference, SolverBackend, create_solver_backend
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping, Sequence
@@ -50,7 +50,7 @@ class Solver:
         preference: Preference = Preference.Any,
     ) -> None:
         vtpes: dict[int, VariableType] = dict(variable_types) if variable_types else {}
-        self._backend: SolverBackend = create_backend(preference)
+        self._backend: SolverBackend = create_solver_backend(preference)
         self._num_variables = num_variables
         self._backend.initialize(num_variables, default_variable_type, vtpes)
 

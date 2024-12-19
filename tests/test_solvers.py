@@ -20,9 +20,11 @@ if TYPE_CHECKING:
 # (this is the best way I could find to determine this so far)
 gu_marks = []
 try:
+    from ilpy.solver_backends import create_solver_backend
+
+    create_solver_backend(ilpy.Preference.Gurobi)
     import gurobipy as gb
 
-    ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
     HAVE_GUROBI = True
 except Exception as e:
     gu_marks.append(pytest.mark.xfail(reason=f"Gurobi error: {e}"))
