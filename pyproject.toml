@@ -43,7 +43,13 @@ dependencies = [
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov", "gurobipy", "pyscipopt", "numpy"]
+test = [
+    "pytest",
+    "pytest-cov",
+    "gurobipy; python_version < '3.13' ",
+    "pyscipopt",
+    "numpy",
+]
 dev = [
     "ilpy[test]",
     "ipython",
