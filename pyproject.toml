@@ -35,7 +35,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    # not technically required if gurobipy is present... but nice to have something always work
+    "pyscipopt",
+]
 
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
@@ -67,9 +70,9 @@ src = ["src"]
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 select = [
-    "E",    # style errors
-    "W",    # style warnings
-    "F",    # flakes
+    "E", # style errors
+    "W", # style warnings
+    "F", # flakes
     # "D",    # pydocstyle
     "D417", # Missing argument descriptions in Docstrings
     "I",    # isort
