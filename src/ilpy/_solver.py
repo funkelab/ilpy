@@ -40,6 +40,9 @@ class Solution:
     def __setitem__(self, key: int, value: float) -> None:
         self.variable_values[key] = value  # type: ignore
 
+    def get_status(self) -> str:
+        return self.status.name
+
 
 class Solver:
     def __init__(
