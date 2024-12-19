@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from ilpy._constants import Relation, Sense, SolverStatus, VariableType
 from ilpy._solver import Solution
@@ -71,7 +71,6 @@ class ScipSolver(SolverBackend):
         self._vars: list[scip.Variable] = []
         for i in range(num_variables):
             self._vars.append(model.addVar(vtype=vtype, lb=-INF, name=f"x_{i}"))
-        self._event_callback: Callable[[Mapping[str, float | str]], None] | None = None
         self.use_epigraph_reformulation = False
 
     def set_objective(
@@ -154,11 +153,6 @@ class ScipSolver(SolverBackend):
 
     def set_verbose(self, verbose: bool) -> None:
         pass
-
-    def set_event_callback(
-        self, callback: Callable[[Mapping[str, float | str]], None] | None
-    ) -> None:
-        self._event_callback = callback
 
     def solve(self) -> Solution:
         self._model.optimize()  # TODO: event callback
