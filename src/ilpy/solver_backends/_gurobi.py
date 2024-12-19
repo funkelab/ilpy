@@ -21,6 +21,10 @@ VTYPE_MAP: Mapping[int, str] = {
     VariableType.Binary: gb.GRB.BINARY,
     VariableType.Integer: gb.GRB.INTEGER,
 }
+SENSE_MAP: Mapping[Sense, int] = {
+    Sense.Minimize: gb.GRB.MINIMIZE,
+    Sense.Maximize: gb.GRB.MAXIMIZE,
+}
 
 STATUS_MAP: Mapping[int, SolverStatus] = {
     gb.GRB.LOADED: SolverStatus.UNKNOWN,
@@ -42,7 +46,7 @@ class GurobiSolver(SolverBackend):
         self,
         num_variables: int,
         default_variable_type: VariableType,
-        variable_types: Mapping[int, VariableType],
+        variable_types: Mapping[int, VariableType],  # TODO
     ) -> None:
         self._model = model = gb.Model()
         # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
@@ -50,20 +54,23 @@ class GurobiSolver(SolverBackend):
         self._vars = model.addVars(num_variables, lb=-gb.GRB.INFINITY, vtype=vtype)
         self._event_callback: Callable[[Mapping[str, float | str]], None] | None = None
 
+        # 2 = non-convex quadratic problems are solved by means of translating them
+        # into bilinear form and applying spatial branching.
+        self._model.params.NonConvex = 2
+
     def set_objective(self, objective: Objective) -> None:
-        sense = (
-            gb.GRB.MINIMIZE
-            if objective.get_sense() == Sense.Minimize
-            else gb.GRB.MAXIMIZE
-        )
         obj: gb.LinExpr | gb.QuadExpr = gb.quicksum(
-            coef * var for coef, var in zip(objective, self._vars)
+            coef * var for coef, var in zip(objective, self._vars.values())
         )
         for (i, j), qcoef in objective.get_quadratic_coefficients().items():
             obj += qcoef * self._vars[i] * self._vars[j]
+        sense = SENSE_MAP[objective.get_sense()]
         self._model.setObjective(obj, sense)
 
     def set_constraints(self, constraints: Constraints) -> None:
+        # clear existing constraints
+        self._model.remove(self._model.getConstrs())
+
         for constraint in constraints:
             self.add_constraint(constraint)
 
@@ -83,19 +90,23 @@ class GurobiSolver(SolverBackend):
             self._model.addConstr(left >= value)
         elif relation == Relation.Equal:
             self._model.addConstr(left == value)
+        else:
+            raise ValueError(f"Unsupported relation: {relation}")  # pragma: no cover
 
     def set_timeout(self, timeout: float) -> None:
         self._model.params.TimeLimit = timeout
 
     def set_optimality_gap(self, gap: float, absolute: bool) -> None:
-        self._model.params.MIPGap = gap
-        self._model.params.MIPGapAbs = int(absolute)
+        if absolute:
+            self._model.params.MIPGapAbs = gap
+        else:
+            self._model.params.MIPGap = gap
 
     def set_num_threads(self, num_threads: int) -> None:
         self._model.params.Threads = num_threads
 
     def set_verbose(self, verbose: bool) -> None:
-        self._model.params.OutputFlag = int(verbose)
+        self._model.params.OutputFlag = 1 if verbose else 0
 
     def set_event_callback(
         self, callback: Callable[[Mapping[str, float | str]], None] | None
@@ -105,11 +116,31 @@ class GurobiSolver(SolverBackend):
     def solve(self) -> Solution:
         self._model.optimize()  # TODO: event callback
 
-        status = STATUS_MAP.get(self._model.Status, SolverStatus.OTHER)
+        native_status = self._model.Status
+        status = STATUS_MAP.get(native_status, SolverStatus.OTHER)
 
-        if status == SolverStatus.OPTIMAL:
+        solcount = self._model.SolCount
+        if (
+            status
+            in (SolverStatus.OPTIMAL, SolverStatus.SUBOPTIMAL, SolverStatus.TIMELIMIT)
+            and solcount > 0
+        ):
             solution = [var.X for var in self._vars.values()]
+            objective_value = self._model.ObjVal
+        elif status == SolverStatus.TIMELIMIT:
+            solution = [var.X for var in self._vars.values()]
+            objective_value = self._model.ObjVal
         else:
             solution = [0] * len(self._vars)
+            objective_value = 0
 
-        return Solution(solution, self._model.ObjVal, status, time=self._model.Runtime)
+        return Solution(
+            variable_values=solution,
+            objective_value=objective_value,
+            time=self._model.Runtime,
+            status=status,
+            native_status=native_status,
+        )
+
+    def native_model(self) -> gb.Model:
+        return self._model

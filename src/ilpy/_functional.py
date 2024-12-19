@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable, Literal
 
 from ._components import Constraint, Objective
 from ._constants import Relation, Sense, VariableType
-from ._solver import Solver
+from ._solver import Solution, Solver
 from .expressions import Expression
 from .solver_backends import Preference
 
@@ -25,7 +25,7 @@ def solve(
     verbose: bool = False,
     preference: PreferenceType = Preference.Any,
     on_event: Callable[[Mapping], None] | None = None,
-) -> list[float]:
+) -> Solution:
     """Solve an objective subject to constraints.
 
     This is a functional interface to the solver. It creates a solver instance
@@ -121,7 +121,7 @@ def solve(
 
     solver.set_event_callback(on_event)
     solution = solver.solve()
-    return list(solution)
+    return solution
 
 
 _op_map = {

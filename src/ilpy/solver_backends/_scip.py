@@ -21,19 +21,27 @@ VTYPE_MAP: Mapping[int, str] = {
     VariableType.Binary: "B",
     VariableType.Integer: "I",
 }
-STATUS_MAP: Mapping[int, SolverStatus] = {
-    scip.SCIP_STATUS.UNKNOWN: SolverStatus.UNKNOWN,
-    scip.SCIP_STATUS.OPTIMAL: SolverStatus.OPTIMAL,
-    scip.SCIP_STATUS.INFEASIBLE: SolverStatus.INFEASIBLE,
-    scip.SCIP_STATUS.UNBOUNDED: SolverStatus.UNBOUNDED,
-    scip.SCIP_STATUS.INFORUNBD: SolverStatus.INF_OR_UNBOUNDED,
-    scip.SCIP_STATUS.TIMELIMIT: SolverStatus.TIMELIMIT,
-    scip.SCIP_STATUS.NODELIMIT: SolverStatus.NODELIMIT,
-    scip.SCIP_STATUS.SOLLIMIT: SolverStatus.SOLUTIONLIMIT,
-    scip.SCIP_STATUS.USERINTERRUPT: SolverStatus.USERINTERRUPT,
-    scip.SCIP_STATUS.NUMERIC: SolverStatus.NUMERIC,
-    scip.SCIP_STATUS.SUBOPTIMAL: SolverStatus.SUBOPTIMAL,
+
+STATUS_MAP: Mapping[str, SolverStatus] = {
+    "bestsollimit": SolverStatus.SOLUTIONLIMIT,
+    "duallimit": SolverStatus.OTHER,
+    "gaplimit": SolverStatus.SUBOPTIMAL,
+    "infeasible": SolverStatus.INFEASIBLE,
+    "inforunbd": SolverStatus.INF_OR_UNBOUNDED,
+    "memlimit": SolverStatus.OTHER,
+    "nodelimit": SolverStatus.NODELIMIT,
+    "optimal": SolverStatus.OPTIMAL,
+    "primallimit": SolverStatus.SUBOPTIMAL,
+    "restartlimit": SolverStatus.OTHER,
+    "sollimit": SolverStatus.SOLUTIONLIMIT,
+    "stallnodelimit": SolverStatus.NODELIMIT,
+    "timelimit": SolverStatus.TIMELIMIT,
+    "totalnodelimit": SolverStatus.NODELIMIT,
+    "unbounded": SolverStatus.UNBOUNDED,
+    "unknown": SolverStatus.UNKNOWN,
+    "userinterrupt": SolverStatus.USERINTERRUPT,
 }
+
 
 INF = float("inf")
 
@@ -48,7 +56,7 @@ class ScipSolver(SolverBackend):
         self._model = model = scip.Model()
         # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
         vtype = VTYPE_MAP[default_variable_type]
-        self._vars = []
+        self._vars: list[scip.Variable] = []
         for i in range(num_variables):
             self._vars.append(model.addVar(vtype=vtype, lb=-INF, name=f"x_{i}"))
         self._event_callback: Callable[[Mapping[str, float | str]], None] | None = None
@@ -120,6 +128,8 @@ class ScipSolver(SolverBackend):
             self._model.addCons(left >= value)
         elif relation == Relation.Equal:
             self._model.addCons(left == value)
+        else:
+            raise ValueError(f"Unsupported relation: {relation}")  # pragma: no cover
 
     def set_timeout(self, timeout: float) -> None:
         pass
@@ -141,11 +151,27 @@ class ScipSolver(SolverBackend):
     def solve(self) -> Solution:
         self._model.optimize()  # TODO: event callback
 
-        status = STATUS_MAP.get(self._model.getStatus(), SolverStatus.OTHER)
+        native_status = self._model.getStatus()
+        status = STATUS_MAP.get(native_status, SolverStatus.OTHER)
+
+        if not self._model.getNSols():
+            variable_values = [0] * len(self._vars)
+            objective_value = 0
+        else:
+            sol = self._model.getBestSol()
+            variable_values = [self._model.getSolVal(sol, v) for v in self._vars]
+            objective_value = self._model.getSolObjVal(sol)
+
+        # Reset SCIP to allow adding constraints for future solves
+        self._model.freeTransform()
 
         return Solution(
-            [self._model.getVal(var) for var in self._vars],
-            self._model.getObjVal(),
-            status,
+            variable_values=variable_values,
+            objective_value=objective_value,
+            status=status,
             time=self._model.getSolvingTime(),
+            native_status=native_status,
         )
+
+    def native_model(self) -> Any:
+        return self._model

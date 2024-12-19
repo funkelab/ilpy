@@ -1,6 +1,6 @@
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Callable
+from typing import Any, Callable
 
 from ._components import Constraint, Constraints, Objective
 from ._constants import SolverStatus, VariableType
@@ -14,9 +14,12 @@ class Solution:
     objective_value: float
     status: SolverStatus
     time: float
+    native_status: Any = None
 
     def __array__(self) -> Sequence[float]:
-        return self.variable_values
+        import numpy as np
+
+        return np.asarray(self.variable_values)
 
     def __iter__(self) -> Iterator[float]:
         return iter(self.variable_values)
@@ -76,3 +79,6 @@ class Solver:
 
     def solve(self) -> Solution:
         return self._backend.solve()
+
+    def native_model(self) -> Any:
+        return self._backend.native_model()
