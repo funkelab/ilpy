@@ -63,31 +63,25 @@ def solve(
         callback function should accept a dict which will contain statics about the
         solving or presolving process. You can import `ilpy.EventData` from ilpy and use
         it to provide dict key hints in your IDE, but `EventData` is not available at
-        runtime.
-        See SCIP and Gurobi documentation for details what each value means.
+        runtime. See SCIP and Gurobi documentation for details what each value means.
 
-        For example::
+        For example
+
+        .. code-block:: python
 
             import ilpy
 
             if TYPE_CHECKING:
                 from ilpy import EventData
 
-
             def callback(data: EventData) -> None:
                 # backend and event_type are guaranteed to be present
                 # they will narrow down the available keys
-                if data["backend"] == "gurobi":
-                    if data["event_type"] == "MIP":
-                        print(data["gap"])
+                if data["backend"] == "gurobi" and data["event_type"] == "MIP":
+                    print(data["gap"])
 
 
             ilpy.solve(..., on_event=callback)
-
-    Returns
-    -------
-    list[float]
-        The solution to the objective.
     """
     if isinstance(sense, str):
         sense = Sense[sense.title()]

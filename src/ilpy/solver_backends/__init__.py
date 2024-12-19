@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import IntEnum, auto
 
 from ._base import SolverBackend
@@ -13,7 +15,7 @@ class Preference(IntEnum):
     Gurobi = auto()
 
 
-def create_backend(preference: Preference) -> "SolverBackend":
+def create_backend(preference: Preference) -> SolverBackend:
     """Create a solver backend based on the preference."""
     to_try = []
     if preference in (Preference.Any, Preference.Gurobi):
@@ -24,8 +26,9 @@ def create_backend(preference: Preference) -> "SolverBackend":
     for modname, clsname in to_try:
         try:
             mod = __import__(f"ilpy.solver_backends.{modname}", fromlist=[clsname])
+        except ImportError:
+            continue
+        else:
             return getattr(mod, clsname)()  # type: ignore [no-any-return]
-        except ImportError as e:
-            print(e)
 
-    raise ValueError(f"Unknown preference: {preference}")
+    raise ValueError(f"Unknown preference: {preference}")  # pragma: no cover
