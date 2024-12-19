@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "ilpy"
-copyright = "2023, Jan Funke, Talley Lambert"
+copyright = "2023, Jan Funke, Talley Lambert"  # noqa
 author = "Jan Funke, Talley Lambert"
 
 # -- General configuration ---------------------------------------------------

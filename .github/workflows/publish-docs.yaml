@@ -21,17 +21,13 @@ jobs:
         shell: bash -l {0}
     steps:
       - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/setup-python@v2
         with:
-          python-version: "3.11"
-          miniforge-version: latest
-          use-mamba: true
-          channels: conda-forge,gurobi,defaults
-          channel-priority: true
+          python-version: "3.12"
 
       - name: Install package and dependencies
         run: |
-          mamba install scip gurobi
+          python -m pip install --upgrade pip
           python -m pip install -e .[docs]
 
       - name: Build documentation
