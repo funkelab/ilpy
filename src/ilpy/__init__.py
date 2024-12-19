@@ -1,4 +1,5 @@
 from importlib.metadata import PackageNotFoundError, version
+from typing import TYPE_CHECKING
 
 try:
     __version__ = version("ilpy")
@@ -11,6 +12,11 @@ from ._functional import solve
 from ._solver import Solution, Solver
 from .expressions import Expression, Variable
 from .solver_backends import Preference, SolverBackend
+
+if TYPE_CHECKING:
+    from .event_data import EventData as EventData
+    from .event_data import GurobiData as GurobiData
+    from .event_data import SCIPData as SCIPData
 
 Maximize = Sense.Maximize
 Minimize = Sense.Minimize
