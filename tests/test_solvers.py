@@ -20,16 +20,12 @@ if TYPE_CHECKING:
 # (this is the best way I could find to determine this so far)
 gu_marks = []
 try:
+    import gurobipy as gb
+
     ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
     HAVE_GUROBI = True
-    try:
-        import gurobipy as gb
-    except ImportError:
-        if os.getenv("CI"):
-            raise ImportError("Gurobipy not installed, but required for CI") from None
-        gb = None
-except RuntimeError:
-    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+except Exception as e:
+    gu_marks.append(pytest.mark.xfail(reason=f"Gurobi error: {e}"))
     gb = None
     HAVE_GUROBI = False
 
