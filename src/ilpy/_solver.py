@@ -7,12 +7,13 @@ from .expressions import Expression
 from .solver_backends import Preference, SolverBackend, create_solver_backend
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping, Sequence
+    from collections.abc import Iterator, Sequence
 
     import numpy as np
 
     from ._components import Constraint, Constraints, Objective
     from ._constants import SolverStatus, VariableType
+    from .event_data import EventData
 
 
 @dataclass
@@ -82,9 +83,7 @@ class Solver:
     def set_verbose(self, verbose: bool) -> None:
         self._backend.set_verbose(verbose)
 
-    def set_event_callback(
-        self, callback: Callable[[Mapping[str, float | str]], None] | None
-    ) -> None:
+    def set_event_callback(self, callback: Callable[[EventData], None] | None) -> None:
         self._backend.set_event_callback(callback)
 
     def solve(self) -> Solution:

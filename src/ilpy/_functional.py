@@ -9,7 +9,9 @@ from .expressions import Expression
 from .solver_backends import Preference
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping, Sequence
+    from collections.abc import Iterable, Sequence
+
+    from .event_data import EventData
 
     ConstraintTuple = tuple[list[float], Relation | str, float]
     SenseType = Sense | Literal["minimize", "maximize"]
@@ -24,7 +26,7 @@ def solve(
     variable_type: VariableTypeType = VariableType.Continuous,
     verbose: bool = False,
     preference: PreferenceType = Preference.Any,
-    on_event: Callable[[Mapping], None] | None = None,
+    on_event: Callable[[EventData], None] | None = None,
 ) -> Solution:
     """Solve an objective subject to constraints.
 
@@ -58,7 +60,7 @@ def solve(
     preference : Preference | Literal["any", "cplex", "gurobi", "scip"]
         Backend preference, either an `ilpy.Preference` or a string in
         {"any", "cplex", "gurobi", "scip"}.  By default, `Preference.Any`.
-    on_event : Callable[[Mapping], None], optional
+    on_event : Callable[[EventData], None], optional
         A callback function that is called when an event occurs, by default None. The
         callback function should accept a dict which will contain statics about the
         solving or presolving process. You can import `ilpy.EventData` from ilpy and use
@@ -76,13 +78,16 @@ def solve(
 
 
             def callback(data: EventData) -> None:
-                # backend and event_type are guaranteed to be present
-                # they will narrow down the available keys
                 if data["backend"] == "gurobi" and data["event_type"] == "MIP":
                     print(data["gap"])
 
 
             ilpy.solve(..., on_event=callback)
+
+    Returns
+    -------
+    Solution
+        The solution to the problem.
     """
     if isinstance(sense, str):
         sense = Sense[sense.title()]

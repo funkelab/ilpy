@@ -1,17 +1,24 @@
-from typing import Literal, TypeAlias, TypedDict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, TypedDict
 
 __all__ = ["EventData", "GurobiData", "SCIPData"]
 
-GurobiEventType: TypeAlias = Literal[
-    "PRESOLVE", "SIMPLEX", "MIP", "MIPSOL", "MIPNODE", "MESSAGE", "UNKNOWN"
-]
-SCIPEventType: TypeAlias = Literal["PRESOLVEROUND", "BESTSOLFOUND"]
-EventType: TypeAlias = GurobiEventType | SCIPEventType
+if TYPE_CHECKING:
+    from typing import Literal, TypeAlias
+
+    GurobiEventType: TypeAlias = Literal[
+        "PRESOLVE", "SIMPLEX", "MIP", "MIPSOL", "MIPNODE", "MESSAGE", "UNKNOWN"
+    ]
+    SCIPEventType: TypeAlias = Literal["PRESOLVEROUND", "BESTSOLFOUND"]
+    EventType: TypeAlias = GurobiEventType | SCIPEventType
+
 
 class _GurobiData(TypedDict, total=False):
     backend: Literal["gurobi"]
     runtime: float  # Elapsed solver runtime (seconds).
     work: float  # Elapsed solver work (work units).
+
 
 class GurobiPresolve(_GurobiData):
     event_type: Literal["PRESOLVE"]
@@ -21,6 +28,7 @@ class GurobiPresolve(_GurobiData):
     pre_bndchg: int
     pre_coechg: int
 
+
 class GurobiSimplex(_GurobiData):
     event_type: Literal["SIMPLEX"]
     itrcnt: float
@@ -28,6 +36,7 @@ class GurobiSimplex(_GurobiData):
     priminf: float
     dualinf: float
     ispert: int
+
 
 class _GurobiMipData(_GurobiData):
     objbst: float
@@ -40,23 +49,28 @@ class _GurobiMipData(_GurobiData):
     dualbound: float  # alias for objbnd
     gap: float  # calculated manually from objbst and objbnd
 
+
 class GurobiMip(_GurobiMipData):
     event_type: Literal["MIP"]
     cutcnt: int
     nodlft: float
     itrcnt: float
 
+
 class GurobiMipSol(_GurobiMipData):
     event_type: Literal["MIPSOL"]
     obj: float
+
 
 class GurobiMipNode(_GurobiMipData):
     event_type: Literal["MIPNODE"]
     status: int
 
+
 class GurobiMessage(_GurobiData):
     event_type: Literal["MESSAGE"]
     message: str
+
 
 GurobiData = (
     GurobiPresolve
@@ -67,9 +81,11 @@ GurobiData = (
     | GurobiMessage
 )
 
+
 class _SCIPData(TypedDict, total=False):
     backend: Literal["scip"]
     deterministictime: float
+
 
 class SCIPPresolve(_SCIPData):
     event_type: Literal["PRESOLVEROUND"]
@@ -82,6 +98,7 @@ class SCIPPresolve(_SCIPData):
     nactiveconss: int
     cutoffbound: float
     nfixedvars: int
+
 
 class SCIPBestSol(_SCIPData):
     event_type: Literal["BESTSOLFOUND"]
@@ -99,6 +116,7 @@ class SCIPBestSol(_SCIPData):
     transgap: float
     nlps: int
     nnzs: int
+
 
 SCIPData = SCIPPresolve | SCIPBestSol
 

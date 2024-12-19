@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -16,10 +16,8 @@ class SolverBackend(ABC):
     def __init__(self) -> None:
         self._event_callback: Callable[[EventData], None] | None = None
 
-    def set_event_callback(
-        self, callback: Callable[[Mapping[str, float | str]], None] | None
-    ) -> None:
-        self._event_callback = cast("Callable[[EventData], None] | None", callback)
+    def set_event_callback(self, callback: Callable[[EventData], None] | None) -> None:
+        self._event_callback = callback
 
     def emit_event_data(self, data: EventData) -> None:
         if self._event_callback:
