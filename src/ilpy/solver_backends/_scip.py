@@ -143,16 +143,20 @@ class ScipSolver(SolverBackend):
             raise ValueError(f"Unsupported relation: {relation}")  # pragma: no cover
 
     def set_timeout(self, timeout: float) -> None:
-        pass
+        self._model.setParam("limits/time", timeout)
 
     def set_optimality_gap(self, gap: float, absolute: bool) -> None:
-        pass
+        if absolute:
+            self._model.setParam("limits/absgap", gap)
+        else:
+            self._model.setParam("limits/gap", gap)
 
     def set_num_threads(self, num_threads: int) -> None:
-        pass
+        self._model.setParam("lp/threads", num_threads)
 
     def set_verbose(self, verbose: bool) -> None:
-        pass
+        level = 4 if verbose else 0
+        self._model.setParam("display/verblevel", level)
 
     def solve(self) -> Solution:
         self._model.optimize()  # TODO: event callback
