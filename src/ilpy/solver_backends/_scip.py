@@ -55,22 +55,29 @@ INF = float("inf")
 
 
 class ScipSolver(SolverBackend):
+    def __init__(self) -> None:
+        super().__init__()
+        self._model = scip.Model(problemName="problem", defaultPlugins=True)
+        self._model.includeEventhdlr(
+            EventHandler(self), "EventHandler", "Handles custom events"
+        )
+
     def initialize(
         self,
         num_variables: int,
         default_variable_type: VariableType,
         variable_types: Mapping[int, VariableType],
     ) -> None:
-        self._model = model = scip.Model()
-        self._model.includeEventhdlr(
-            EventHandler(self), "EventHandler", "Handles custom events"
-        )
-
-        # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
-        vtype = VTYPE_MAP[default_variable_type]
+        self.set_verbose(False)
         self._vars: list[scip.Variable] = []
         for i in range(num_variables):
-            self._vars.append(model.addVar(vtype=vtype, lb=-INF, name=f"x_{i}"))
+            # Use special type if provided, otherwise default.
+            vt = variable_types.get(i, default_variable_type)
+            vtype = VTYPE_MAP[vt]
+            # ilpy uses infinite bounds by default, but Gurobi defaults to 0 to infinity
+            lb, ub = (0.0, 1.0) if vt == VariableType.Binary else (-INF, INF)
+            var = self._model.addVar(vtype=vtype, lb=lb, ub=ub, name=f"x_{i}")
+            self._vars.append(var)
         self.use_epigraph_reformulation = False
 
     def set_objective(
