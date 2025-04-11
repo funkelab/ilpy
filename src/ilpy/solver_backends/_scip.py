@@ -78,7 +78,7 @@ class ScipSolver(SolverBackend):
             lb, ub = (0.0, 1.0) if vt == VariableType.Binary else (-INF, INF)
             var = self._model.addVar(vtype=vtype, lb=lb, ub=ub, name=f"x_{i}")
             self._vars.append(var)
-        self.use_epigraph_reformulation = False
+        self.use_epigraph_reformulation = True
 
     def set_objective(
         self, objective: Objective, *, use_epigraph: bool | None = None

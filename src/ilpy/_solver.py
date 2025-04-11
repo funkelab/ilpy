@@ -24,10 +24,10 @@ class Solution:
     time: float
     native_status: Any = None
 
-    def __array__(self) -> np.ndarray:
+    def __array__(self, dtype=None, copy=None) -> np.ndarray:
         import numpy as np
 
-        return np.asarray(self.variable_values)
+        return np.asarray(self.variable_values, dtype=dtype, copy=copy)
 
     def __iter__(self) -> Iterator[float]:
         return iter(self.variable_values)
