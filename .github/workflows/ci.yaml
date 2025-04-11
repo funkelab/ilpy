@@ -71,11 +71,30 @@ jobs:
         uses: codecov/codecov-action@v5
 
   test-motile:
-    uses: pyapp-kit/workflows/.github/workflows/test-dependents.yml@v2
-    with:
-      dependency-repo: funkelab/motile
-      dependency-extras: "test"
-      python-version: "3.12"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ilpy
+          fetch-depth: 0
+
+      - uses: actions/checkout@v4
+        with:
+          path: motile
+          repository: funkelab/motile
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          python -m pip install ./ilpy
+          python -m  pip install ./motile[test]
+
+      - name: run tests
+        run: pytest --color=yes -W default
+        working-directory: motile
 
   deploy:
     needs: test
