@@ -92,11 +92,8 @@ jobs:
           python -m  pip install ./motile[test]
 
       - name: run tests
-        run: pytest --color yes -W default -v --cov ilpy --cov-report=xml
+        run: pytest --color=yes -W default
         working-directory: motile
-
-      - name: upload coverage
-        uses: codecov/codecov-action@v5
 
   deploy:
     needs: test
