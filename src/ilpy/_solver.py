@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
     import numpy as np
+    import numpy.typing as npt
 
     from ._components import Constraint, Constraints, Objective
     from ._constants import SolverStatus, VariableType
@@ -24,7 +25,9 @@ class Solution:
     time: float
     native_status: Any = None
 
-    def __array__(self, dtype=None, copy=None) -> np.ndarray:
+    def __array__(
+        self, dtype: npt.DTypeLike | None = None, copy: bool | None = None
+    ) -> np.ndarray:
         import numpy as np
 
         return np.asarray(self.variable_values, dtype=dtype, copy=copy)
