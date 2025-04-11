@@ -70,12 +70,12 @@ jobs:
       - name: upload coverage
         uses: codecov/codecov-action@v5
 
-  # test-motile:
-  #   uses: pyapp-kit/workflows/.github/workflows/test-dependents.yml@v2
-  #   with:
-  #     dependency-repo: funkelab/motile
-  #     dependency-extras: "test"
-  #     python-version: "3.11"
+  test-motile:
+    uses: pyapp-kit/workflows/.github/workflows/test-dependents.yml@v2
+    with:
+      dependency-repo: funkelab/motile
+      dependency-extras: "test"
+      python-version: "3.12"
 
   deploy:
     needs: test
