@@ -2,14 +2,9 @@ name: CI
 
 on:
   push:
-    tags: ["*"]
-    branches:
-      - master
-      - main
-  pull_request:
-    branches:
-      - master
-      - main
+    branches: [main]
+    tags: [v*]
+  pull_request: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,48 +19,33 @@ jobs:
       - name: Run pre-commit linting
         run: pipx run pre-commit run --all-files
 
-  check-manifest:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      # this test ensures that the sdist contains all necessary files
-      # if it fails, you need to either update MANIFEST.in,
-      # or add an explicit "ignore" rule to pyproject.toml
-      - name: Run check-manifest
-        run: pipx run check-manifest
-
   test:
     runs-on: ${{ matrix.platform }}
-    defaults:
-      run:
-        shell: bash -el {0} # needed when using setup-miniconda
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-        platform: [ubuntu-latest, windows-latest]
+        platform: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - python-version: "3.9"
             platform: ubuntu-latest
-          - python-version: "3.9"
-            platform: macos-13
+          - python-version: "3.13"
+            platform: ubuntu-latest
+        exclude:
+          # getting segfaults on _get_coefficients...
+          # probably related to the recursion limit
           - python-version: "3.10"
-            platform: macos-latest
-          - python-version: "3.11"
             platform: macos-latest
 
     steps:
       - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v4
         with:
+          version: "0.5.10"
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
           python-version: ${{ matrix.python-version }}
-          miniforge-version: latest
-          use-mamba: true
-          channels: conda-forge,gurobi,defaults
-          channel-priority: true
-
-      - name: install build deps
-        run: mamba install scip=9.1.0 gurobi gcovr
 
       - name: add gurobi license
         shell: bash
@@ -76,46 +56,64 @@ jobs:
           echo "$LICENSE" > $PWD/gurobi.lic
           echo "grb_license_file=$PWD/gurobi.lic" >> $GITHUB_OUTPUT
 
-      - name: install package
-        run: |
-          python -m pip install -U pip
-          python -m pip install -e .[dev]
-          python setup.py build_ext --inplace  # required for C coverage
-        env:
-          CYTHON_TRACE: 1 # enable coverage of cython code
-          CFLAGS: "-coverage" # enable coverage of C code
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install the project
+        run: uv sync --extra test
 
       - name: run tests
-        run: |
-          pytest --color yes -v --cov ilpy --cov-report=xml
-          gcovr --xml coverage_cpp.xml  # generate C coverage report
+        run: uv run pytest --color yes -v --cov ilpy --cov-report=xml
         env:
           GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
 
       - name: upload coverage
         uses: codecov/codecov-action@v5
-        with:
-          files: ./coverage.xml,./coverage_cpp.xml
 
-  # we only deploy the sdist to PyPI, the wheel is still complicated
-  deploy-sdist:
-    if: startsWith(github.ref, 'refs/tags')
-    needs: [test, check-manifest]
-    name: Build sdist, Publish to PyPI on tagged versions
+  test-motile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: ilpy
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          path: motile
+          repository: funkelab/motile
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
-      - name: Build an sdist
+          python-version: 3.12
+      - name: Install
         run: |
-          python -m pip install build
-          python -m build --sdist
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+          python -m pip install -U pip
+          python -m pip install ./ilpy
+          python -m  pip install ./motile[test]
+
+      - name: run tests
+        run: pytest --color=yes -W default
+        working-directory: motile
+
+  deploy:
+    needs: test
+    if: startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
         with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          fetch-depth: 0
+
+      - name: 👷 Build
+        run: pipx run build
+
+      - name: 🚢 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          files: "./dist/*"

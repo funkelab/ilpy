@@ -1,5 +1,4 @@
 import ilpy
-import pytest
 
 
 def test_resize() -> None:
@@ -15,8 +14,3 @@ def test_resize() -> None:
     obj2 = ilpy.Objective()
     obj2.set_quadratic_coefficient(0, 0, 1)  # quadratic term (x^2)
     assert len(obj2) == 1
-
-
-def test_deprecation() -> None:
-    with pytest.warns(DeprecationWarning):
-        ilpy.LinearObjective()

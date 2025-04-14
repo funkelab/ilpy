@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Callable, Literal
 
+from ._components import Constraint, Objective
+from ._constants import Relation, Sense, VariableType
+from ._solver import Solution, Solver
 from .expressions import Expression
-from .wrapper import (
-    Constraint,
-    Objective,
-    Preference,
-    Relation,
-    Sense,
-    Solver,
-    VariableType,
-)
+from .solver_backends import Preference
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from .event_data import EventData
+
     ConstraintTuple = tuple[list[float], Relation | str, float]
     SenseType = Sense | Literal["minimize", "maximize"]
     VariableTypeType = VariableType | Literal["continuous", "binary", "integer"]
@@ -28,8 +26,8 @@ def solve(
     variable_type: VariableTypeType = VariableType.Continuous,
     verbose: bool = False,
     preference: PreferenceType = Preference.Any,
-    on_event: Callable[[Mapping], None] | None = None,
-) -> list[float]:
+    on_event: Callable[[EventData], None] | None = None,
+) -> Solution:
     """Solve an objective subject to constraints.
 
     This is a functional interface to the solver. It creates a solver instance
@@ -62,34 +60,34 @@ def solve(
     preference : Preference | Literal["any", "cplex", "gurobi", "scip"]
         Backend preference, either an `ilpy.Preference` or a string in
         {"any", "cplex", "gurobi", "scip"}.  By default, `Preference.Any`.
-    on_event : Callable[[Mapping], None], optional
+    on_event : Callable[[EventData], None], optional
         A callback function that is called when an event occurs, by default None. The
         callback function should accept a dict which will contain statics about the
         solving or presolving process. You can import `ilpy.EventData` from ilpy and use
         it to provide dict key hints in your IDE, but `EventData` is not available at
-        runtime.
-        See SCIP and Gurobi documentation for details what each value means.
+        runtime. See SCIP and Gurobi documentation for details what each value means.
 
-        For example::
+        For example
+
+        .. code-block:: python
 
             import ilpy
 
             if TYPE_CHECKING:
                 from ilpy import EventData
 
+
             def callback(data: EventData) -> None:
-                # backend and event_type are guaranteed to be present
-                # they will narrow down the available keys
-                if data["backend"] == "gurobi":
-                    if data["event_type"] == "MIP":
-                        print(data["gap"])
+                if data["backend"] == "gurobi" and data["event_type"] == "MIP":
+                    print(data["gap"])
+
 
             ilpy.solve(..., on_event=callback)
 
     Returns
     -------
-    list[float]
-        The solution to the objective.
+    Solution
+        The solution to the problem.
     """
     if isinstance(sense, str):
         sense = Sense[sense.title()]
@@ -123,7 +121,7 @@ def solve(
 
     solver.set_event_callback(on_event)
     solution = solver.solve()
-    return list(solution)  # type: ignore
+    return solution
 
 
 _op_map = {

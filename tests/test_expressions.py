@@ -3,8 +3,8 @@ import os
 import sys
 
 import pytest
-from ilpy.expressions import Expression, Variable, _get_coefficients
-from ilpy.wrapper import (
+
+from ilpy import (
     Constraint,
     Constraints,
     Objective,
@@ -13,6 +13,7 @@ from ilpy.wrapper import (
     Solver,
     VariableType,
 )
+from ilpy.expressions import Expression, Variable, _get_coefficients
 
 u = Variable("u")
 v = Variable("v")

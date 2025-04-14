@@ -2,11 +2,15 @@ from __future__ import annotations
 
 import ast
 import sys
-from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from typing import Any, ClassVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Union
 
-from ilpy.wrapper import Constraint, Objective, Relation, Sense
+from ._constants import Relation, Sense
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+
+    from ._components import Constraint, Objective
 
 Number = Union[float, int]
 
@@ -22,7 +26,7 @@ def recursion_limit_raised_by(N: int = 5000) -> Iterator[None]:
         sys.setrecursionlimit(old_limit)
 
 
-class Expression(ast.AST):
+class Expression(ast.expr):
     """Base class for all expression nodes.
 
     Expressions allow ilpy to represent mathematical expressions in an
@@ -38,6 +42,8 @@ class Expression(ast.AST):
 
     def as_constraint(self) -> Constraint:
         """Create an ilpy.Constraint object from this expression."""
+        from ._components import Constraint
+
         l_coeffs, q_coeffs, value = _get_coeff_indices(self)
         return Constraint.from_coefficients(
             coefficients=l_coeffs,
@@ -51,6 +57,7 @@ class Expression(ast.AST):
         if _get_relation(self) is not None:  # pragma: no cover
             # TODO: may be supported in the future, eg. for piecewise objectives?
             raise ValueError(f"Objective function cannot have comparisons: {self}")
+        from ._components import Objective
 
         l_coeffs, q_coeffs, value = _get_coeff_indices(self)
         return Objective.from_coefficients(
@@ -147,7 +154,7 @@ class Compare(Expression, ast.Compare):
     def __init__(
         self,
         left: Expression,
-        ops: Sequence[ast.cmpop],
+        ops: list[ast.cmpop],
         comparators: Sequence[Expression | Number],
         **kwargs: Any,
     ) -> None:
@@ -213,7 +220,7 @@ class Constant(Expression, ast.Constant):
 class Variable(Expression, ast.Name):
     """A variable.
 
-    `id` holds the index as a string (becuase ast.Name requires a string).
+    `id` holds the index as a string (because ast.Name requires a string).
 
     The special attribute `index` is added here for the purpose of storing
     the index of a variable in a solver's variable list: ``Variable('u', index=0)``
@@ -330,8 +337,8 @@ def _get_coefficients(
 
     Example:
 
-        >>> u = Variable('u')
-        >>> v = Variable('v')
+        >>> u = Variable("u")
+        >>> v = Variable("v")
         >>> _get_coefficients(2 * u - 5 * v <= 7)
         {u: 2, v: -5, None: -7}
 
@@ -422,7 +429,7 @@ def _process_mult_op(
         _get_coefficients(expr.left, coeffs, scale, expr.right)
     else:  # pragma: no cover
         raise TypeError(
-            "Unexpected multiplcation or division between "
+            "Unexpected multiplication or division between "
             f"{type(expr.left)} and {type(expr.right)}"
         )
 

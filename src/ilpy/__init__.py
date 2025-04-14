@@ -1,43 +1,54 @@
+from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING
 
-from . import wrapper
+try:
+    __version__ = version("ilpy")
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "uninstalled"
+
+from ._components import Constraint, Constraints, Objective
+from ._constants import Relation, Sense, SolverStatus, VariableType
 from ._functional import solve
+from ._solver import Solution, Solver
 from .expressions import Expression, Variable
-from .wrapper import *  # noqa: F403
+from .solver_backends import Preference, SolverBackend
 
 if TYPE_CHECKING:
     from .event_data import EventData as EventData
     from .event_data import GurobiData as GurobiData
     from .event_data import SCIPData as SCIPData
 
-__version__ = "0.4.1"
-__all__ = [  # noqa: F405
-    "Any",
-    "Binary",
-    "Constraint",
+
+# make enums available at the module level
+Any = Preference.Any
+Scip = Preference.Scip
+Gurobi = Preference.Gurobi
+Continuous = VariableType.Continuous
+Integer = VariableType.Integer
+Binary = VariableType.Binary
+Minimize = Sense.Minimize
+Maximize = Sense.Maximize
+LessEqual = Relation.LessEqual
+Equal = Relation.Equal
+GreaterEqual = Relation.GreaterEqual
+
+__all__ = [
     "Constraint",
     "Constraints",
-    "Continuous",
-    "Cplex",
-    "Equal",
     "Expression",
-    "GreaterEqual",
-    "Gurobi",
-    "Integer",
-    "LessEqual",
     "Maximize",
     "Minimize",
     "Objective",
     "Preference",
     "Relation",
-    "Scip",
     "Sense",
     "Solution",
-    "solve",
     "Solver",
-    "Solver",
+    "SolverBackend",
+    "SolverStatus",
     "Variable",
     "VariableType",
+    "solve",
 ]
 
 
@@ -51,6 +62,6 @@ def __getattr__(name: str):  # type: ignore
                 DeprecationWarning,
                 stacklevel=2,
             )
-            return getattr(wrapper, suffix)
+            return globals()[suffix]
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -2,30 +2,32 @@ from __future__ import annotations
 
 import operator
 import os
-from collections.abc import Iterable, Sequence
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
 from unittest.mock import Mock
 
-import ilpy
 import numpy.testing as npt
 import pytest
+
+import ilpy
 from ilpy.expressions import Expression, Variable
-from ilpy.wrapper import VariableType
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from ilpy._constants import VariableType
 
 # XFAIL if no gurobi not installed or no license found
 # (this is the best way I could find to determine this so far)
 gu_marks = []
 try:
-    ilpy.Solver(0, ilpy.VariableType.Binary, None, ilpy.Preference.Gurobi)
+    from ilpy.solver_backends import create_solver_backend
+
+    create_solver_backend(ilpy.Preference.Gurobi)
+    import gurobipy as gb
+
     HAVE_GUROBI = True
-    try:
-        import gurobipy as gb
-    except ImportError:
-        if os.getenv("CI"):
-            raise ImportError("Gurobipy not installed, but required for CI") from None
-        gb = None
-except RuntimeError:
-    gu_marks.append(pytest.mark.xfail(reason="Gurobi missing or no license found"))
+except Exception as e:
+    gu_marks.append(pytest.mark.xfail(reason=f"Gurobi error: {e}"))
     gb = None
     HAVE_GUROBI = False
 
@@ -81,11 +83,9 @@ def test_solve(preference: ilpy.Preference, case: Case) -> None:
     kwargs = case._asdict()
     expectation = kwargs.pop("expectation")
     mock = Mock()
-    npt.assert_allclose(
-        ilpy.solve(**kwargs, preference=preference, on_event=mock), expectation
-    )
-    if preference == ilpy.Preference.Scip:
-        assert mock.call_count > 0
+    solution = ilpy.solve(**kwargs, preference=preference, on_event=mock)
+    npt.assert_allclose(solution, expectation)
+    assert mock.call_count > 0
     assert all(
         "event_type" in x.args[0] and "backend" in x.args[0]
         for x in mock.call_args_list
@@ -115,7 +115,7 @@ def _gurobipy_solve(
 
     Examples
     --------
-    >>> gurobipy_solve([2,3], [([3,2], '>=', 10), ([1,2], '>=', 8)])
+    >>> gurobipy_solve([2, 3], [([3, 2], ">=", 10), ([1, 2], ">=", 8)])
     [1.0, 3.5]
     """
     if isinstance(objective, Expression):
@@ -233,7 +233,8 @@ def test_solve_twice(preference: ilpy.Preference) -> None:
     # initial solve
     solver.set_constraints(c0)
     solution = solver.solve()
-    assert list(solution) == [7, 3] and solution.get_value() == 10
+    assert list(solution) == [7, 3]
+    assert solution.get_value() == 10
 
     # add a constraint and check that the solution has changed
     solver.set_constraints(c1)
