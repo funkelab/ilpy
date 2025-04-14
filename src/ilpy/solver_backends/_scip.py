@@ -78,40 +78,35 @@ class ScipSolver(SolverBackend):
             lb, ub = (0.0, 1.0) if vt == VariableType.Binary else (-INF, INF)
             var = self._model.addVar(vtype=vtype, lb=lb, ub=ub, name=f"x_{i}")
             self._vars.append(var)
-        self.use_epigraph_reformulation = True
 
-    def set_objective(
-        self, objective: Objective, *, use_epigraph: bool | None = None
-    ) -> None:
+    def set_objective(self, objective: Objective) -> None:
         # Create linear part of the objective
-        obj = scip.quicksum(coef * var for coef, var in zip(objective, self._vars))
-        obj = obj + objective.get_constant()
+        expr = scip.quicksum(coef * var for coef, var in zip(objective, self._vars))
+        expr = expr + objective.get_constant()
         sense = "minimize" if objective.get_sense() == Sense.Minimize else "maximize"
-
-        # Add quadratic terms using auxiliary variables
         if quad_coeffs := objective.get_quadratic_coefficients():
-            if use_epigraph is None:
-                use_epigraph = self.use_epigraph_reformulation
-            if use_epigraph:
-                for (i, j), qcoef in quad_coeffs.items():
-                    obj += qcoef * self._vars[i] * self._vars[j]
-                self._set_nonlinear_objective(obj, sense)  # type: ignore [arg-type]
-                return
-            else:
-                self._add_quad_auxiliary_variables(quad_coeffs)
-
-        self._model.setObjective(obj, sense=sense)
+            self._set_nonlinear_objective(expr, quad_coeffs, sense)  # type: ignore
+        else:
+            self._model.setObjective(expr, sense=sense)
 
     def _set_nonlinear_objective(
-        self, expr: Any, sense: Literal["minimize", "maximize"]
+        self,
+        obj_expr: Any,  # linear scip expression object
+        quad_coeffs: Mapping[tuple[int, int], float],
+        sense: Literal["minimize", "maximize"],
     ) -> None:
         """Handles epigraph reformulation for nonlinear objectives."""
+
+        for (i, j), qcoef in quad_coeffs.items():
+            obj_expr += qcoef * self._vars[i] * self._vars[j]
+
         new_obj = self._model.addVar(lb=-INF, obj=1)  # Surrogate objective variable
+
         if sense == "minimize":
-            self._model.addCons(expr <= new_obj)
+            self._model.addCons(obj_expr <= new_obj)
             self._model.setMinimize()
         elif sense == "maximize":
-            self._model.addCons(expr >= new_obj)
+            self._model.addCons(obj_expr >= new_obj)
             self._model.setMaximize()
 
     def _add_quad_auxiliary_variables(
