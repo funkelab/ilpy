@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, cast
-
-import numpy as np
 
 from ilpy._constants import Relation, Sense, SolverStatus, VariableType
 from ilpy._solver import Solution
@@ -35,6 +34,7 @@ SENSE_MAP: Mapping[Sense, int] = {
     Sense.Minimize: GRB.MINIMIZE,
     Sense.Maximize: GRB.MAXIMIZE,
 }
+EPS = sys.float_info.epsilon
 
 STATUS_MAP: Mapping[int, SolverStatus] = {
     GRB.LOADED: SolverStatus.UNKNOWN,
@@ -236,8 +236,7 @@ def _get_event_data(model: gb.Model, where: int) -> GurobiData | None:
                 "phase": model.cbGet(GRB.Callback.MIP_PHASE),
                 "primalbound": objbst,
                 "dualbound": objbnd,
-                "gap": 100
-                * (abs(objbnd - objbst) / (np.finfo(float).eps + abs(objbst))),
+                "gap": 100 * (abs(objbnd - objbst) / (EPS + abs(objbst))),
             }
         )
     elif where == GRB.Callback.MIPSOL:
@@ -256,8 +255,7 @@ def _get_event_data(model: gb.Model, where: int) -> GurobiData | None:
                 "phase": model.cbGet(GRB.Callback.MIPSOL_PHASE),
                 "primalbound": objbst,
                 "dualbound": objbnd,
-                "gap": 100
-                * (abs(objbnd - objbst) / (np.finfo(float).eps + abs(objbst))),
+                "gap": 100 * (abs(objbnd - objbst) / (EPS + abs(objbst))),
             }
         )
     elif where == GRB.Callback.MESSAGE:

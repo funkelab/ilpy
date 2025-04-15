@@ -11,6 +11,7 @@ source = "vcs"
 [project]
 name = "ilpy"
 description = "Unified API for ILP solvers."
+readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
