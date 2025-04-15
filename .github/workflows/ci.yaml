@@ -40,9 +40,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
           python-version: ${{ matrix.python-version }}
 
       - name: add gurobi license
