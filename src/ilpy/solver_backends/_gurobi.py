@@ -21,8 +21,8 @@ try:
 
 except ImportError:
     raise ImportError(
-        "Gurobipy not installed, but required for GurobiSolver. "
-        "please `conda install -c gurobi gurobi"
+        "gurobipy not installed, but required for GurobiSolver. "
+        "please `pip install gurobipy` or `conda install -c gurobi gurobi`."
     ) from None
 
 # map ilpy variable types to gurobipy variable types

@@ -18,7 +18,7 @@ try:
 except ImportError:
     raise ImportError(
         "pyscipopt not installed, but required for GurobiSolver. "
-        "please `pip install pyscipopt`"
+        "please `pip install pyscipopt` or `conda install -c conda-forge pyscipopt`."
     ) from None
 
 # map ilpy variable types to gurobipy variable types
