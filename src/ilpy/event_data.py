@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, Union
 
 __all__ = ["EventData", "GurobiData", "SCIPData"]
 
@@ -72,14 +72,9 @@ class GurobiMessage(_GurobiData):
     message: str
 
 
-GurobiData = (
-    GurobiPresolve
-    | GurobiSimplex
-    | GurobiMip
-    | GurobiMipSol
-    | GurobiMipNode
-    | GurobiMessage
-)
+GurobiData = Union[
+    GurobiPresolve, GurobiSimplex, GurobiMip, GurobiMipSol, GurobiMipNode, GurobiMessage
+]
 
 
 class _SCIPData(TypedDict, total=False):
@@ -118,6 +113,5 @@ class SCIPBestSol(_SCIPData):
     nnzs: int
 
 
-SCIPData = SCIPPresolve | SCIPBestSol
-
-EventData = GurobiData | SCIPData
+SCIPData = Union[SCIPPresolve, SCIPBestSol]
+EventData = Union[GurobiData, SCIPData]

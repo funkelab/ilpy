@@ -7,23 +7,17 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "vcs"
 
-# read more about configuring hatch at:
-# https://hatch.pypa.io/latest/config/build/
-[tool.hatch.build.targets.wheel]
-only-include = ["src"]
-sources = ["src"]
-
 # https://peps.python.org/pep-0621/
 [project]
 name = "ilpy"
-description = "Python wrappers for popular MIP solvers."
+description = "Unified API for ILP solvers."
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
     { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
     { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
 ]
-dynamic = ["version", "readme"]
+dynamic = ["version"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: BSD License",
@@ -36,28 +30,19 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    # not technically required if gurobipy is present... but nice to have something always work
+    # pyscipopt is not technically required if gurobipy is present...
+    # but it's nice to have something always work, and pyscipopt
+    # only depends on numpy, and builds wheels for all platforms we support
     "pyscipopt",
 ]
 
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-cov",
-    "gurobipy; python_version < '3.13' ",
-    "pyscipopt",
-    "numpy",
-]
-dev = [
-    "ilpy[test]",
-    "ipython",
-    "mypy",
-    "pre-commit",
-    "ruff",
-    "pdbpp; sys_platform != 'win32'",
-]
+gurobi = ["gurobipy"]
+scip = ["pyscipopt"]
+test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
+dev = ["ilpy[test]", "ipython", "mypy", "pre-commit", "ruff"]
 docs = ["numpy", "sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
 
 [project.urls]
@@ -73,10 +58,9 @@ src = ["src"]
 [tool.ruff.lint]
 pydocstyle = { convention = "numpy" }
 select = [
-    "E", # style errors
-    "W", # style warnings
-    "F", # flakes
-    # "D",    # pydocstyle
+    "E",    # style errors
+    "W",    # style warnings
+    "F",    # flakes
     "D417", # Missing argument descriptions in Docstrings
     "I",    # isort
     "UP",   # pyupgrade
@@ -86,9 +70,6 @@ select = [
     "RUF",  # ruff-specific rules
     "TC",   # flake8-type-checking
     "TID",  # flake8-tidy-imports
-]
-ignore = [
-    "D401", # First line should be in imperative mood (remove to opt in)
 ]
 
 [tool.ruff.lint.per-file-ignores]
