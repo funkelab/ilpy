@@ -17,7 +17,7 @@ authors = [
     { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
     { email = "talley.lambert@gmail.com", name = "Talley Lambert" },
 ]
-dynamic = ["version", "readme"]
+dynamic = ["version"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: BSD License",
