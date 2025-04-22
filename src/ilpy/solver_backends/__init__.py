@@ -33,7 +33,7 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
     if preference in (Preference.Any, Preference.Scip):
         to_try.append(("_scip", "ScipSolver"))
     if preference in (Preference.Any, Preference.GurobiUnlicensed):
-        to_try.append(("_scip", "ScipSolver"))
+        to_try.append(("_gurobi", "GurobiSolver"))
 
     errors: list[tuple[str, BaseException]] = []
     for modname, clsname in to_try:
