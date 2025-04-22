@@ -55,7 +55,11 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
 
 @cache
 def _have_gurobi_license() -> bool:
-    """Check if Gurobi license is available."""
+    """Check if Gurobi license is available.
+
+    This assumes that the license file is located as described in the Gurobi docs:
+    https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic
+    """
     license_file = Path.home() / "gurobi.lic"
     if license_file.exists():
         return True
