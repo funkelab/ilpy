@@ -15,7 +15,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run pre-commit linting
         run: pipx run pre-commit run --all-files
 
@@ -38,7 +38,7 @@ jobs:
             platform: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -70,11 +70,11 @@ jobs:
   test-motile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ilpy
           fetch-depth: 0
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: motile
           repository: funkelab/motile
@@ -100,7 +100,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
