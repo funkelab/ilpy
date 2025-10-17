@@ -34,6 +34,7 @@ except Exception as e:
 PREFS = [
     pytest.param(ilpy.Preference.Scip, id="scip"),
     pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
+    pytest.param(ilpy.Preference.GurobiUnlicensed, id="gurobi-restricted"),
 ]
 
 
