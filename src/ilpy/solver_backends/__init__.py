@@ -16,21 +16,15 @@ class Preference(IntEnum):
     bundled with the `gurobipy` pip wheel. See
     https://support.gurobi.com/hc/en-us/articles/360051597492
 
-    Attributes
-    ----------
-    Any
-        Use Gurobi if a full license is available, otherwise fall back to SCIP.
-        The bundled size-limited license is treated as "no license" to avoid
-        silent "Model too large" failures on problems with >2000 variables.
-    Scip
-        Use SCIP. Raises if `pyscipopt` is not installed.
-    Gurobi
-        Use Gurobi; requires a full license. Raises otherwise. Use
-        `GurobiRestricted` if you only have the bundled pip license.
-    GurobiRestricted
-        Use Gurobi with whatever license resolves (including the bundled
-        size-limited pip license). Suitable for small problems
-        (<2000 variables); larger ones will fail at solve time.
+    - `Any`: Use Gurobi if a full license is available, otherwise fall back
+      to SCIP. The bundled size-limited license is treated as "no license" to
+      avoid silent "Model too large" failures on problems with >2000 variables.
+    - `Scip`: Use SCIP. Raises if `pyscipopt` is not installed.
+    - `Gurobi`: Use Gurobi; requires a full license. Raises otherwise. Use
+      `GurobiRestricted` if you only have the bundled pip license.
+    - `GurobiRestricted`: Use Gurobi with whatever license resolves
+      (including the bundled size-limited pip license). Suitable for small
+      problems (<2000 variables); larger ones will fail at solve time.
     """
 
     Any = auto()
