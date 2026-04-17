@@ -4,20 +4,21 @@ ilpy welcomes contributions
 
 ## Local development
 
-Clone the repo and install in editable mode.
+This project uses [`uv`](https://docs.astral.sh/uv/) for environment and
+dependency management. Clone the repo and sync the dev environment:
 
 ```bash
 git clone <your-fork>
 cd ilpy
-pip install -e .[dev]
+uv sync
 ```
 
 ### Testing
 
-To run the tests, you can use `pytest`:
+To run the tests, use `uv run`:
 
 ```bash
-pytest
+uv run pytest
 ```
 
 ## Deploying
