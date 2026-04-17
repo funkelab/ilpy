@@ -1,5 +1,4 @@
 import operator
-import os
 import sys
 
 import pytest
@@ -166,18 +165,101 @@ def test_adding() -> None:
     solver.set_constraints(constraints)
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 11) and os.name == "nt",
-    reason="fails too often on windows 3.10",
-)
-def test_recursion() -> None:
-    from ilpy.expressions import recursion_limit_raised_by
+def test_large_expression() -> None:
+    """Test that large expressions work without hitting recursion limits.
 
+    This tests the fix for https://github.com/funkelab/ilpy/issues/64
+    Previously, summing many variables would create a deeply nested AST that
+    caused RecursionError. Now it should work with arbitrarily large expressions.
+    """
+    # Create an expression with way more terms than the recursion limit
     reclimit = sys.getrecursionlimit()
-    s = sum(Variable(str(x), index=x) for x in range(reclimit + 5001))
+    num_vars = reclimit + 5001
+    s = sum(Variable(str(x), index=x) for x in range(num_vars))
     SOME_MAX = 1000
     expr = s <= SOME_MAX
-    with pytest.raises(RecursionError):
-        expr.as_constraint()
-    with recursion_limit_raised_by():
-        assert isinstance(expr.as_constraint(), Constraint)
+
+    # Should work without raising RecursionError
+    constraint = expr.as_constraint()
+    assert isinstance(constraint, Constraint)
+    assert constraint.get_value() == SOME_MAX
+    assert constraint.get_relation() == Relation.LessEqual
+
+    # Verify all coefficients are present
+    coeffs = constraint.get_coefficients()
+    assert len(coeffs) == num_vars
+    assert all(coeffs[i] == 1.0 for i in range(num_vars))
+
+
+def test_large_expression_with_coefficients() -> None:
+    """Test large expressions with different coefficients and operations."""
+    reclimit = sys.getrecursionlimit()
+    num_vars = reclimit + 1000
+
+    # Test with alternating addition and subtraction
+    expr = sum(
+        Variable(f"x{i}", index=i) if i % 2 == 0 else -Variable(f"x{i}", index=i)
+        for i in range(num_vars)
+    )
+    constraint = (expr >= 42).as_constraint()
+    assert isinstance(constraint, Constraint)
+    assert constraint.get_value() == 42
+
+    # Verify alternating coefficients
+    coeffs = constraint.get_coefficients()
+    assert len(coeffs) == num_vars
+    for i in range(num_vars):
+        expected = 1.0 if i % 2 == 0 else -1.0
+        assert coeffs[i] == expected
+
+
+def test_large_expression_with_scaling() -> None:
+    """Test large expressions with scalar multiplication."""
+    reclimit = sys.getrecursionlimit()
+    num_vars = reclimit + 1000
+
+    # Test with scalar multiplication
+    expr = 3.5 * sum(Variable(f"y{i}", index=i) for i in range(num_vars))
+    objective = expr.as_objective()
+    assert isinstance(objective, Objective)
+
+    # Verify all coefficients are scaled
+    coeffs = objective.get_coefficients()
+    assert len(coeffs) == num_vars
+    assert all(coeffs[i] == 3.5 for i in range(num_vars))
+
+
+def test_large_quadratic_expression() -> None:
+    """Test large quadratic expressions."""
+    # Use fewer variables for quadratic to keep test fast
+    num_vars = 100
+    variables = [Variable(f"q{i}", index=i) for i in range(num_vars)]
+
+    # Create sum of squares
+    expr = sum(v**2 for v in variables)
+    objective = expr.as_objective()
+    assert isinstance(objective, Objective)
+
+    # Verify quadratic coefficients
+    q_coeffs = objective.get_quadratic_coefficients()
+    assert len(q_coeffs) == num_vars
+    for i in range(num_vars):
+        assert (i, i) in q_coeffs
+        assert q_coeffs[(i, i)] == 1.0
+
+
+def test_deeply_nested_parentheses() -> None:
+    """Test expressions with deep nesting from parentheses."""
+    reclimit = sys.getrecursionlimit()
+    num_vars = reclimit + 1000
+
+    # Create expression with deep nesting: ((...((x0 + x1) + x2) + x3)...) + xN
+    expr = Variable("x0", index=0)
+    for i in range(1, num_vars):
+        expr = expr + Variable(f"x{i}", index=i)
+
+    constraint = (expr <= 999).as_constraint()
+    assert isinstance(constraint, Constraint)
+    coeffs = constraint.get_coefficients()
+    assert len(coeffs) == num_vars
+    assert all(coeffs[i] == 1.0 for i in range(num_vars))

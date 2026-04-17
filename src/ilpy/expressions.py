@@ -286,24 +286,13 @@ def _get_coeff_indices(
     l_coeffs: dict[int, float] = {}
     q_coeffs: dict[tuple[int, int], float] = {}
     constant = 0.0
-    try:
-        with recursion_limit_raised_by(5000):
-            for var, coefficient in _get_coefficients(expr).items():
-                if var is None:
-                    constant = coefficient
-                elif isinstance(var, tuple):
-                    q_coeffs[(_ensure_index(var[0]), _ensure_index(var[1]))] = (
-                        coefficient
-                    )
-                elif coefficient != 0:
-                    l_coeffs[_ensure_index(var)] = coefficient
-    except RecursionError as e:
-        raise RecursionError(
-            "RecursionError when casting an ilpy.Expression to a Constraint or "
-            "Objective. If you really want an expression this large, you may raise the "
-            "limit temporarily with `ilpy.expressions.recursion_limit_raised_by` (or "
-            "manually with `sys.setrecursionlimit`)"
-        ) from e
+    for var, coefficient in _get_coefficients(expr).items():
+        if var is None:
+            constant = coefficient
+        elif isinstance(var, tuple):
+            q_coeffs[(_ensure_index(var[0]), _ensure_index(var[1]))] = coefficient
+        elif coefficient != 0:
+            l_coeffs[_ensure_index(var)] = coefficient
     return l_coeffs, q_coeffs, constant
 
 
@@ -349,45 +338,62 @@ def _get_coefficients(
     if coeffs is None:
         coeffs = {}
 
-    if isinstance(expr, Constant):
-        coeffs.setdefault(None, 0)
-        coeffs[None] += expr.value * scale
+    # Use an explicit stack to avoid recursion
+    # Stack entries: (expr, scale, var_scale)
+    stack: list[tuple[Expression | ast.expr, float, Variable | None]] = [
+        (expr, scale, var_scale)
+    ]
 
-    elif isinstance(expr, UnaryOp):
-        if isinstance(expr.op, ast.USub):
-            scale = -scale
-        _get_coefficients(expr.operand, coeffs, scale, var_scale)
+    while stack:
+        current_expr, current_scale, current_var_scale = stack.pop()
 
-    elif isinstance(expr, Variable):
-        if var_scale is not None:
-            # multiplication or division between two variables
-            key = _sort_vars(expr, var_scale)
-            coeffs.setdefault(key, 0)
-            coeffs[key] += scale
-        else:
-            coeffs.setdefault(expr, 0)
-            coeffs[expr] += scale
+        if isinstance(current_expr, Constant):
+            coeffs.setdefault(None, 0)
+            coeffs[None] += current_expr.value * current_scale
 
-    elif isinstance(expr, Compare):
-        if len(expr.ops) != 1:  # pragma: no cover
-            raise ValueError("Only single comparisons are supported")
-        _get_coefficients(expr.left, coeffs, scale, var_scale)
-        # negate the right hand side of the comparison
-        _get_coefficients(expr.comparators[0], coeffs, scale * -1, var_scale)
+        elif isinstance(current_expr, UnaryOp):
+            new_scale = current_scale
+            if isinstance(current_expr.op, ast.USub):
+                new_scale = -current_scale
+            stack.append((current_expr.operand, new_scale, current_var_scale))
 
-    elif isinstance(expr, BinOp):
-        if isinstance(expr.op, (ast.Mult, ast.Div)):
-            _process_mult_op(expr, coeffs, scale, var_scale)
-        elif isinstance(expr.op, (ast.Add, ast.UAdd, ast.USub, ast.Sub)):
-            _get_coefficients(expr.left, coeffs, scale, var_scale)
-            if isinstance(expr.op, (ast.USub, ast.Sub)):
-                scale = -scale
-            _get_coefficients(expr.right, coeffs, scale, var_scale)
+        elif isinstance(current_expr, Variable):
+            if current_var_scale is not None:
+                # multiplication or division between two variables
+                key = _sort_vars(current_expr, current_var_scale)
+                coeffs.setdefault(key, 0)
+                coeffs[key] += current_scale
+            else:
+                coeffs.setdefault(current_expr, 0)
+                coeffs[current_expr] += current_scale
+
+        elif isinstance(current_expr, Compare):
+            if len(current_expr.ops) != 1:  # pragma: no cover
+                raise ValueError("Only single comparisons are supported")
+            stack.append((current_expr.left, current_scale, current_var_scale))
+            # negate the right hand side of the comparison
+            stack.append(
+                (current_expr.comparators[0], current_scale * -1, current_var_scale)
+            )
+
+        elif isinstance(current_expr, BinOp):
+            if isinstance(current_expr.op, (ast.Mult, ast.Div)):
+                _process_mult_op_iterative(
+                    current_expr, coeffs, current_scale, current_var_scale, stack
+                )
+            elif isinstance(current_expr.op, (ast.Add, ast.UAdd, ast.USub, ast.Sub)):
+                stack.append((current_expr.left, current_scale, current_var_scale))
+                right_scale = current_scale
+                if isinstance(current_expr.op, (ast.USub, ast.Sub)):
+                    right_scale = -current_scale
+                stack.append((current_expr.right, right_scale, current_var_scale))
+            else:  # pragma: no cover
+                raise ValueError(
+                    f"Unsupported binary operator: {type(current_expr.op)}"
+                )
+
         else:  # pragma: no cover
-            raise ValueError(f"Unsupported binary operator: {type(expr.op)}")
-
-    else:  # pragma: no cover
-        raise ValueError(f"Unsupported expression type: {type(expr)}")
+            raise ValueError(f"Unsupported expression type: {type(current_expr)}")
 
     return coeffs
 
@@ -404,29 +410,33 @@ def _sort_vars(v1: Variable, v2: Variable) -> tuple[Variable, Variable]:
     return _v1, _v2
 
 
-def _process_mult_op(
+def _process_mult_op_iterative(
     expr: BinOp,
     coeffs: dict[Variable | None | tuple[Variable, Variable], float],
-    scale: int,
-    var_scale: Variable | None = None,
+    scale: float,
+    var_scale: Variable | None,
+    stack: list[tuple[Expression | ast.expr, float, Variable | None]],
 ) -> None:
-    """Helper function for _get_coefficients to process multiplication and division."""
+    """Helper function for _get_coefficients to process multiplication and division.
+
+    This is the iterative version that adds work to the stack instead of recursing.
+    """
     if isinstance(expr.right, Constant):
         v = expr.right.value
-        scale *= 1 / v if isinstance(expr.op, ast.Div) else v
-        _get_coefficients(expr.left, coeffs, scale, var_scale)
+        new_scale = scale * (1 / v if isinstance(expr.op, ast.Div) else v)
+        stack.append((expr.left, new_scale, var_scale))
     elif isinstance(expr.left, Constant):
         v = expr.left.value
-        scale *= 1 / v if isinstance(expr.op, ast.Div) else v
-        _get_coefficients(expr.right, coeffs, scale, var_scale)
+        new_scale = scale * (1 / v if isinstance(expr.op, ast.Div) else v)
+        stack.append((expr.right, new_scale, var_scale))
     elif isinstance(expr.left, Variable):
         if var_scale is not None:
             raise TypeError("Cannot multiply by more than two variables.")
-        _get_coefficients(expr.right, coeffs, scale, expr.left)
+        stack.append((expr.right, scale, expr.left))
     elif isinstance(expr.right, Variable):
         if var_scale is not None:  # pragma: no cover
             raise TypeError("Cannot multiply by more than two variables.")
-        _get_coefficients(expr.left, coeffs, scale, expr.right)
+        stack.append((expr.left, scale, expr.right))
     else:  # pragma: no cover
         raise TypeError(
             "Unexpected multiplication or division between "

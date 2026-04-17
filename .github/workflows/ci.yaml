@@ -15,7 +15,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run pre-commit linting
         run: pipx run pre-commit run --all-files
 
@@ -31,6 +31,8 @@ jobs:
             platform: ubuntu-latest
           - python-version: "3.13"
             platform: ubuntu-latest
+          - python-version: "3.14"
+            platform: ubuntu-latest
         exclude:
           # getting segfaults on _get_coefficients...
           # probably related to the recursion limit
@@ -38,9 +40,9 @@ jobs:
             platform: macos-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -53,44 +55,38 @@ jobs:
           echo "$LICENSE" > $PWD/gurobi.lic
           echo "grb_license_file=$PWD/gurobi.lic" >> $GITHUB_OUTPUT
 
-      - name: Set up Python
-        run: uv python install
-
-      - name: Install the project
-        run: uv sync --extra test
-
       - name: run tests
         run: uv run pytest --color yes -v --cov ilpy --cov-report=xml
         env:
           GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
 
       - name: upload coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
 
   test-motile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           path: ilpy
           fetch-depth: 0
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           path: motile
           repository: funkelab/motile
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v7
         with:
-          python-version: 3.12
+          python-version: 3.13
       - name: Install
+        working-directory: motile
         run: |
-          python -m pip install -U pip
-          python -m pip install ./ilpy
-          python -m  pip install ./motile[test]
+          uv sync --group test
+          uv pip install ../ilpy
 
       - name: run tests
-        run: pytest --color=yes -W default
         working-directory: motile
+        run: uv run --no-sync pytest tests -v --color=yes -W ignore
 
   deploy:
     needs: test
@@ -100,7 +96,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -112,7 +108,7 @@ jobs:
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: "./dist/*"
