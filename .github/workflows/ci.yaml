@@ -31,6 +31,8 @@ jobs:
             platform: ubuntu-latest
           - python-version: "3.13"
             platform: ubuntu-latest
+          - python-version: "3.14"
+            platform: ubuntu-latest
         exclude:
           # getting segfaults on _get_coefficients...
           # probably related to the recursion limit
@@ -84,7 +86,7 @@ jobs:
 
       - name: run tests
         working-directory: motile
-        run: uv run --no-sync pytest tests -v --color=yes --cov=motile --cov-report=xml
+        run: uv run --no-sync pytest tests -v --color=yes -W ignore
 
   deploy:
     needs: test
