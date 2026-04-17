@@ -35,7 +35,7 @@ except Exception as e:
 
 gr_marks = []
 try:
-    create_solver_backend(ilpy.Preference.GurobiUnlicensed)
+    create_solver_backend(ilpy.Preference.GurobiRestricted)
 except Exception as e:
     gr_marks.append(pytest.mark.xfail(reason=f"Gurobi restricted error: {e}"))
 
@@ -43,7 +43,7 @@ PREFS = [
     pytest.param(ilpy.Preference.Scip, id="scip"),
     pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
     pytest.param(
-        ilpy.Preference.GurobiUnlicensed, marks=gr_marks, id="gurobi-restricted"
+        ilpy.Preference.GurobiRestricted, marks=gr_marks, id="gurobi-restricted"
     ),
 ]
 

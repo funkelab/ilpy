@@ -10,12 +10,33 @@ __all__ = ["Preference", "SolverBackend", "create_solver_backend"]
 
 
 class Preference(IntEnum):
-    """Preference for a solver backend."""
+    """Preference for a solver backend.
+
+    A "full" Gurobi license means one that is *not* the size-limited license
+    bundled with the `gurobipy` pip wheel. See
+    https://support.gurobi.com/hc/en-us/articles/360051597492
+
+    Attributes
+    ----------
+    Any
+        Use Gurobi if a full license is available, otherwise fall back to SCIP.
+        The bundled size-limited license is treated as "no license" to avoid
+        silent "Model too large" failures on problems with >2000 variables.
+    Scip
+        Use SCIP. Raises if `pyscipopt` is not installed.
+    Gurobi
+        Use Gurobi; requires a full license. Raises otherwise. Use
+        `GurobiRestricted` if you only have the bundled pip license.
+    GurobiRestricted
+        Use Gurobi with whatever license resolves (including the bundled
+        size-limited pip license). Suitable for small problems
+        (<2000 variables); larger ones will fail at solve time.
+    """
 
     Any = auto()
     Scip = auto()
     Gurobi = auto()
-    GurobiUnlicensed = auto()
+    GurobiRestricted = auto()
 
 
 def create_solver_backend(preference: Preference | str) -> SolverBackend:
@@ -31,7 +52,7 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
             raise RuntimeError("Gurobi license is not available. ")
     if preference in (Preference.Any, Preference.Scip):
         to_try.append(("_scip", "ScipSolver"))
-    if preference in (Preference.Any, Preference.GurobiUnlicensed):
+    if preference in (Preference.Any, Preference.GurobiRestricted):
         to_try.append(("_gurobi", "GurobiSolver"))
 
     errors: list[tuple[str, BaseException]] = []
