@@ -84,6 +84,7 @@ class GurobiSolver(SolverBackend):
         )
         for (i, j), qcoef in objective.get_quadratic_coefficients().items():
             obj += qcoef * self._vars[i] * self._vars[j]
+        obj += objective.get_constant()
         sense = SENSE_MAP[objective.get_sense()]
         self._model.setObjective(obj, sense)
 
