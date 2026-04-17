@@ -28,6 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -42,8 +43,10 @@ dependencies = [
 [project.optional-dependencies]
 gurobi = ["gurobipy"]
 scip = ["pyscipopt"]
+
+[dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
-dev = ["ilpy[test]", "ipython", "mypy", "pre-commit", "ruff"]
+dev = [{ "include-group" = "test" }, "ipython", "mypy", "pre-commit", "ruff"]
 docs = ["numpy", "sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
 
 [project.urls]
