@@ -46,8 +46,8 @@ scip = ["pyscipopt"]
 
 [dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
-dev = [{ "include-group" = "test" }, "ipython", "mypy", "pre-commit", "ruff"]
-docs = ["numpy", "sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
+dev = [{ "include-group" = "test" }, "ipython", "mypy", "prek", "ruff"]
+docs = ["numpy", "zensical", "mkdocstrings-python"]
 
 [project.urls]
 homepage = "https://github.com/funkelab/ilpy"

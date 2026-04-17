@@ -15,3 +15,4 @@ coverage_cpp.xml
 docs/_build/
 docs/build/
 uv.lock
+site/

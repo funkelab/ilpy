@@ -11,8 +11,11 @@ class Preference(IntEnum):
     """Preference for a solver backend."""
 
     Any = auto()
+    """Use whichever supported backend is available."""
     Scip = auto()
+    """Prefer the SCIP backend."""
     Gurobi = auto()
+    """Prefer the Gurobi backend."""
 
 
 def create_solver_backend(preference: Preference | str) -> SolverBackend:

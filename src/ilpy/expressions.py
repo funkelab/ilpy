@@ -1,3 +1,10 @@
+"""AST-based expressions used to build `ilpy.Constraint` and `ilpy.Objective`.
+
+Expressions let you write linear or quadratic problems in natural Python
+syntax (e.g. `2 * x - y >= 0`) and convert them into the corresponding
+`ilpy` component objects.
+"""
+
 from __future__ import annotations
 
 import ast
@@ -33,15 +40,17 @@ class Expression(ast.expr):
     intuitive syntax, and then convert to a native Constraint object.
 
     This class provides all of the operators and methods needed to build
-    expressions. For example, to create the expression ``2 * x - y >= 0``, you can
-    write ``2 * Variable('x') - Variable('y') >= 0``.
+    expressions. For example, to create the expression `2 * x - y >= 0`, you can
+    write `2 * Variable('x') - Variable('y') >= 0`.
 
-    Tip: you can use ``ast.dump`` to see the AST representation of an expression.
-    Or, use ``print(expr)`` to see the string representation of an expression.
+    !!! tip
+
+        you can use `ast.dump` to see the AST representation of an expression.
+        Or, use `print(expr)` to see the string representation of an expression.
     """
 
     def as_constraint(self) -> Constraint:
-        """Create an ilpy.Constraint object from this expression."""
+        """Create an [ilpy.Constraint][] object from this expression."""
         from ._components import Constraint
 
         l_coeffs, q_coeffs, value = _get_coeff_indices(self)
@@ -223,7 +232,7 @@ class Variable(Expression, ast.Name):
     `id` holds the index as a string (because ast.Name requires a string).
 
     The special attribute `index` is added here for the purpose of storing
-    the index of a variable in a solver's variable list: ``Variable('u', index=0)``
+    the index of a variable in a solver's variable list: `Variable('u', index=0)`
     """
 
     def __init__(self, id: str, index: int | None = None) -> None:
