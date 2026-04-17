@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import os
+from contextlib import suppress
 from enum import IntEnum, auto
 from functools import cache
-from pathlib import Path
 
 from ._base import SolverBackend
 
@@ -55,14 +54,29 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
 
 @cache
 def _have_gurobi_license() -> bool:
-    """Check if Gurobi license is available.
+    """Return True if a real (non size-limited) Gurobi license is available.
 
-    This assumes that the license file is located as described in the Gurobi docs:
-    https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic
+    Delegates license resolution to gurobipy itself so every documented search
+    location is honored — the `GRB_LICENSE_FILE` environment variable, the
+    user's home directory, and the platform-specific shared install directory
+    (`/opt/gurobi` on Linux, `/Library/gurobi` on macOS, `C:\\gurobi` on
+    Windows). See
+    https://support.gurobi.com/hc/en-us/articles/360013417211
+
+    The pip/conda `gurobipy` wheel ships with a bundled size-limited license
+    (max 2000 variables); it reports `LicenseID == 0`. We treat that case as
+    "no license" so callers can fall back to SCIP for larger problems.
     """
-    license_file = Path.home() / "gurobi.lic"
-    if license_file.exists():
-        return True
-    if (env_file := os.getenv("GRB_LICENSE_FILE", "")) and Path(env_file).exists():
-        return True
+    try:
+        import gurobipy as gp
+    except ImportError:
+        return False
+    with suppress(Exception):
+        # empty=True defers license validation until start()
+        with gp.Env(empty=True) as env:
+            # silence the startup banner and the "Restricted license" notice
+            env.setParam("OutputFlag", 0)
+            env.start()
+            return int(env.getParam("LicenseID")) != 0
+    # no license file found, or license expired
     return False
