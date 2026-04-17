@@ -42,8 +42,10 @@ dependencies = [
 [project.optional-dependencies]
 gurobi = ["gurobipy"]
 scip = ["pyscipopt"]
+
+[dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
-dev = ["ilpy[test]", "ipython", "mypy", "pre-commit", "ruff"]
+dev = [{ "include-group" = "test" }, "ipython", "mypy", "pre-commit", "ruff"]
 docs = ["numpy", "sphinx", "sphinx_rtd_theme", "sphinx-autodoc-typehints"]
 
 [project.urls]
