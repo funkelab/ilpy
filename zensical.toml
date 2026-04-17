@@ -1,0 +1,27 @@
+[project]
+site_name = "ilpy"
+site_description = "Unified API for ILP solvers."
+site_author = "Jan Funke, Talley Lambert"
+site_url = "https://funkelab.github.io/ilpy/"
+repo_url = "https://github.com/funkelab/ilpy"
+repo_name = "funkelab/ilpy"
+
+nav = [
+  { Home = "index.md" },
+  { "API Reference" = "api.md" },
+]
+
+[project.theme.icon]
+logo = "material/sitemap"
+
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+
+[project.markdown_extensions.pymdownx.superfences]
+
+[project.plugins.mkdocstrings.handlers.python]
+inventories = ["https://docs.python.org/3/objects.inv"]
+paths = ["src"]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "numpy"

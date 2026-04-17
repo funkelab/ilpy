@@ -17,24 +17,30 @@ if TYPE_CHECKING:
 
 
 class Constraint:
+    """A linear (or quadratic) constraint of the form `Ax [<=|=|>=] b`."""
+
     def __init__(self) -> None:
+        """Create an empty `<= 0` constraint with no coefficients."""
         self._coefs: dict[int, float] = {}
         self._quad_coefs: dict[tuple[int, int], float] = {}
         self._relation: Relation = Relation.LessEqual
         self._value: float = 0.0
 
     def set_coefficient(self, i: SupportsIndex, value: float) -> None:
+        """Set the linear coefficient of variable `i`."""
         if value == 0:
             self._coefs.pop(int(i), None)
         else:
             self._coefs[int(i)] = value
 
     def get_coefficients(self) -> Mapping[int, float]:
+        """Return the linear coefficients as a mapping from variable index to value."""
         return MappingProxyType(self._coefs)
 
     def set_quadratic_coefficient(
         self, i: SupportsIndex, j: SupportsIndex, value: float
     ) -> None:
+        """Set the quadratic coefficient for the term `x_i * x_j`."""
         key = (int(i), int(j))
         if value == 0:
             self._quad_coefs.pop(key, None)
@@ -42,21 +48,27 @@ class Constraint:
             self._quad_coefs[key] = value
 
     def get_quadratic_coefficients(self) -> Mapping[tuple[int, int], float]:
+        """Return the quadratic coefficients, keyed by variable-index pairs."""
         return MappingProxyType(self._quad_coefs)
 
     def set_relation(self, relation: Relation) -> None:
+        """Set the relation (`<=`, `=`, `>=`) used by this constraint."""
         self._relation = relation
 
     def get_relation(self) -> Relation:
+        """Return the relation of this constraint."""
         return self._relation
 
     def set_value(self, value: float) -> None:
+        """Set the right-hand-side value of this constraint."""
         self._value = value
 
     def get_value(self) -> float:
+        """Return the right-hand-side value of this constraint."""
         return self._value
 
     def is_violated(self, solution: Solution) -> bool:
+        """Return True if `solution` violates this constraint."""
         total = sum(coef * solution[var] for var, coef in self._coefs.items())
         if self._relation == Relation.LessEqual:
             return total > self._value
@@ -74,6 +86,7 @@ class Constraint:
         relation: Relation = Relation.LessEqual,
         value: float = 0,
     ) -> Constraint:
+        """Build a `Constraint` from coefficients, a relation, and a value."""
         constraint = cls()
         iter_coeffs = (
             coefficients.items()
@@ -96,19 +109,25 @@ class Constraint:
 
 
 class Constraints:
+    """An ordered collection of `Constraint` objects."""
+
     def __init__(self) -> None:
+        """Create an empty collection of constraints."""
         self._constraints: list[Constraint] = []
 
     def clear(self) -> None:
+        """Remove all constraints from this collection."""
         self._constraints.clear()
 
     def add(self, constraint: Constraint | Expression) -> None:
+        """Append a `Constraint` (or an `Expression` convertible to one)."""
         if isinstance(constraint, Expression):
             self._constraints.append(constraint.as_constraint())
         else:
             self._constraints.append(constraint)
 
     def add_all(self, constraints: Constraints) -> None:
+        """Append every constraint from another `Constraints` instance."""
         self._constraints.extend(constraints._constraints)
 
     def __len__(self) -> int:
@@ -119,16 +138,21 @@ class Constraints:
 
 
 class Objective:
+    """A linear (or quadratic) objective function to minimize or maximize."""
+
     def __init__(self, size: int = 0) -> None:
+        """Create an empty minimizing objective with `size` zero coefficients."""
         self._sense = Sense.Minimize
         self._constant = 0.0
         self._coeffs: list[float] = []
         self._quad_coeffs: dict[tuple[int, int], float] = {}
 
     def set_constant(self, value: float) -> None:
+        """Set the constant term added to the objective."""
         self._constant = value
 
     def get_constant(self) -> float:
+        """Return the constant term of the objective."""
         return self._constant
 
     def resize(self, size: int) -> None:
@@ -142,12 +166,14 @@ class Objective:
             self._coeffs = self._coeffs[:size]
 
     def set_coefficient(self, i: SupportsIndex, value: float) -> None:
+        """Set the linear coefficient of variable `i`, growing storage as needed."""
         i = int(i)
         if i >= len(self):
             self.resize(i + 1)
         self._coeffs[i] = value
 
     def get_coefficients(self) -> list[float]:
+        """Return a copy of the linear coefficients."""
         return list(self._coeffs)
 
     def __iter__(self) -> Iterator[float]:
@@ -156,6 +182,7 @@ class Objective:
     def set_quadratic_coefficient(
         self, i: SupportsIndex, j: SupportsIndex, value: float
     ) -> None:
+        """Set the quadratic coefficient for the term `x_i * x_j`."""
         i, j = int(i), int(j)
         if i >= len(self) or j >= len(self):
             self.resize(max(i, j) + 1)
@@ -165,12 +192,15 @@ class Objective:
             self._quad_coeffs[(i, j)] = value
 
     def get_quadratic_coefficients(self) -> Mapping[tuple[int, int], float]:
+        """Return the quadratic coefficients, keyed by variable-index pairs."""
         return MappingProxyType(self._quad_coeffs)
 
     def set_sense(self, sense: Sense) -> None:
+        """Set the sense (`Sense.Minimize` or `Sense.Maximize`)."""
         self._sense = sense
 
     def get_sense(self) -> Sense:
+        """Return the sense of this objective."""
         return self._sense
 
     def __len__(self) -> int:
@@ -184,6 +214,7 @@ class Objective:
         constant: float = 0,
         sense: Sense = Sense.Minimize,
     ) -> Objective:
+        """Build an `Objective` from coefficients, a constant, and a sense."""
         obj = cls()
         iter_coeffs = (
             coefficients.items()

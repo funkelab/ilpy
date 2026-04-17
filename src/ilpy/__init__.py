@@ -1,3 +1,11 @@
+"""Unified Python API for Integer Linear Programming (ILP) solvers.
+
+`ilpy` provides a consistent interface that abstracts over different ILP
+backends (currently Gurobi and SCIP), and lets you build problems either
+imperatively (via `Objective` / `Constraint`) or as natural Python
+expressions (via `Variable` and `Expression`).
+"""
+
 from importlib.metadata import PackageNotFoundError, version
 
 try:

@@ -1,3 +1,5 @@
+"""Typed payloads delivered to `ilpy.Solver` event callbacks."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict, Union
@@ -10,8 +12,11 @@ if TYPE_CHECKING:
     GurobiEventType: TypeAlias = Literal[
         "PRESOLVE", "SIMPLEX", "MIP", "MIPSOL", "MIPNODE", "MESSAGE", "UNKNOWN"
     ]
+    """The set of event types emitted by the Gurobi backend."""
     SCIPEventType: TypeAlias = Literal["PRESOLVEROUND", "BESTSOLFOUND"]
+    """The set of event types emitted by the SCIP backend."""
     EventType: TypeAlias = GurobiEventType | SCIPEventType
+    """Union of all event types emitted by any supported backend."""
 
 
 class _GurobiData(TypedDict, total=False):
@@ -21,6 +26,8 @@ class _GurobiData(TypedDict, total=False):
 
 
 class GurobiPresolve(_GurobiData):
+    """Event payload emitted by Gurobi during presolve."""
+
     event_type: Literal["PRESOLVE"]
     pre_coldel: int
     pre_rowdel: int
@@ -30,6 +37,8 @@ class GurobiPresolve(_GurobiData):
 
 
 class GurobiSimplex(_GurobiData):
+    """Event payload emitted by Gurobi from the simplex method."""
+
     event_type: Literal["SIMPLEX"]
     itrcnt: float
     objval: float
@@ -51,6 +60,8 @@ class _GurobiMipData(_GurobiData):
 
 
 class GurobiMip(_GurobiMipData):
+    """Event payload emitted by Gurobi during MIP search."""
+
     event_type: Literal["MIP"]
     cutcnt: int
     nodlft: float
@@ -58,16 +69,22 @@ class GurobiMip(_GurobiMipData):
 
 
 class GurobiMipSol(_GurobiMipData):
+    """Event payload emitted by Gurobi when a new MIP solution is found."""
+
     event_type: Literal["MIPSOL"]
     obj: float
 
 
 class GurobiMipNode(_GurobiMipData):
+    """Event payload emitted by Gurobi when a MIP node is processed."""
+
     event_type: Literal["MIPNODE"]
     status: int
 
 
 class GurobiMessage(_GurobiData):
+    """Event payload wrapping a textual log message from Gurobi."""
+
     event_type: Literal["MESSAGE"]
     message: str
 
@@ -75,6 +92,7 @@ class GurobiMessage(_GurobiData):
 GurobiData = Union[
     GurobiPresolve, GurobiSimplex, GurobiMip, GurobiMipSol, GurobiMipNode, GurobiMessage
 ]
+"""Union of all Gurobi event payload types."""
 
 
 class _SCIPData(TypedDict, total=False):
@@ -83,6 +101,8 @@ class _SCIPData(TypedDict, total=False):
 
 
 class SCIPPresolve(_SCIPData):
+    """Event payload emitted by SCIP during a presolve round."""
+
     event_type: Literal["PRESOLVEROUND"]
     nativeconss: int
     nbinvars: int
@@ -96,6 +116,8 @@ class SCIPPresolve(_SCIPData):
 
 
 class SCIPBestSol(_SCIPData):
+    """Event payload emitted by SCIP when a new best solution is found."""
+
     event_type: Literal["BESTSOLFOUND"]
     avgdualbound: float
     avglowerbound: float
@@ -114,4 +136,6 @@ class SCIPBestSol(_SCIPData):
 
 
 SCIPData = Union[SCIPPresolve, SCIPBestSol]
+"""Union of all SCIP event payload types."""
 EventData = Union[GurobiData, SCIPData]
+"""Union of every event payload emitted by any supported backend."""
