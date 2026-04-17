@@ -16,12 +16,14 @@ if TYPE_CHECKING:
 
     from ilpy._constants import VariableType
 
-# XFAIL if no gurobi not installed or no license found
-# (this is the best way I could find to determine this so far)
+# XFAIL gurobi tests if the requested license mode is unavailable:
+# - `gurobi` needs a full license
+# - `gurobi-restricted` needs at least the bundled/size-limited pip license
+#   (which is poisoned if GRB_LICENSE_FILE is set but points to a stale file)
+from ilpy.solver_backends import create_solver_backend
+
 gu_marks = []
 try:
-    from ilpy.solver_backends import create_solver_backend
-
     create_solver_backend(ilpy.Preference.Gurobi)
     import gurobipy as gb
 
@@ -31,10 +33,18 @@ except Exception as e:
     gb = None
     HAVE_GUROBI = False
 
+gr_marks = []
+try:
+    create_solver_backend(ilpy.Preference.GurobiUnlicensed)
+except Exception as e:
+    gr_marks.append(pytest.mark.xfail(reason=f"Gurobi restricted error: {e}"))
+
 PREFS = [
     pytest.param(ilpy.Preference.Scip, id="scip"),
     pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
-    pytest.param(ilpy.Preference.GurobiUnlicensed, id="gurobi-restricted"),
+    pytest.param(
+        ilpy.Preference.GurobiUnlicensed, marks=gr_marks, id="gurobi-restricted"
+    ),
 ]
 
 
