@@ -259,6 +259,14 @@ class CuOptSolver(SolverBackend):
         # production deployments that build the solver via tracksdata /
         # third-party code and can't easily reach the set_timeout() call
         # site.
+        #
+        # Empirical floor for cell-tracking ILPs in heuristics-only mode
+        # (cuopt-cu12 == 26.4.x): Papilo presolve alone takes ~91 s, so
+        # time_limit < ~120 s frequently returns a trivial / infeasible
+        # primal. Recommended production default for MIPs of this shape:
+        # 240 s (~1.3× safety margin over the 180s "first usable primal"
+        # floor measured on ops0042 A/2: 2.2M nodes / 1.56M edges).
+        # See royerlab/hoct_inference PR #5 for the measurement methodology.
         effective_time_limit = self._time_limit
         env_time_limit = os.environ.get("ILPY_CUOPT_TIME_LIMIT")
         if env_time_limit:
