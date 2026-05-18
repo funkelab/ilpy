@@ -252,8 +252,22 @@ class CuOptSolver(SolverBackend):
 
         # Settings
         ss = SolverSettings()
-        if self._time_limit is not None:
-            ss.set_parameter("time_limit", str(self._time_limit))
+        # Time limit precedence: ILPY_CUOPT_TIME_LIMIT env var wins over
+        # whatever was passed via set_timeout() (which itself defaults to
+        # whatever the caller's ILPSolverConfig.timeout was — typically
+        # very large). Letting an env-var override is essential for
+        # production deployments that build the solver via tracksdata /
+        # third-party code and can't easily reach the set_timeout() call
+        # site.
+        effective_time_limit = self._time_limit
+        env_time_limit = os.environ.get("ILPY_CUOPT_TIME_LIMIT")
+        if env_time_limit:
+            try:
+                effective_time_limit = float(env_time_limit)
+            except ValueError:
+                pass
+        if effective_time_limit is not None:
+            ss.set_parameter("time_limit", str(effective_time_limit))
         if self._mip_gap_rel is not None:
             ss.set_parameter("mip_relative_gap", str(self._mip_gap_rel))
         if self._mip_gap_abs is not None:
