@@ -27,6 +27,7 @@ from .solver_backends import Preference, SolverBackend
 Any = Preference.Any
 Scip = Preference.Scip
 Gurobi = Preference.Gurobi
+CuOpt = Preference.CuOpt
 Continuous = VariableType.Continuous
 Integer = VariableType.Integer
 Binary = VariableType.Binary

@@ -39,12 +39,21 @@ try:
 except Exception as e:
     gr_marks.append(pytest.mark.xfail(reason=f"Gurobi restricted error: {e}"))
 
+# CuOpt requires the cuopt-cu12 wheel AND a visible CUDA device. Mark
+# xfail when either is absent so the suite runs everywhere.
+cuopt_marks = []
+try:
+    create_solver_backend(ilpy.Preference.CuOpt)
+except Exception as e:
+    cuopt_marks.append(pytest.mark.xfail(reason=f"cuOpt unavailable: {e}"))
+
 PREFS = [
     pytest.param(ilpy.Preference.Scip, id="scip"),
     pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
     pytest.param(
         ilpy.Preference.GurobiRestricted, marks=gr_marks, id="gurobi-restricted"
     ),
+    pytest.param(ilpy.Preference.CuOpt, marks=cuopt_marks, id="cuopt"),
 ]
 
 
@@ -202,6 +211,12 @@ def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
     obj.set_quadratic_coefficient(0, 0, -1)  # quadratic term (-x^2)
 
     solver = ilpy.Solver(1, ilpy.VariableType.Continuous, preference=preference)
+    if preference == ilpy.Preference.CuOpt:
+        # CuOpt is a linear MIP solver; QP/MIQP is documented as
+        # NotImplementedError on this backend.
+        with pytest.raises(NotImplementedError):
+            solver.set_objective(obj)
+        return
     solver.set_objective(obj)
 
     constraint = ilpy.Constraint()

@@ -25,12 +25,17 @@ class Preference(IntEnum):
     - `GurobiRestricted`: Use Gurobi with whatever license resolves
       (including the bundled size-limited pip license). Suitable for small
       problems (<2000 variables); larger ones will fail at solve time.
+    - `CuOpt`: Use NVIDIA cuOpt (GPU-accelerated, Apache-2.0). Raises if
+      ``cuopt-cu12`` is not installed or no CUDA device is visible. Useful
+      for very large MIPs on sites without a Gurobi seat; quadratic
+      objectives/constraints are not supported by this backend.
     """
 
     Any = auto()
     Scip = auto()
     Gurobi = auto()
     GurobiRestricted = auto()
+    CuOpt = auto()
 
 
 def create_solver_backend(preference: Preference | str) -> SolverBackend:
@@ -48,6 +53,10 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
         to_try.append(("_scip", "ScipSolver"))
     if preference in (Preference.Any, Preference.GurobiRestricted):
         to_try.append(("_gurobi", "GurobiSolver"))
+    # CuOpt is opt-in only (not part of `Any`): it requires a CUDA device
+    # and the cuopt-cu12 wheel, so callers must request it explicitly.
+    if preference == Preference.CuOpt:
+        to_try.append(("_cuopt", "CuOptSolver"))
 
     errors: list[tuple[str, BaseException]] = []
     for modname, clsname in to_try:

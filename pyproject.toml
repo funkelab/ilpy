@@ -43,6 +43,10 @@ dependencies = [
 [project.optional-dependencies]
 gurobi = ["gurobipy"]
 scip = ["pyscipopt"]
+# NVIDIA cuOpt (GPU MIP solver, Apache-2.0). Only useful on CUDA-capable
+# hosts. Wheel is hosted on pypi.nvidia.com, so install with:
+#   pip install --extra-index-url https://pypi.nvidia.com 'ilpy[cuopt]'
+cuopt = ["cuopt-cu12", "numpy", "scipy"]
 
 [dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
