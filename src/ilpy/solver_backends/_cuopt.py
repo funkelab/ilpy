@@ -16,6 +16,7 @@ selected-variable set matched a Gurobi-completed reference within rounding
 error (<0.01 % of variables differ). See the upstream consumer
 (eet_inference / hoct_inference) for the validation harness.
 """
+
 from __future__ import annotations
 
 import os
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
 try:
     import numpy as np
     from cuopt.linear_programming import data_model, solver
+    from cuopt.linear_programming.internals import GetSolutionCallback
     from cuopt.linear_programming.solver_settings import SolverSettings
     from scipy.sparse import csr_matrix
 except ImportError as e:
@@ -45,7 +47,7 @@ except ImportError as e:
 
 
 # ilpy.VariableType → cuOpt single-char variable kind code
-VTYPE_MAP: "Mapping[int, bytes]" = {
+VTYPE_MAP: Mapping[int, bytes] = {
     VariableType.Continuous: b"C",
     VariableType.Binary: b"I",  # cuOpt uses {0,1} bounds + integer to model binary
     VariableType.Integer: b"I",
@@ -54,7 +56,7 @@ VTYPE_MAP: "Mapping[int, bytes]" = {
 # cuOpt termination_status enum values (from cuopt.linear_programming):
 #   1 = Optimal, 2 = Infeasible, 3 = Unbounded, 4 = TimeLimit, 5 = IterationLimit,
 #   6 = Numerical, 7 = PrimalFeasible (heuristic-only, no dual bound)
-STATUS_MAP: "Mapping[int, SolverStatus]" = {
+STATUS_MAP: Mapping[int, SolverStatus] = {
     1: SolverStatus.OPTIMAL,
     2: SolverStatus.INFEASIBLE,
     3: SolverStatus.UNBOUNDED,
@@ -100,12 +102,14 @@ class CuOptSolver(SolverBackend):
         self,
         num_variables: int,
         default_variable_type: VariableType,
-        variable_types: "Mapping[int, VariableType]",
+        variable_types: Mapping[int, VariableType],
     ) -> None:
         self._num_variables = int(num_variables)
         self._var_types = np.array(
-            [VTYPE_MAP[variable_types.get(i, default_variable_type)]
-             for i in range(num_variables)],
+            [
+                VTYPE_MAP[variable_types.get(i, default_variable_type)]
+                for i in range(num_variables)
+            ],
             dtype=object,
         )
         lb = np.empty(num_variables, dtype=np.float64)
@@ -125,7 +129,7 @@ class CuOptSolver(SolverBackend):
 
     # ------------------------------------------------------------ objective
 
-    def set_objective(self, objective: "Objective") -> None:
+    def set_objective(self, objective: Objective) -> None:
         if objective.get_quadratic_coefficients():
             raise NotImplementedError(
                 "CuOptSolver does not currently support quadratic objectives. "
@@ -136,10 +140,10 @@ class CuOptSolver(SolverBackend):
 
     # ----------------------------------------------------------- constraints
 
-    def set_constraints(self, constraints: "Constraints") -> None:
+    def set_constraints(self, constraints: Constraints) -> None:
         self._constraint_buf = list(constraints)
 
-    def add_constraint(self, constraint: "Constraint") -> None:
+    def add_constraint(self, constraint: Constraint) -> None:
         if constraint.get_quadratic_coefficients():
             raise NotImplementedError(
                 "CuOptSolver does not currently support quadratic constraints. "
@@ -172,7 +176,9 @@ class CuOptSolver(SolverBackend):
         if self._num_variables == 0:
             raise ValueError("CuOptSolver: initialize() must be called before solve().")
         if self._objective is None:
-            raise ValueError("CuOptSolver: set_objective() must be called before solve().")
+            raise ValueError(
+                "CuOptSolver: set_objective() must be called before solve()."
+            )
 
         import time as _time
 
@@ -230,7 +236,7 @@ class CuOptSolver(SolverBackend):
             row_lb[ge] = rhs[ge]
             row_ub[ge] = INF
         else:
-            # Empty constraint set: build a 0×n_vars matrix to keep cuOpt happy.
+            # Empty constraint set: build a 0-by-n_vars matrix to keep cuOpt happy.
             A = csr_matrix((n_cons, n_vars), dtype=np.float64)
             row_lb = np.zeros(0, dtype=np.float64)
             row_ub = np.zeros(0, dtype=np.float64)
@@ -244,9 +250,7 @@ class CuOptSolver(SolverBackend):
         dm.set_variable_lower_bounds(self._var_lb)
         dm.set_variable_upper_bounds(self._var_ub)
         # cuOpt expects an array of single-char byte codes for var types
-        dm.set_variable_types(
-            np.asarray(self._var_types, dtype=object).astype(bytes)
-        )
+        dm.set_variable_types(np.asarray(self._var_types, dtype=object).astype(bytes))
         dm.set_maximize(self._sense == Sense.Maximize)
         self._last_dm = dm
 
@@ -264,7 +268,7 @@ class CuOptSolver(SolverBackend):
         # (cuopt-cu12 == 26.4.x): Papilo presolve alone takes ~91 s, so
         # time_limit < ~120 s frequently returns a trivial / infeasible
         # primal. Recommended production default for MIPs of this shape:
-        # 240 s (~1.3× safety margin over the 180s "first usable primal"
+        # 240 s (~1.3x safety margin over the 180s "first usable primal"
         # floor measured on ops0042 A/2: 2.2M nodes / 1.56M edges).
         # See royerlab/hoct_inference PR #5 for the measurement methodology.
         effective_time_limit = self._time_limit
@@ -296,15 +300,57 @@ class CuOptSolver(SolverBackend):
             except Exception:
                 pass
         extra = os.environ.get("ILPY_CUOPT_EXTRA_PARAMS", "")
-        for kv in extra.split(","):
-            kv = kv.strip()
-            if not kv or "=" not in kv:
+        for raw_kv in extra.split(","):
+            kv_clean = raw_kv.strip()
+            if not kv_clean or "=" not in kv_clean:
                 continue
-            k, v = kv.split("=", 1)
+            param_name, param_value = kv_clean.split("=", 1)
             try:
-                ss.set_parameter(k.strip(), v.strip())
+                ss.set_parameter(param_name.strip(), param_value.strip())
             except Exception:
                 pass
+
+        # Progress events: cuOpt's per-incumbent hook is MILP-only and is
+        # invoked from C++ once per new feasible solution. For LP problems
+        # (and MIPs that solve entirely during presolve), no incumbent
+        # callback fires, so we always emit a terminal "SOLVED" event below
+        # to give callers at least one payload per solve.
+        is_mip = bool(self._var_types is not None and (self._var_types == b"I").any())
+
+        backend_self = self
+
+        class _IncumbentRelay(GetSolutionCallback):
+            """Forward each cuOpt incumbent to ilpy's event-callback hook."""
+
+            def get_solution(
+                self,
+                solution: Any,
+                solution_cost: Any,
+                solution_bound: Any,
+                user_data: Any,
+            ) -> None:
+                # cuOpt reports the unshifted objective; add ilpy's
+                # objective constant so the value matches Solution.value.
+                try:
+                    cost = float(solution_cost[0]) + obj_constant
+                    bound = float(solution_bound[0]) + obj_constant
+                except Exception:
+                    return
+                denom = max(abs(cost), 1e-10)
+                gap = abs(cost - bound) / denom
+                backend_self.emit_event_data(
+                    {
+                        "backend": "cuopt",
+                        "event_type": "MIPSOL",
+                        "obj": cost,
+                        "solution_bound": bound,
+                        "gap": gap,
+                        "runtime": _time.monotonic() - t0,
+                    }
+                )
+
+        if is_mip:
+            ss.set_mip_callback(_IncumbentRelay(), None)
 
         # Solve
         t0 = _time.monotonic()
@@ -324,6 +370,16 @@ class CuOptSolver(SolverBackend):
             obj_val = float(sol.get_primal_objective()) + obj_constant
         except Exception:
             obj_val = float("nan")
+
+        self.emit_event_data(
+            {
+                "backend": "cuopt",
+                "event_type": "SOLVED",
+                "obj": obj_val,
+                "status": native_status,
+                "runtime": wall,
+            }
+        )
 
         return Solution(
             variable_values=variable_values,

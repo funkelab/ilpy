@@ -44,9 +44,11 @@ dependencies = [
 gurobi = ["gurobipy"]
 scip = ["pyscipopt"]
 # NVIDIA cuOpt (GPU MIP solver, Apache-2.0). Only useful on CUDA-capable
-# hosts. Wheel is hosted on pypi.nvidia.com, so install with:
-#   pip install --extra-index-url https://pypi.nvidia.com 'ilpy[cuopt]'
-cuopt = ["cuopt-cu12", "numpy", "scipy"]
+# hosts. The cuopt-cu12 wheel is hosted on pypi.nvidia.com (see the
+# [[tool.uv.index]] / [tool.uv.sources] blocks below for the uv route) and
+# only ships for Python >= 3.10, so the marker keeps `uv sync` working on
+# 3.9 environments that don't request the extra.
+cuopt = ["cuopt-cu12; python_version >= '3.10'", "numpy", "scipy"]
 
 [dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
@@ -56,6 +58,15 @@ docs = ["numpy", "zensical", "mkdocstrings-python"]
 [project.urls]
 homepage = "https://github.com/funkelab/ilpy"
 repository = "https://github.com/funkelab/ilpy"
+
+# uv: route `cuopt-cu12` to NVIDIA's index so `uv sync --extra cuopt`
+# resolves without needing `--extra-index-url` on the command line.
+[[tool.uv.index]]
+name = "nvidia"
+url = "https://pypi.nvidia.com"
+
+[tool.uv.sources]
+cuopt-cu12 = { index = "nvidia" }
 
 # https://docs.astral.sh/ruff
 [tool.ruff]
