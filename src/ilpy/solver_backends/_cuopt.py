@@ -141,7 +141,18 @@ class CuOptSolver(SolverBackend):
     # ----------------------------------------------------------- constraints
 
     def set_constraints(self, constraints: Constraints) -> None:
-        self._constraint_buf = list(constraints)
+        # Materialise + validate up front so a quadratic term anywhere in the
+        # incoming iterable aborts the call *before* mutating `_constraint_buf`.
+        # Iterating once also handles single-pass iterables (generators).
+        new_buf = list(constraints)
+        for c in new_buf:
+            if c.get_quadratic_coefficients():
+                raise NotImplementedError(
+                    "CuOptSolver does not currently support quadratic "
+                    "constraints. Use the SCIP or Gurobi backend for "
+                    "QCP/MIQCP problems."
+                )
+        self._constraint_buf = new_buf
 
     def add_constraint(self, constraint: Constraint) -> None:
         if constraint.get_quadratic_coefficients():
@@ -185,16 +196,15 @@ class CuOptSolver(SolverBackend):
         n_vars = self._num_variables
         n_cons = len(self._constraint_buf)
 
-        # Objective vector
+        # Objective vector. `Objective.get_coefficients()` returns
+        # `list[float]` (one entry per variable). Match the Gurobi/SCIP
+        # behaviour of silently truncating if the objective is longer than
+        # `num_variables` (rather than raising IndexError) by capping the
+        # slice length explicitly.
         obj_coefs = np.zeros(n_vars, dtype=np.float64)
-        raw = self._objective.get_coefficients()
-        if hasattr(raw, "items"):
-            for vi, c in raw.items():
-                obj_coefs[vi] = c
-        else:
-            # Sequence form: index → coefficient by position
-            for vi, c in enumerate(list(raw)):
-                obj_coefs[vi] = c
+        raw = np.asarray(self._objective.get_coefficients(), dtype=np.float64)
+        n_assign = min(raw.shape[0], n_vars)
+        obj_coefs[:n_assign] = raw[:n_assign]
         # ilpy may report a constant on the objective; cuOpt has no
         # objective-constant parameter, so we capture it and add it to the
         # objective value we return.

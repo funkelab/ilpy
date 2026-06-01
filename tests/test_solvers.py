@@ -107,9 +107,11 @@ def test_solve(preference: ilpy.Preference, case: Case) -> None:
         solution = ilpy.solve(**kwargs, preference=preference, on_event=mock)
     except NotImplementedError as e:
         # CuOpt is linear-only: quadratic objectives/constraints raise
-        # NotImplementedError in the backend. Treat that as an expected
-        # skip rather than a test failure.
-        pytest.xfail(f"{preference.name} backend does not support this case: {e}")
+        # NotImplementedError. For every other backend a NotImplementedError
+        # is a real regression, so only xfail on CuOpt and re-raise otherwise.
+        if preference != ilpy.Preference.CuOpt:
+            raise
+        pytest.xfail(f"CuOpt backend does not support this case: {e}")
     npt.assert_allclose(solution, expectation)
     assert mock.call_count > 0
     assert all(
