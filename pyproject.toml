@@ -43,12 +43,11 @@ dependencies = [
 [project.optional-dependencies]
 gurobi = ["gurobipy"]
 scip = ["pyscipopt"]
-# NVIDIA cuOpt (GPU MIP solver, Apache-2.0). Only useful on CUDA-capable
-# hosts. The cuopt-cu12 wheel is hosted on pypi.nvidia.com (see the
-# [[tool.uv.index]] / [tool.uv.sources] blocks below for the uv route) and
-# only ships for Python >= 3.10, so the marker keeps `uv sync` working on
-# 3.9 environments that don't request the extra.
-cuopt = ["cuopt-cu12; python_version >= '3.10'", "numpy", "scipy"]
+cuopt = [
+    "cuopt-cu12; python_version >= '3.10'",
+    "numpy; python_version >= '3.10'",
+    "scipy; python_version >= '3.10'",
+]
 
 [dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
