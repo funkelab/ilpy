@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict, Union
 
-__all__ = ["EventData", "GurobiData", "SCIPData"]
+__all__ = ["CuOptData", "EventData", "GurobiData", "SCIPData"]
 
 if TYPE_CHECKING:
     from typing import Literal, TypeAlias
@@ -15,7 +15,9 @@ if TYPE_CHECKING:
     """The set of event types emitted by the Gurobi backend."""
     SCIPEventType: TypeAlias = Literal["PRESOLVEROUND", "BESTSOLFOUND"]
     """The set of event types emitted by the SCIP backend."""
-    EventType: TypeAlias = GurobiEventType | SCIPEventType
+    CuOptEventType: TypeAlias = Literal["MIPSOL", "SOLVED"]
+    """The set of event types emitted by the cuOpt backend."""
+    EventType: TypeAlias = GurobiEventType | SCIPEventType | CuOptEventType
     """Union of all event types emitted by any supported backend."""
 
 
@@ -137,5 +139,45 @@ class SCIPBestSol(_SCIPData):
 
 SCIPData = Union[SCIPPresolve, SCIPBestSol]
 """Union of all SCIP event payload types."""
-EventData = Union[GurobiData, SCIPData]
+
+
+class _CuOptData(TypedDict, total=False):
+    backend: Literal["cuopt"]
+    runtime: float  # Elapsed wall time since the cuOpt solve was dispatched.
+
+
+class CuOptMipSol(_CuOptData):
+    """Payload emitted by cuOpt when the MIP solver reports a new incumbent.
+
+    cuOpt invokes the registered ``GetSolutionCallback.get_solution`` hook
+    once per incumbent during branch-and-bound; we forward each call as
+    one event. ``obj`` is the incumbent's objective value, ``solution_bound``
+    is the dual bound at the time of the callback, and ``gap`` is computed
+    from the two (matching the convention used by ``GurobiMipSol``).
+    """
+
+    event_type: Literal["MIPSOL"]
+    obj: float
+    solution_bound: float
+    gap: float
+
+
+class CuOptSolved(_CuOptData):
+    """Payload emitted by cuOpt once at the end of every solve.
+
+    LP-only problems do not trigger the per-incumbent callback (the MIP
+    callback API is MILP-specific), and pure-presolve solutions also bypass
+    it; this terminal event guarantees at least one payload per ``solve()``
+    call so callers can count on receiving progress data.
+    """
+
+    event_type: Literal["SOLVED"]
+    obj: float
+    status: int
+
+
+CuOptData = Union[CuOptMipSol, CuOptSolved]
+"""Union of all cuOpt event payload types."""
+
+EventData = Union[GurobiData, SCIPData, CuOptData]
 """Union of every event payload emitted by any supported backend."""

@@ -39,12 +39,21 @@ try:
 except Exception as e:
     gr_marks.append(pytest.mark.xfail(reason=f"Gurobi restricted error: {e}"))
 
+# CuOpt requires the cuopt-cu12 wheel AND a visible CUDA device. Mark
+# xfail when either is absent so the suite runs everywhere.
+cuopt_marks = []
+try:
+    create_solver_backend(ilpy.Preference.CuOpt)
+except Exception as e:
+    cuopt_marks.append(pytest.mark.xfail(reason=f"cuOpt unavailable: {e}"))
+
 PREFS = [
     pytest.param(ilpy.Preference.Scip, id="scip"),
     pytest.param(ilpy.Preference.Gurobi, marks=gu_marks, id="gurobi"),
     pytest.param(
         ilpy.Preference.GurobiRestricted, marks=gr_marks, id="gurobi-restricted"
     ),
+    pytest.param(ilpy.Preference.CuOpt, marks=cuopt_marks, id="cuopt"),
 ]
 
 
@@ -94,7 +103,15 @@ def test_solve(preference: ilpy.Preference, case: Case) -> None:
     kwargs = case._asdict()
     expectation = kwargs.pop("expectation")
     mock = Mock()
-    solution = ilpy.solve(**kwargs, preference=preference, on_event=mock)
+    try:
+        solution = ilpy.solve(**kwargs, preference=preference, on_event=mock)
+    except NotImplementedError as e:
+        # CuOpt is linear-only: quadratic objectives/constraints raise
+        # NotImplementedError. For every other backend a NotImplementedError
+        # is a real regression, so only xfail on CuOpt and re-raise otherwise.
+        if preference != ilpy.Preference.CuOpt:
+            raise
+        pytest.xfail(f"CuOpt backend does not support this case: {e}")
     npt.assert_allclose(solution, expectation)
     assert mock.call_count > 0
     assert all(
@@ -202,6 +219,12 @@ def test_non_convex_quadratic(preference: ilpy.Preference) -> None:
     obj.set_quadratic_coefficient(0, 0, -1)  # quadratic term (-x^2)
 
     solver = ilpy.Solver(1, ilpy.VariableType.Continuous, preference=preference)
+    if preference == ilpy.Preference.CuOpt:
+        # CuOpt is a linear MIP solver; QP/MIQP is documented as
+        # NotImplementedError on this backend.
+        with pytest.raises(NotImplementedError):
+            solver.set_objective(obj)
+        return
     solver.set_objective(obj)
 
     constraint = ilpy.Constraint()

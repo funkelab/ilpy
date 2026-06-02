@@ -43,6 +43,11 @@ dependencies = [
 [project.optional-dependencies]
 gurobi = ["gurobipy"]
 scip = ["pyscipopt"]
+cuopt = [
+    "cuopt-cu12; python_version >= '3.10'",
+    "numpy; python_version >= '3.10'",
+    "scipy; python_version >= '3.10'",
+]
 
 [dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
@@ -52,6 +57,15 @@ docs = ["numpy", "zensical", "mkdocstrings-python"]
 [project.urls]
 homepage = "https://github.com/funkelab/ilpy"
 repository = "https://github.com/funkelab/ilpy"
+
+# uv: route `cuopt-cu12` to NVIDIA's index so `uv sync --extra cuopt`
+# resolves without needing `--extra-index-url` on the command line.
+[[tool.uv.index]]
+name = "nvidia"
+url = "https://pypi.nvidia.com"
+
+[tool.uv.sources]
+cuopt-cu12 = { index = "nvidia" }
 
 # https://docs.astral.sh/ruff
 [tool.ruff]
