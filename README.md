@@ -51,6 +51,24 @@ in the [`gurobipy`](https://pypi.org/project/gurobipy/) dependency with:
 pip install ilpy[gurobi]
 ```
 
+### ... with cuOpt
+
+`ilpy[cuopt]` depends on `cuopt-cu12`, which is hosted on NVIDIA's package index.
+Install it with pip by adding NVIDIA as an extra index:
+
+```sh
+pip install "ilpy[cuopt]" --extra-index-url https://pypi.nvidia.com
+```
+
+If you install from a custom/private index, keep your index as the primary one and
+add NVIDIA as an extra index so pip can still resolve `cuopt-cu12`:
+
+```sh
+pip install "ilpy[cuopt]" \
+  --index-url https://<your-custom-index>/simple \
+  --extra-index-url https://pypi.nvidia.com
+```
+
 ### On conda
 
 If you prefer to use conda:
