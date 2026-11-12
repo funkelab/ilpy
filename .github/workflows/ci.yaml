@@ -15,7 +15,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Run pre-commit linting
         run: pipx run pre-commit run --all-files
 
@@ -40,7 +40,7 @@ jobs:
             platform: macos-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -61,16 +61,16 @@ jobs:
           GRB_LICENSE_FILE: ${{ steps.write-license.outputs.grb_license_file }}
 
       - name: upload coverage
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
 
   test-motile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: ilpy
           fetch-depth: 0
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: motile
           repository: funkelab/motile
@@ -96,7 +96,7 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
