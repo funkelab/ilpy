@@ -54,14 +54,13 @@ pip install "ilpy[gurobi]"
 ### ... with cuOpt
 
 [cuOpt](https://github.com/NVIDIA/cuopt) is NVIDIA's GPU-accelerated
-optimization engine (Linux only, requires an NVIDIA GPU):
+optimization engine (Linux only, requires an NVIDIA GPU). Install the
+package that matches your CUDA version:
 
 ```sh
-pip install "ilpy[cuopt]"
+pip install ilpy cuopt-cu12  # CUDA 12
+pip install ilpy cuopt-cu13  # CUDA 13
 ```
-
-This installs `cuopt-cu12`. For CUDA 13, skip the extra and install
-`cuopt-cu13` directly: `pip install ilpy cuopt-cu13`
 
 ### On conda
 
