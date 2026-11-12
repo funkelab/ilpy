@@ -39,7 +39,7 @@ suite](https://www.scipopt.org), via
 explicitly:
 
 ```sh
-pip install ilpy[scip]
+pip install "ilpy[scip]"
 ```
 
 ### ... with Gurobi
@@ -48,7 +48,18 @@ If you want to use Gurobi (which requires a license), you can bring
 in the [`gurobipy`](https://pypi.org/project/gurobipy/) dependency with:
 
 ```sh
-pip install ilpy[gurobi]
+pip install "ilpy[gurobi]"
+```
+
+### ... with cuOpt
+
+[cuOpt](https://github.com/NVIDIA/cuopt) is NVIDIA's GPU-accelerated
+optimization engine (Linux only, requires an NVIDIA GPU). Install the
+package that matches your CUDA version:
+
+```sh
+pip install ilpy cuopt-cu12  # CUDA 12
+pip install ilpy cuopt-cu13  # CUDA 13
 ```
 
 ### On conda
