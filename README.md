@@ -53,16 +53,15 @@ pip install "ilpy[gurobi]"
 
 ### ... with cuOpt
 
-`cuOpt` is NVIDIA's GPU-accelerated optimization engine. `ilpy[cuopt]`
-includes `cuopt-cu12`, which is hosted on NVIDIA's package index.
-Install it with pip by adding NVIDIA as an extra index:
+[cuOpt](https://github.com/NVIDIA/cuopt) is NVIDIA's GPU-accelerated
+optimization engine (Linux only, requires an NVIDIA GPU):
 
 ```sh
-pip install "ilpy[cuopt]" --extra-index-url https://pypi.nvidia.com
+pip install "ilpy[cuopt]"
 ```
 
-*if you want to install a different version, such as `cuopt-cu13`, you
-may, but you will also need to install `scipy`*
+This installs `cuopt-cu12`. For CUDA 13, skip the extra and install
+`cuopt-cu13` directly: `pip install ilpy cuopt-cu13`
 
 ### On conda
 
