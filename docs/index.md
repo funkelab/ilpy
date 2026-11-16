@@ -33,8 +33,8 @@ and `x + 2y >= 8`:
         objective=2 * x + 3 * y,
         constraints=[3 * x + 2 * y >= 10, x + 2 * y >= 8],
     )
-    print(list(solution))       # [1.0, 3.5]
-    print(solution.get_value()) # 12.5
+    print(list(solution))  # [1.0, 3.5]
+    print(solution.get_value())  # 12.5
     ```
 
     Or pass raw coefficients directly:
@@ -68,8 +68,8 @@ and `x + 2y >= 8`:
     solver.add_constraint(x + 2 * y >= 8)
 
     solution = solver.solve()
-    print(list(solution))       # [1.0, 3.5]
-    print(solution.get_value()) # 12.5
+    print(list(solution))  # [1.0, 3.5]
+    print(solution.get_value())  # 12.5
     ```
 
     Or assemble `Objective` and `Constraint` objects imperatively:
