@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, ClassVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ._constants import Relation, Sense
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from ._components import Constraint, Objective
 
-Number = Union[float, int]
+Number = float | int
 
 
 @contextmanager
@@ -507,7 +507,7 @@ class _ExprSerializer(ast.NodeVisitor):
 
     def visit_Compare(self, node: ast.Compare) -> None:
         self.visit(node.left)
-        for op, right in zip(node.ops, node.comparators):
+        for op, right in zip(node.ops, node.comparators, strict=False):
             self.write(f" {self.OP_MAP[type(op)]} ", right)
 
     def visit_BinOp(self, node: ast.BinOp) -> None:

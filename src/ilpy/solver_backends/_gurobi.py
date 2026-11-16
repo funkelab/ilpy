@@ -80,7 +80,8 @@ class GurobiSolver(SolverBackend):
 
     def set_objective(self, objective: Objective) -> None:
         obj: gb.LinExpr | gb.QuadExpr = gb.quicksum(
-            coef * var for coef, var in zip(objective, self._vars.values())
+            coef * var
+            for coef, var in zip(objective, self._vars.values(), strict=False)
         )
         for (i, j), qcoef in objective.get_quadratic_coefficients().items():
             obj += qcoef * self._vars[i] * self._vars[j]

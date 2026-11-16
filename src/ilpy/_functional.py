@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Literal
+from typing import TYPE_CHECKING, Literal
 
 from ._components import Constraint, Objective
 from ._constants import Relation, Sense, VariableType
@@ -9,7 +9,7 @@ from .expressions import Expression
 from .solver_backends import Preference
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
     from .event_data import EventData
 
