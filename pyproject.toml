@@ -111,7 +111,11 @@ pretty = true
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # CI on forks has no license secret, so GRB_LICENSE_FILE points to an empty file
+    "default:Gurobi license check failed:UserWarning",
+]
 
 # https://coverage.readthedocs.io/
 [tool.coverage.report]

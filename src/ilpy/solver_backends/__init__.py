@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from contextlib import suppress
+import warnings
 from enum import IntEnum, auto
 from functools import cache
 
@@ -53,10 +53,18 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
 
     to_try = []
     if preference in (Preference.Any, Preference.Gurobi):
-        if _have_gurobi_license():
+        problem = _gurobi_license_problem()
+        if problem is None:
             to_try.append(("_gurobi", "GurobiSolver"))
         elif preference == Preference.Gurobi:
-            raise RuntimeError("Gurobi license is not available. ")
+            raise RuntimeError(f"Gurobi license is not available: {problem}")
+        elif isinstance(problem, Exception):
+            # a license is configured but broken: don't silently fall back
+            warnings.warn(
+                "Gurobi license check failed, falling back to other backends: "
+                f"{problem}",
+                stacklevel=2,
+            )
     if preference in (Preference.Any, Preference.Scip):
         to_try.append(("_scip", "ScipSolver"))
     if preference in (Preference.Any, Preference.GurobiRestricted):
@@ -85,8 +93,13 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
 
 
 @cache
-def _have_gurobi_license() -> bool:
-    """Return True if a real (non size-limited) Gurobi license is available.
+def _gurobi_license_problem() -> str | Exception | None:
+    """Return None if a real (non size-limited) Gurobi license is available.
+
+    Otherwise, return a string describing an expected reason (`gurobipy` not
+    installed, or only the size-limited license), or the exception raised for
+    any unexpected failure (e.g. an invalid, expired, or version-mismatched
+    license, or an unreachable token server).
 
     Delegates license resolution to gurobipy itself so every documented search
     location is honored — the `GRB_LICENSE_FILE` environment variable, the
@@ -105,8 +118,8 @@ def _have_gurobi_license() -> bool:
     try:
         import gurobipy as gp
     except ImportError:
-        return False
-    with suppress(Exception):
+        return "`gurobipy` is not installed"
+    try:
         # empty=True defers license validation until start()
         with gp.Env(empty=True) as env:
             # silence the startup banner and the "Restricted license" notice
@@ -117,6 +130,13 @@ def _have_gurobi_license() -> bool:
                 model.Params.TimeLimit = 0
                 model.addVars(_GUROBI_PROBE_SIZE)
                 model.optimize()
-                return True
-    # no license found, license expired, or size-limited license
-    return False
+    except gp.GurobiError as e:
+        if e.errno == gp.GRB.Error.SIZE_LIMIT_EXCEEDED:
+            return (
+                "only the size-limited license bundled with `gurobipy` was found "
+                "(use `Preference.GurobiRestricted` for small problems)"
+            )
+        return e
+    except Exception as e:
+        return e
+    return None
