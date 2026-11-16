@@ -12,7 +12,7 @@ source = "vcs"
 name = "ilpy"
 description = "Unified API for ILP solvers."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
     { email = "funkej@janelia.hhmi.org", name = "Jan Funke" },
@@ -23,12 +23,11 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -43,11 +42,7 @@ dependencies = [
 [project.optional-dependencies]
 gurobi = ["gurobipy"]
 scip = ["pyscipopt"]
-cuopt = [
-    "cuopt-cu12; python_version >= '3.10'",
-    "numpy; python_version >= '3.10'",
-    "scipy; python_version >= '3.10'",
-]
+cuopt = ["cuopt-cu12", "numpy", "scipy"]
 
 [dependency-groups]
 test = ["ilpy[gurobi, scip]", "pytest", "pytest-cov", "numpy"]
@@ -69,7 +64,7 @@ cuopt-cu12 = { index = "nvidia" }
 
 # https://docs.astral.sh/ruff
 [tool.ruff]
-target-version = "py39"
+target-version = "py311"
 src = ["src"]
 
 # https://docs.astral.sh/ruff/rules
