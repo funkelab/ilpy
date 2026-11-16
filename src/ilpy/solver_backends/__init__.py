@@ -8,6 +8,11 @@ from ._base import SolverBackend
 
 __all__ = ["Preference", "SolverBackend", "create_solver_backend"]
 
+# number of variables used to probe for the size-limited license bundled with pip
+# `gurobipy` (capped at 2000). Deliberately well above that cap, so this stays
+# valid if Gurobi ever raises it.
+_GUROBI_PROBE_SIZE = 10_001
+
 
 class Preference(IntEnum):
     """Preference for a solver backend.
@@ -91,8 +96,11 @@ def _have_gurobi_license() -> bool:
     https://support.gurobi.com/hc/en-us/articles/360013417211
 
     The pip/conda `gurobipy` wheel ships with a bundled size-limited license
-    (max 2000 variables); it reports `LicenseID == 0`. We treat that case as
-    "no license" so callers can fall back to SCIP for larger problems.
+    (max 2000 variables). We treat that case as "no license" so callers can fall
+    back to SCIP for larger problems. License metadata can't tell the two apart
+    (e.g. token-server licenses also report `LicenseID == 0`), so we probe the
+    limit directly: optimizing a model well over it raises `SIZE_LIMIT_EXCEEDED`
+    only under the size-limited license.
     """
     try:
         import gurobipy as gp
@@ -104,6 +112,11 @@ def _have_gurobi_license() -> bool:
             # silence the startup banner and the "Restricted license" notice
             env.setParam("OutputFlag", 0)
             env.start()
-            return int(env.getParam("LicenseID")) != 0
-    # no license file found, or license expired
+            with gp.Model(env=env) as model:
+                # TimeLimit=0 makes this a ~ms no-op under a full license
+                model.Params.TimeLimit = 0
+                model.addVars(_GUROBI_PROBE_SIZE)
+                model.optimize()
+                return True
+    # no license found, license expired, or size-limited license
     return False
