@@ -10,7 +10,7 @@ from __future__ import annotations
 import ast
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, ClassVar, Union
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ._constants import Relation, Sense
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from ._components import Constraint, Objective
 
-Number = Union[float, int]
+Number = float | int
 
 
 @contextmanager
@@ -208,6 +208,8 @@ class Constant(Expression, ast.Constant):
     types supported: int, float
     """
 
+    value: Number
+
     def __init__(self, value: Number, kind: str | None = None, **kwargs: Any) -> None:
         if not isinstance(value, (float, int)):
             raise TypeError("Constants must be numbers")
@@ -313,10 +315,10 @@ def _ensure_index(var: Variable) -> int:
 
 def _get_coefficients(
     expr: Expression | ast.expr,
-    coeffs: dict[Variable | None | tuple[Variable, Variable], float] | None = None,
+    coeffs: dict[Variable | tuple[Variable, Variable] | None, float] | None = None,
     scale: int = 1,
     var_scale: Variable | None = None,
-) -> dict[Variable | None | tuple[Variable, Variable], float]:
+) -> dict[Variable | tuple[Variable, Variable] | None, float]:
     """Get the coefficients of an expression.
 
     The coefficients are returned as a dictionary mapping Variable to coefficient.
@@ -421,7 +423,7 @@ def _sort_vars(v1: Variable, v2: Variable) -> tuple[Variable, Variable]:
 
 def _process_mult_op_iterative(
     expr: BinOp,
-    coeffs: dict[Variable | None | tuple[Variable, Variable], float],
+    coeffs: dict[Variable | tuple[Variable, Variable] | None, float],
     scale: float,
     var_scale: Variable | None,
     stack: list[tuple[Expression | ast.expr, float, Variable | None]],
@@ -505,7 +507,7 @@ class _ExprSerializer(ast.NodeVisitor):
 
     def visit_Compare(self, node: ast.Compare) -> None:
         self.visit(node.left)
-        for op, right in zip(node.ops, node.comparators):
+        for op, right in zip(node.ops, node.comparators, strict=False):
             self.write(f" {self.OP_MAP[type(op)]} ", right)
 
     def visit_BinOp(self, node: ast.BinOp) -> None:

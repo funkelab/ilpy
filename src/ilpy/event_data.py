@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict, Union
+from typing import TYPE_CHECKING, TypedDict
 
 __all__ = ["CuOptData", "EventData", "GurobiData", "SCIPData"]
 
@@ -91,9 +91,14 @@ class GurobiMessage(_GurobiData):
     message: str
 
 
-GurobiData = Union[
-    GurobiPresolve, GurobiSimplex, GurobiMip, GurobiMipSol, GurobiMipNode, GurobiMessage
-]
+GurobiData = (
+    GurobiPresolve
+    | GurobiSimplex
+    | GurobiMip
+    | GurobiMipSol
+    | GurobiMipNode
+    | GurobiMessage
+)
 """Union of all Gurobi event payload types."""
 
 
@@ -137,7 +142,7 @@ class SCIPBestSol(_SCIPData):
     nnzs: int
 
 
-SCIPData = Union[SCIPPresolve, SCIPBestSol]
+SCIPData = SCIPPresolve | SCIPBestSol
 """Union of all SCIP event payload types."""
 
 
@@ -176,8 +181,8 @@ class CuOptSolved(_CuOptData):
     status: int
 
 
-CuOptData = Union[CuOptMipSol, CuOptSolved]
+CuOptData = CuOptMipSol | CuOptSolved
 """Union of all cuOpt event payload types."""
 
-EventData = Union[GurobiData, SCIPData, CuOptData]
+EventData = GurobiData | SCIPData | CuOptData
 """Union of every event payload emitted by any supported backend."""

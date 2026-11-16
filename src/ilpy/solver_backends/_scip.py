@@ -81,7 +81,9 @@ class ScipSolver(SolverBackend):
 
     def set_objective(self, objective: Objective) -> None:
         # Create linear part of the objective
-        expr = scip.quicksum(coef * var for coef, var in zip(objective, self._vars))
+        expr = scip.quicksum(
+            coef * var for coef, var in zip(objective, self._vars, strict=False)
+        )
         expr = expr + objective.get_constant()
         sense = "minimize" if objective.get_sense() == Sense.Minimize else "maximize"
         if quad_coeffs := objective.get_quadratic_coefficients():
