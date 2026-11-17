@@ -269,3 +269,12 @@ def test_constant_in_product() -> None:
     x = Variable("x", index=0)
     y = Variable("y", index=1)
     assert _get_coefficients((x + 1) * y) == {(x, y): 1, y: 1}
+
+
+def test_division_by_variable() -> None:
+    x = Variable("x", index=0)
+    y = Variable("y", index=1)
+    with pytest.raises(TypeError, match="Division"):
+        _get_coefficients(2 / x)
+    with pytest.raises(TypeError, match="Division"):
+        _get_coefficients(x / y)

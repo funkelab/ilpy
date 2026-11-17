@@ -433,6 +433,8 @@ def _process_mult_op_iterative(
 
     This is the iterative version that adds work to the stack instead of recursing.
     """
+    if isinstance(expr.op, ast.Div) and not isinstance(expr.right, Constant):
+        raise TypeError("Division is only supported by a constant.")
     if isinstance(expr.right, Constant):
         v = expr.right.value
         new_scale = scale * (1 / v if isinstance(expr.op, ast.Div) else v)
