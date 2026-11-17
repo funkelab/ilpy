@@ -8,6 +8,7 @@ syntax (e.g. `2 * x - y >= 0`) and convert them into the corresponding
 from __future__ import annotations
 
 import ast
+import numbers
 import sys
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -219,8 +220,10 @@ class Constant(Expression, ast.Constant):
     value: Number
 
     def __init__(self, value: Number, kind: str | None = None, **kwargs: Any) -> None:
-        if not isinstance(value, (float, int)):
+        if not isinstance(value, numbers.Real):
             raise TypeError("Constants must be numbers")
+        # store plain python numbers (not e.g. numpy scalars)
+        value = int(value) if isinstance(value, numbers.Integral) else float(value)
         super().__init__(value, kind, **kwargs)
 
     def __mul__(self, other: Any) -> BinOp | Constant:

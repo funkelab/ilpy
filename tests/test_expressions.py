@@ -1,6 +1,7 @@
 import operator
 import sys
 
+import numpy as np
 import pytest
 
 from ilpy import (
@@ -301,3 +302,12 @@ def test_chained_comparison() -> None:
     x = Variable("x", index=0)
     with pytest.raises(TypeError, match="Chained comparisons"):
         0 <= x <= 1  # noqa: B015
+
+        
+def test_numpy_scalars() -> None:
+    x = Variable("x", index=0)
+    expr = x * np.int64(3) <= np.float32(4)
+    assert str(expr) == "x * 3 <= 4.0"
+    constraint = expr.as_constraint()
+    assert constraint.get_coefficients() == {0: 3}
+    assert constraint.get_value() == 4
