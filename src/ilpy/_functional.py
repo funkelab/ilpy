@@ -103,10 +103,7 @@ def solve(
     else:
         obj = Objective.from_coefficients(coefficients=objective, sense=sense)
 
-    solver = Solver(len(obj), variable_type, preference=preference)
-    solver.set_verbose(verbose)
-    solver.set_objective(obj)
-
+    consts: list[Constraint] = []
     for constraint in constraints:
         if isinstance(constraint, Expression):
             const = constraint.as_constraint()
@@ -117,6 +114,20 @@ def solve(
             const = Constraint.from_coefficients(
                 coefficients=coeff, relation=_op_map[relation], value=value
             )
+        consts.append(const)
+
+    # constraints may reference variables that don't appear in the objective
+    num_variables = len(obj)
+    for const in consts:
+        for i in const.get_coefficients():
+            num_variables = max(num_variables, i + 1)
+        for i, j in const.get_quadratic_coefficients():
+            num_variables = max(num_variables, i + 1, j + 1)
+
+    solver = Solver(num_variables, variable_type, preference=preference)
+    solver.set_verbose(verbose)
+    solver.set_objective(obj)
+    for const in consts:
         solver.add_constraint(const)
 
     solver.set_event_callback(on_event)

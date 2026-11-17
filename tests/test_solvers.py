@@ -375,3 +375,11 @@ def test_scip_solution_time() -> None:
     )
     assert times
     assert solution.time >= max(times)
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_solve_constraint_var_not_in_objective(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)  # only appears in constraints
+    solution = ilpy.solve(x, [x + y >= 1, y <= 0.25], preference=preference)
+    npt.assert_allclose(list(solution), [0.75, 0.25])
