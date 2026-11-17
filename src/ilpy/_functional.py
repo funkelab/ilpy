@@ -16,7 +16,9 @@ if TYPE_CHECKING:
     ConstraintTuple = tuple[list[float], Relation | str, float]
     SenseType = Sense | Literal["minimize", "maximize"]
     VariableTypeType = VariableType | Literal["continuous", "binary", "integer"]
-    PreferenceType = Preference | Literal["any", "cplex", "gurobi", "scip"]
+    PreferenceType = (
+        Preference | Literal["any", "scip", "gurobi", "gurobirestricted", "cuopt"]
+    )
 
 
 def solve(
@@ -57,9 +59,9 @@ def solve(
         {"continuous", "binary", "integer"}.  By default, `VariableType.Continuous`.
     verbose : bool, optional
         Whether to print the solver output, by default `False`.
-    preference : Preference | Literal["any", "cplex", "gurobi", "scip"]
-        Backend preference, either an [`ilpy.Preference`][] or a string in
-        {"any", "cplex", "gurobi", "scip"}.  By default, `Preference.Any`.
+    preference : Preference | str
+        Backend preference, either an [`ilpy.Preference`][] or its (case-insensitive)
+        name, e.g. "scip" or "cuopt".  By default, `Preference.Any`.
     on_event : Callable[[EventData], None], optional
         A callback function that is called when an event occurs, by default None. The
         callback function should accept a dict which will contain statics about the
@@ -93,8 +95,6 @@ def solve(
         sense = Sense[sense.title()]
     if isinstance(variable_type, str):
         variable_type = VariableType[variable_type.title()]
-    if isinstance(preference, str):
-        preference = Preference[preference.title()]
 
     if isinstance(objective, Expression):
         obj = objective.as_objective(sense)
