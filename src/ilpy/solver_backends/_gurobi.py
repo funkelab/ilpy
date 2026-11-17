@@ -66,13 +66,18 @@ class GurobiSolver(SolverBackend):
         self,
         num_variables: int,
         default_variable_type: VariableType,
-        variable_types: Mapping[int, VariableType],  # TODO
+        variable_types: Mapping[int, VariableType],
     ) -> None:
         self._reset()
         # clear if we have any
         # ilpy uses infinite bounds by default, but Gurobi uses 0 to infinity by default
-        vtype = VTYPE_MAP[default_variable_type]
-        self._vars = self._model.addVars(num_variables, lb=-GRB.INFINITY, vtype=vtype)
+        vtype = [
+            VTYPE_MAP[variable_types.get(i, default_variable_type)]
+            for i in range(num_variables)
+        ]
+        self._vars = self._model.addVars(
+            range(num_variables), lb=-GRB.INFINITY, vtype=vtype
+        )
 
     def _reset(self) -> None:
         self._model.remove(self._model.getVars())
