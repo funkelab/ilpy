@@ -297,22 +297,25 @@ def _get_coeff_indices(
     l_coeffs: dict[int, float] = {}
     q_coeffs: dict[tuple[int, int], float] = {}
     constant = 0.0
+    names: dict[int, str] = {}
     for var, coefficient in _get_coefficients(expr).items():
         if var is None:
             constant = coefficient
         elif isinstance(var, tuple):
             # distinct Variable objects may share an index, so accumulate
-            key = (_ensure_index(var[0]), _ensure_index(var[1]))
+            key = (_ensure_index(var[0], names), _ensure_index(var[1], names))
             q_coeffs[key] = q_coeffs.get(key, 0) + coefficient
         elif coefficient != 0:
-            idx = _ensure_index(var)
+            idx = _ensure_index(var, names)
             l_coeffs[idx] = l_coeffs.get(idx, 0) + coefficient
     return l_coeffs, q_coeffs, constant
 
 
-def _ensure_index(var: Variable) -> int:
+def _ensure_index(var: Variable, names: dict[int, str]) -> int:
     if var.index is None:
         raise ValueError("All variables in an Expression must have an index")
+    if (name := names.setdefault(var.index, var.id)) != var.id:
+        raise ValueError(f"Variables {name!r} and {var.id!r} share index {var.index}")
     return var.index
 
 
