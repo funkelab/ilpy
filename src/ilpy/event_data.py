@@ -104,7 +104,7 @@ GurobiData = (
 
 class _SCIPData(TypedDict, total=False):
     backend: Literal["scip"]
-    deterministictime: float
+    deterministic_time: float
 
 
 class SCIPPresolve(_SCIPData):
@@ -115,31 +115,19 @@ class SCIPPresolve(_SCIPData):
     nbinvars: int
     nintvars: int
     nimplvars: int
-    # nenabledconss: int
-    upperbound: float
-    nactiveconss: int
-    cutoffbound: float
-    nfixedvars: int
 
 
 class SCIPBestSol(_SCIPData):
     """Event payload emitted by SCIP when a new best solution is found."""
 
     event_type: Literal["BESTSOLFOUND"]
-    avgdualbound: float
-    avglowerbound: float
     dualbound: float
     gap: float
-    lowerbound: float
-    nactiveconss: int
     nbestsolsfound: int
-    nenabledconss: int
     nlimsolsfound: int
     nsolsfound: int
     primalbound: float
-    transgap: float
     nlps: int
-    nnzs: int
 
 
 SCIPData = SCIPPresolve | SCIPBestSol
