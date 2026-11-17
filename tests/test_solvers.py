@@ -400,6 +400,20 @@ def test_gurobi_solution_limit() -> None:
 
 
 @pytest.mark.parametrize("preference", PREFS)
+def test_solve_objective_with_sense(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    obj = ilpy.Objective.from_coefficients([1])
+    solution = ilpy.solve(obj, [x <= 3, x >= -3], "maximize", preference=preference)
+    assert list(solution) == [3]
+    assert obj.get_sense() == ilpy.Minimize  # caller's objective is untouched
+
+    # without `sense`, the objective's own sense is used
+    obj = ilpy.Objective.from_coefficients([1], sense=ilpy.Maximize)
+    solution = ilpy.solve(obj, [x <= 3, x >= -3], preference=preference)
+    assert list(solution) == [3]
+
+
+@pytest.mark.parametrize("preference", PREFS)
 def test_event_data_has_no_placeholders(preference: ilpy.Preference) -> None:
     x = ilpy.Variable("x", index=0)
     events: list[ilpy.EventData] = []

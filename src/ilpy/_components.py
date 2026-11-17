@@ -70,12 +70,17 @@ class Constraint:
     def is_violated(self, solution: Solution) -> bool:
         """Return True if `solution` violates this constraint."""
         total = sum(coef * solution[var] for var, coef in self._coefs.items())
+        total += sum(
+            coef * solution[i] * solution[j]
+            for (i, j), coef in self._quad_coefs.items()
+        )
+        tol = 1e-6  # default feasibility tolerance of both gurobi and scip
         if self._relation == Relation.LessEqual:
-            return total > self._value
+            return total > self._value + tol
         elif self._relation == Relation.GreaterEqual:
-            return total < self._value
+            return total < self._value - tol
         elif self._relation == Relation.Equal:
-            return total != self._value
+            return abs(total - self._value) > tol
         return False
 
     @classmethod
@@ -144,7 +149,7 @@ class Objective:
         """Create an empty minimizing objective with `size` zero coefficients."""
         self._sense = Sense.Minimize
         self._constant = 0.0
-        self._coeffs: list[float] = []
+        self._coeffs: list[float] = [0.0] * size
         self._quad_coeffs: dict[tuple[int, int], float] = {}
 
     def set_constant(self, value: float) -> None:
