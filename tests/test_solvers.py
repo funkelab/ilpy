@@ -287,3 +287,10 @@ def test_timeout_without_solution(preference: ilpy.Preference) -> None:
     solution = solver.solve()
     assert solution.status == ilpy.SolverStatus.TIMELIMIT
     assert list(solution) == [0, 0]
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_solution_time(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    solution = ilpy.solve(x, [x >= 1], preference=preference)
+    assert solution.time > 0
