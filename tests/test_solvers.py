@@ -304,8 +304,16 @@ def test_cuopt_status_map() -> None:
     assert STATUS_MAP[LPTerminationStatus.IterationLimit] == S.NODELIMIT
 
 
-@pytest.mark.parametrize("preference", PREFS)
-def test_solution_time(preference: ilpy.Preference) -> None:
+def test_scip_solution_time() -> None:
+    # solving time only grows, so the final time can't be less than any time
+    # reported during the solve (makes no assumption about how long it takes)
+    times: list[float] = []
     x = ilpy.Variable("x", index=0)
-    solution = ilpy.solve(x, [x >= 1], preference=preference)
-    assert solution.time > 0
+    solution = ilpy.solve(
+        x,
+        [x >= 1],
+        preference=ilpy.Preference.Scip,
+        on_event=lambda e: times.append(e["deterministic_time"]),
+    )
+    assert times
+    assert solution.time >= max(times)
