@@ -95,8 +95,10 @@ class GurobiSolver(SolverBackend):
         self._model.setObjective(obj, sense)
 
     def set_constraints(self, constraints: Constraints) -> None:
-        # clear existing constraints
+        # clear existing constraints (update first, so pending ones are included)
+        self._model.update()
         self._model.remove(self._model.getConstrs())
+        self._model.remove(self._model.getQConstrs())
 
         for constraint in constraints:
             self.add_constraint(constraint)
