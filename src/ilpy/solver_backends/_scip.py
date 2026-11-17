@@ -57,6 +57,7 @@ INF = float("inf")
 class ScipSolver(SolverBackend):
     def __init__(self) -> None:
         super().__init__()
+        self._constraints: list[scip.Constraint] = []  # added via add_constraint
         self._model = scip.Model(problemName="problem", defaultPlugins=True)
         self._model.includeEventhdlr(
             EventHandler(self), "EventHandler", "Handles custom events"
@@ -126,6 +127,10 @@ class ScipSolver(SolverBackend):
                 self._model.addCons(self._vars[i] * self._vars[j] - z_ij == 0)
 
     def set_constraints(self, constraints: Constraints) -> None:
+        # clear existing constraints (only ours, not e.g. the objective epigraph)
+        for cons in self._constraints:
+            self._model.delCons(cons)
+        self._constraints.clear()
         for constraint in constraints:
             self.add_constraint(constraint)
 
@@ -138,11 +143,11 @@ class ScipSolver(SolverBackend):
         for (i, j), qcoef in qcoefs.items():
             left = left + qcoef * self._vars[i] * self._vars[j]
         if relation == Relation.LessEqual:
-            self._model.addCons(left <= value)
+            self._constraints.append(self._model.addCons(left <= value))
         elif relation == Relation.GreaterEqual:
-            self._model.addCons(left >= value)
+            self._constraints.append(self._model.addCons(left >= value))
         elif relation == Relation.Equal:
-            self._model.addCons(left == value)
+            self._constraints.append(self._model.addCons(left == value))
         else:
             raise ValueError(f"Unsupported relation: {relation}")  # pragma: no cover
 
