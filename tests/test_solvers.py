@@ -377,6 +377,14 @@ def test_scip_solution_time() -> None:
     assert solution.time >= max(times)
 
 
+@pytest.mark.parametrize("preference", PREFS)
+def test_solve_constraint_var_not_in_objective(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)  # only appears in constraints
+    solution = ilpy.solve(x, [x + y >= 1, y <= 0.25], preference=preference)
+    npt.assert_allclose(list(solution), [0.75, 0.25])
+
+
 @pytest.mark.skipif(not HAVE_GUROBI, reason="Gurobi unavailable")
 def test_gurobi_solution_limit() -> None:
     solver = ilpy.Solver(5, ilpy.Binary, preference=ilpy.Preference.Gurobi)
