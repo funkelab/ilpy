@@ -14,3 +14,7 @@ def test_resize() -> None:
     obj2 = ilpy.Objective()
     obj2.set_quadratic_coefficient(0, 0, 1)  # quadratic term (x^2)
     assert len(obj2) == 1
+
+
+def test_size() -> None:
+    assert list(ilpy.Objective(3)) == [0, 0, 0]

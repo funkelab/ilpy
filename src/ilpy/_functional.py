@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING, Literal
 
 from ._components import Constraint, Objective
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 def solve(
     objective: Sequence[float] | Expression | Objective,
     constraints: Iterable[ConstraintTuple | Expression | Constraint],
-    sense: SenseType = Sense.Minimize,
+    sense: SenseType | None = None,
     variable_type: VariableTypeType = VariableType.Continuous,
     verbose: bool = False,
     preference: PreferenceType = Preference.Any,
@@ -53,7 +54,8 @@ def solve(
     sense : Sense | Literal["minimize", "maximize"]
         The sense of the objective, either `Sense.Minimize` or `Sense.Maximize`.
         Alternatively, a string in {"minimize", "maximize"} can be provided.
-        By default, `Sense.Minimize`.
+        By default, `Sense.Minimize` (or the sense of `objective`, if it is an
+        `Objective`).
     variable_type : VariableType | Literal["continuous", "binary", "integer"]
         The type of the variables, either an [`ilpy.VariableType`][], or a string in
         {"continuous", "binary", "integer"}.  By default, `VariableType.Continuous`.
@@ -97,11 +99,16 @@ def solve(
         variable_type = VariableType[variable_type.title()]
 
     if isinstance(objective, Expression):
-        obj = objective.as_objective(sense)
+        obj = objective.as_objective(sense or Sense.Minimize)
     elif isinstance(objective, Objective):
         obj = objective
+        if sense is not None:
+            obj = copy.copy(objective)  # don't modify the caller's objective
+            obj.set_sense(sense)
     else:
-        obj = Objective.from_coefficients(coefficients=objective, sense=sense)
+        obj = Objective.from_coefficients(
+            coefficients=objective, sense=sense or Sense.Minimize
+        )
 
     consts: list[Constraint] = []
     for constraint in constraints:
