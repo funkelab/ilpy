@@ -287,3 +287,18 @@ def test_timeout_without_solution(preference: ilpy.Preference) -> None:
     solution = solver.solve()
     assert solution.status == ilpy.SolverStatus.TIMELIMIT
     assert list(solution) == [0, 0]
+
+
+@pytest.mark.skipif(bool(cuopt_marks), reason="cuOpt unavailable")
+def test_cuopt_status_map() -> None:
+    from cuopt.linear_programming.solver.solver_wrapper import (
+        LPTerminationStatus,
+        MILPTerminationStatus,
+    )
+
+    from ilpy.solver_backends._cuopt import STATUS_MAP
+
+    S = ilpy.SolverStatus
+    assert STATUS_MAP[MILPTerminationStatus.TimeLimit] == S.TIMELIMIT
+    assert STATUS_MAP[MILPTerminationStatus.FeasibleFound] == S.SUBOPTIMAL
+    assert STATUS_MAP[LPTerminationStatus.IterationLimit] == S.NODELIMIT
