@@ -148,11 +148,7 @@ class GurobiSolver(SolverBackend):
         status = STATUS_MAP.get(native_status, SolverStatus.OTHER)
 
         solcount = self._model.SolCount
-        if (
-            status
-            in (SolverStatus.OPTIMAL, SolverStatus.SUBOPTIMAL, SolverStatus.TIMELIMIT)
-            and solcount > 0
-        ):
+        if solcount > 0:
             solution = [var.X for var in self._vars.values()]
             objective_value = self._model.ObjVal
         else:

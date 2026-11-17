@@ -383,3 +383,17 @@ def test_solve_constraint_var_not_in_objective(preference: ilpy.Preference) -> N
     y = ilpy.Variable("y", index=1)  # only appears in constraints
     solution = ilpy.solve(x, [x + y >= 1, y <= 0.25], preference=preference)
     npt.assert_allclose(list(solution), [0.75, 0.25])
+
+
+@pytest.mark.skipif(not HAVE_GUROBI, reason="Gurobi unavailable")
+def test_gurobi_solution_limit() -> None:
+    solver = ilpy.Solver(5, ilpy.Binary, preference=ilpy.Preference.Gurobi)
+    solver.set_objective(
+        ilpy.Objective.from_coefficients([1, 8, 4, 11, 7], sense=ilpy.Maximize)
+    )
+    solver.add_constraint(ilpy.Constraint.from_coefficients([1, 6, 11, 3, 8], value=15))
+    model = solver.native_model()
+    model.Params.SolutionLimit = 1
+    solution = solver.solve()
+    assert solution.status == ilpy.SolverStatus.SOLUTIONLIMIT
+    assert solution.objective_value == model.ObjVal > 0
