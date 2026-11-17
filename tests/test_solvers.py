@@ -295,3 +295,8 @@ def test_preference_from_string(name: str) -> None:
         create_solver_backend(name)
     except RuntimeError:
         pass  # backend unavailable here, but the name itself was recognized
+
+
+def test_unknown_preference_string() -> None:
+    with pytest.raises(ValueError, match="Unknown preference 'cplex'"):
+        create_solver_backend("cplex")

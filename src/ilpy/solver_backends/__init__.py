@@ -51,7 +51,11 @@ def create_solver_backend(preference: Preference | str) -> SolverBackend:
     if not isinstance(preference, Preference):
         # case-insensitive name lookup (e.g. "cuopt" -> Preference.CuOpt)
         names = {p.name.lower(): p for p in Preference}
-        preference = names[str(preference).lower()]
+        if (key := str(preference).lower()) not in names:
+            raise ValueError(
+                f"Unknown preference {preference!r}. Options: {', '.join(names)}"
+            )
+        preference = names[key]
 
     to_try = []
     if preference in (Preference.Any, Preference.Gurobi):
