@@ -75,7 +75,7 @@ class Solver:
         num_variables: int,
         default_variable_type: VariableType,
         variable_types: dict[int, VariableType] | None = None,
-        preference: Preference = Preference.Any,
+        preference: Preference | str = Preference.Any,
     ) -> None:
         """Create a solver with `num_variables` decision variables.
 

@@ -49,7 +49,9 @@ class Preference(IntEnum):
 def create_solver_backend(preference: Preference | str) -> SolverBackend:
     """Create a solver backend based on the preference."""
     if not isinstance(preference, Preference):
-        preference = Preference[str(preference).title()]
+        # case-insensitive name lookup (e.g. "cuopt" -> Preference.CuOpt)
+        names = {p.name.lower(): p for p in Preference}
+        preference = names[str(preference).lower()]
 
     to_try = []
     if preference in (Preference.Any, Preference.Gurobi):

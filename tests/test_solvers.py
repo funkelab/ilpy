@@ -287,3 +287,11 @@ def test_timeout_without_solution(preference: ilpy.Preference) -> None:
     solution = solver.solve()
     assert solution.status == ilpy.SolverStatus.TIMELIMIT
     assert list(solution) == [0, 0]
+
+
+@pytest.mark.parametrize("name", ["scip", "Gurobi", "gurobirestricted", "cuopt"])
+def test_preference_from_string(name: str) -> None:
+    try:
+        create_solver_backend(name)
+    except RuntimeError:
+        pass  # backend unavailable here, but the name itself was recognized
