@@ -175,6 +175,14 @@ class Compare(Expression, ast.Compare):
             **kwargs,
         )
 
+    def __bool__(self) -> bool:
+        # python evaluates `0 <= x <= 1` as `(0 <= x) and (x <= 1)`, which would
+        # silently drop the first comparison
+        raise TypeError(
+            "Comparisons have no truth value. Chained comparisons (e.g. "
+            "`0 <= x <= 1`) are not supported: use separate constraints instead."
+        )
+
 
 class BinOp(Expression, ast.BinOp):
     """A binary operation (like addition or division).

@@ -298,6 +298,12 @@ def test_variables_with_same_index() -> None:
         (x1 + Variable("z", index=0) <= 1).as_constraint()
 
 
+def test_chained_comparison() -> None:
+    x = Variable("x", index=0)
+    with pytest.raises(TypeError, match="Chained comparisons"):
+        0 <= x <= 1  # noqa: B015
+
+
 def test_numpy_scalars() -> None:
     x = Variable("x", index=0)
     expr = x * np.int64(3) <= np.float32(4)
