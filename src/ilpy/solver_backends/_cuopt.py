@@ -2,7 +2,7 @@
 
 cuOpt is an Apache-2.0 GPU MIP/LP solver
 (https://docs.nvidia.com/cuopt/), distributed as the ``cuopt-cu12`` wheel on
-``pypi.nvidia.com``. It accepts a sparse problem definition (CSR constraint
+PyPI. It accepts a sparse problem definition (CSR constraint
 matrix + objective vector + row/column bounds + variable types) and solves
 on a single CUDA device.
 
@@ -42,7 +42,7 @@ except ImportError as e:
     raise ImportError(
         "cuopt-cu12 (and numpy/scipy) are required for CuOptSolver. "
         "Install with:\n"
-        "    pip install --extra-index-url https://pypi.nvidia.com cuopt-cu12"
+        "    pip install cuopt-cu12"
     ) from e
 
 
