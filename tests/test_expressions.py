@@ -1,6 +1,7 @@
 import operator
 import sys
 
+import numpy as np
 import pytest
 
 from ilpy import (
@@ -295,3 +296,12 @@ def test_variables_with_same_index() -> None:
     # same index with a different name is almost certainly a mistake
     with pytest.raises(ValueError, match="share index 0"):
         (x1 + Variable("z", index=0) <= 1).as_constraint()
+
+
+def test_numpy_scalars() -> None:
+    x = Variable("x", index=0)
+    expr = x * np.int64(3) <= np.float32(4)
+    assert str(expr) == "x * 3 <= 4.0"
+    constraint = expr.as_constraint()
+    assert constraint.get_coefficients() == {0: 3}
+    assert constraint.get_value() == 4
