@@ -304,6 +304,32 @@ def test_cuopt_status_map() -> None:
     assert STATUS_MAP[LPTerminationStatus.IterationLimit] == S.NODELIMIT
 
 
+@pytest.mark.parametrize("preference", PREFS)
+def test_variable_types(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)
+    solver = ilpy.Solver(2, ilpy.Continuous, {0: ilpy.Binary}, preference=preference)
+    solver.set_objective((x + y).as_objective(ilpy.Maximize))
+    solver.add_constraint(x <= 5.5)
+    solver.add_constraint(y <= 5.5)
+    npt.assert_allclose(list(solver.solve()), [1, 5.5])
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_set_constraints_replaces(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    solver = ilpy.Solver(1, ilpy.Continuous, preference=preference)
+    solver.set_objective(x.as_objective(ilpy.Maximize))
+    solver.add_constraint(x <= 1)
+    if preference != ilpy.Preference.CuOpt:  # cuOpt doesn't support quadratics
+        solver.add_constraint(x * x <= 4)
+
+    new = ilpy.Constraints()
+    new.add(x <= 10)
+    solver.set_constraints(new)
+    npt.assert_allclose(list(solver.solve()), [10])
+
+
 @pytest.mark.parametrize("name", ["scip", "Gurobi", "gurobirestricted", "cuopt"])
 def test_preference_from_string(name: str) -> None:
     try:
