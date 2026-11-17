@@ -235,11 +235,6 @@ class EventHandler(scip.Eventhdlr):
                     "nbinvars": m.getNBinVars(),  # SCIPgetNBinVars
                     "nintvars": m.getNIntVars(),  # SCIPgetNIntVars
                     "nimplvars": m.getNImplVars(),  # SCIPgetNImplVars
-                    "nenabledconss": ...,  # SCIPgetNEnabledConss
-                    "upperbound": ...,  # SCIPgetUpperbound
-                    "nactiveconss": ...,  # SCIPgetNActiveConss
-                    "cutoffbound": ...,  # SCIPgetCutoffbound
-                    "nfixedvars": ...,  # SCIPgetNFixedVars
                 }
             )
 
@@ -247,20 +242,13 @@ class EventHandler(scip.Eventhdlr):
         elif eventtype == SCIP_EVENTTYPE.BESTSOLFOUND:
             event_data.update(
                 {
-                    "avgdualbound": ...,  # SCIPgetAvgDualbound
-                    "avglowerbound": ...,  # SCIPgetAvgLowerbound
                     "dualbound": m.getDualbound(),  # SCIPgetDualbound
                     "gap": m.getGap(),  # SCIPgetGap
-                    "lowerbound": ...,  # SCIPgetLowerbound
-                    "nactiveconss": ...,  # SCIPgetNActiveConss
                     "nbestsolsfound": m.getNBestSolsFound(),  # SCIPgetNBestSolsFound
-                    "nenabledconss": ...,  # SCIPgetNEnabledConss
                     "nlimsolsfound": m.getNLimSolsFound(),  # SCIPgetNLimSolsFound
                     "nlps": m.getNLPs(),  # SCIPgetNLPs
-                    "nnzs": ...,  # SCIPgetNNZs
                     "nsolsfound": m.getNSolsFound(),  # SCIPgetNSolsFound
                     "primalbound": m.getPrimalbound(),  # SCIPgetPrimalbound
-                    "transgap": ...,  # SCIPgetTransGap
                 }
             )
 

@@ -397,3 +397,12 @@ def test_gurobi_solution_limit() -> None:
     solution = solver.solve()
     assert solution.status == ilpy.SolverStatus.SOLUTIONLIMIT
     assert solution.objective_value == model.ObjVal > 0
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_event_data_has_no_placeholders(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    events: list[ilpy.EventData] = []
+    ilpy.solve(x, [x >= 1], preference=preference, on_event=events.append)
+    for event in events:
+        assert ... not in event.values()
