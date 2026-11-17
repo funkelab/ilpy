@@ -12,7 +12,7 @@ from ilpy import (
     Solver,
     VariableType,
 )
-from ilpy.expressions import Expression, Variable, _get_coefficients
+from ilpy.expressions import Constant, Expression, Variable, _get_coefficients
 
 u = Variable("u")
 v = Variable("v")
@@ -127,6 +127,10 @@ def test_sum() -> None:
     assert constraint1.get_value() == 9
     assert constraint1.get_relation() == Relation.LessEqual
     assert constraint1.get_coefficients() == {0: 10.0, 1: -1.0, 2: -1.0, 3: -1.0}
+
+
+def test_constant_mul():
+    assert (Constant(2) * Constant(3)).value == 6
 
 
 def test_expression_errors():

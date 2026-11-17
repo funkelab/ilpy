@@ -217,7 +217,7 @@ class Constant(Expression, ast.Constant):
 
     def __mul__(self, other: Any) -> BinOp | Constant:
         if isinstance(other, Constant):
-            return Constant(self.value**other.value)
+            return Constant(self.value * other.value)
         if isinstance(other, (float, int)):
             return Constant(self.value * other)
         return super().__mul__(other)

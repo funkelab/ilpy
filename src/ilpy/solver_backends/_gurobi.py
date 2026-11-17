@@ -153,9 +153,6 @@ class GurobiSolver(SolverBackend):
         ):
             solution = [var.X for var in self._vars.values()]
             objective_value = self._model.ObjVal
-        elif status == SolverStatus.TIMELIMIT:
-            solution = [var.X for var in self._vars.values()]
-            objective_value = self._model.ObjVal
         else:
             solution = [0] * len(self._vars)
             objective_value = 0
