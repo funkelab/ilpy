@@ -265,6 +265,12 @@ def test_deeply_nested_parentheses() -> None:
     assert all(coeffs[i] == 1.0 for i in range(num_vars))
 
 
+def test_constant_in_product() -> None:
+    x = Variable("x", index=0)
+    y = Variable("y", index=1)
+    assert _get_coefficients((x + 1) * y) == {(x, y): 1, y: 1}
+
+
 def test_variables_with_same_index() -> None:
     x1 = Variable("x", index=0)
     x2 = Variable("x", index=0)
