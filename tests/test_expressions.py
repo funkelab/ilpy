@@ -1,3 +1,4 @@
+import ast
 import copy
 import operator
 import pickle
@@ -335,3 +336,16 @@ def test_copy_and_pickle(copier: Callable[[Expression], Expression]) -> None:
     copied = copier(expr)
     assert str(copied) == str(expr)
     assert copied.as_constraint().get_coefficients() == {0: 2}
+
+
+def test_ast_dump() -> None:
+    # on python 3.13+, ast.dump compares each field with `[]`
+    x = Variable("x", index=0)
+    assert ast.dump(2 * x - 1 <= 3).startswith("Compare(")
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="needs 3.14")
+def test_copy_replace_variable() -> None:
+    x = Variable("x", index=0)
+    y = copy.replace(x, id="y")
+    assert (y.id, y.index) == ("y", 0)

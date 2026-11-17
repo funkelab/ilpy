@@ -101,9 +101,13 @@ class Expression(ast.expr):
         return Compare(self, [ast.LtE()], [other])
 
     def __eq__(self, other: Expression | float) -> Compare:  # type: ignore
+        if not isinstance(other, (Expression, numbers.Real)):
+            return NotImplemented  # e.g. `ast.dump` compares fields to `[]`
         return Compare(self, [ast.Eq()], [other])
 
     def __ne__(self, other: Expression | float) -> Compare:  # type: ignore
+        if not isinstance(other, (Expression, numbers.Real)):
+            return NotImplemented  # e.g. `ast.dump` compares fields to `[]`
         return Compare(self, [ast.NotEq()], [other])
 
     def __gt__(self, other: Expression | float) -> Compare:
@@ -257,6 +261,11 @@ class Variable(Expression, ast.Name):
     def __init__(self, id: str, index: int | None = None) -> None:
         self.index = index
         super().__init__(str(id), ctx=ast.Load())
+
+    def __replace__(self, **changes: Any) -> Variable:
+        # the default from ast.AST (3.14+) passes `ctx` and drops `index`
+        changes.pop("ctx", None)
+        return Variable(**{"id": self.id, "index": self.index, **changes})
 
     def __pow__(self, other: Number) -> Expression:
         if not isinstance(other, (int, float)):  # pragma: no cover
