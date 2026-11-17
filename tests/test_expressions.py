@@ -263,3 +263,12 @@ def test_deeply_nested_parentheses() -> None:
     coeffs = constraint.get_coefficients()
     assert len(coeffs) == num_vars
     assert all(coeffs[i] == 1.0 for i in range(num_vars))
+
+
+def test_division_by_variable() -> None:
+    x = Variable("x", index=0)
+    y = Variable("y", index=1)
+    with pytest.raises(TypeError, match="Division"):
+        _get_coefficients(2 / x)
+    with pytest.raises(TypeError, match="Division"):
+        _get_coefficients(x / y)
