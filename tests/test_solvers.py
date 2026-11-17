@@ -274,3 +274,18 @@ def test_solve_twice(preference: ilpy.Preference) -> None:
     solver.set_constraints(c1)
     solution = solver.solve()
     assert list(solution) != [7, 3]
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_set_constraints_replaces(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    solver = ilpy.Solver(1, ilpy.Continuous, preference=preference)
+    solver.set_objective(x.as_objective(ilpy.Maximize))
+    solver.add_constraint(x <= 1)
+    if preference != ilpy.Preference.CuOpt:  # cuOpt doesn't support quadratics
+        solver.add_constraint(x * x <= 4)
+
+    new = ilpy.Constraints()
+    new.add(x <= 10)
+    solver.set_constraints(new)
+    npt.assert_allclose(list(solver.solve()), [10])
