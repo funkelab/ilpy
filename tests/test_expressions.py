@@ -278,3 +278,16 @@ def test_division_by_variable() -> None:
         _get_coefficients(2 / x)
     with pytest.raises(TypeError, match="Division"):
         _get_coefficients(x / y)
+
+
+def test_variables_with_same_index() -> None:
+    x1 = Variable("x", index=0)
+    x2 = Variable("x", index=0)
+    y = Variable("y", index=1)
+    constraint = (x1 + x2 + x1 * y + x2 * y <= 1).as_constraint()
+    assert constraint.get_coefficients() == {0: 2}
+    assert constraint.get_quadratic_coefficients() == {(0, 1): 2}
+
+    # same index with a different name is almost certainly a mistake
+    with pytest.raises(ValueError, match="share index 0"):
+        (x1 + Variable("z", index=0) <= 1).as_constraint()
