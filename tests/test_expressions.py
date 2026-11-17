@@ -295,3 +295,9 @@ def test_variables_with_same_index() -> None:
     # same index with a different name is almost certainly a mistake
     with pytest.raises(ValueError, match="share index 0"):
         (x1 + Variable("z", index=0) <= 1).as_constraint()
+
+
+def test_chained_comparison() -> None:
+    x = Variable("x", index=0)
+    with pytest.raises(TypeError, match="Chained comparisons"):
+        0 <= x <= 1  # noqa: B015
