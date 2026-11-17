@@ -420,3 +420,22 @@ def test_event_data_has_no_placeholders(preference: ilpy.Preference) -> None:
     ilpy.solve(x, [x >= 1], preference=preference, on_event=events.append)
     for event in events:
         assert ... not in event.values()
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_objective_beyond_num_variables(preference: ilpy.Preference) -> None:
+    x = [ilpy.Variable(f"x{i}", index=i) for i in range(3)]
+    solver = ilpy.Solver(2, ilpy.Continuous, preference=preference)
+    with pytest.raises(ValueError, match="num_variables"):
+        solver.set_objective(x[0] + x[1] - 100 * x[2])
+    # trailing zeros are fine
+    solver.set_objective(ilpy.Objective.from_coefficients([1, 1, 0]))
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_variable_types_keyed_by_variable(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    solver = ilpy.Solver(1, ilpy.Continuous, {x: ilpy.Integer}, preference=preference)
+    solver.set_objective(-x)
+    solver.add_constraint(x <= 2.5)
+    assert list(solver.solve()) == [2]
