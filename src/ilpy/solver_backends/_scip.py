@@ -181,6 +181,8 @@ class ScipSolver(SolverBackend):
             variable_values = [self._model.getSolVal(sol, v) for v in self._vars]
             objective_value = self._model.getSolObjVal(sol)
 
+        # read before freeTransform, which resets the solving time to 0
+        solving_time = self._model.getSolvingTime()
         # Reset SCIP to allow adding constraints for future solves
         self._model.freeTransform()
 
@@ -188,7 +190,7 @@ class ScipSolver(SolverBackend):
             variable_values=variable_values,
             objective_value=objective_value,
             status=status,
-            time=self._model.getSolvingTime(),
+            time=solving_time,
             native_status=native_status,
         )
 
