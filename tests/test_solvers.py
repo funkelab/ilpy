@@ -375,3 +375,17 @@ def test_scip_solution_time() -> None:
     )
     assert times
     assert solution.time >= max(times)
+
+
+@pytest.mark.skipif(not HAVE_GUROBI, reason="Gurobi unavailable")
+def test_gurobi_solution_limit() -> None:
+    solver = ilpy.Solver(5, ilpy.Binary, preference=ilpy.Preference.Gurobi)
+    solver.set_objective(
+        ilpy.Objective.from_coefficients([1, 8, 4, 11, 7], sense=ilpy.Maximize)
+    )
+    solver.add_constraint(ilpy.Constraint.from_coefficients([1, 6, 11, 3, 8], value=15))
+    model = solver.native_model()
+    model.Params.SolutionLimit = 1
+    solution = solver.solve()
+    assert solution.status == ilpy.SolverStatus.SOLUTIONLIMIT
+    assert solution.objective_value == model.ObjVal > 0
