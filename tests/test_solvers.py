@@ -277,6 +277,34 @@ def test_solve_twice(preference: ilpy.Preference) -> None:
 
 
 @pytest.mark.parametrize("preference", PREFS)
+def test_timeout_without_solution(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)
+    solver = ilpy.Solver(2, ilpy.Integer, preference=preference)
+    solver.set_objective((x + y).as_objective())
+    solver.add_constraint(2 * x + 2 * y == 1)  # no integer solution
+    solver.set_timeout(0)
+    solution = solver.solve()
+    assert solution.status == ilpy.SolverStatus.TIMELIMIT
+    assert list(solution) == [0, 0]
+
+
+@pytest.mark.skipif(bool(cuopt_marks), reason="cuOpt unavailable")
+def test_cuopt_status_map() -> None:
+    from cuopt.linear_programming.solver.solver_wrapper import (
+        LPTerminationStatus,
+        MILPTerminationStatus,
+    )
+
+    from ilpy.solver_backends._cuopt import STATUS_MAP
+
+    S = ilpy.SolverStatus
+    assert STATUS_MAP[MILPTerminationStatus.TimeLimit] == S.TIMELIMIT
+    assert STATUS_MAP[MILPTerminationStatus.FeasibleFound] == S.SUBOPTIMAL
+    assert STATUS_MAP[LPTerminationStatus.IterationLimit] == S.NODELIMIT
+
+
+@pytest.mark.parametrize("preference", PREFS)
 def test_replace_quadratic_objective(preference: ilpy.Preference) -> None:
     if preference == ilpy.Preference.CuOpt:
         pytest.skip("cuOpt doesn't support quadratic objectives")

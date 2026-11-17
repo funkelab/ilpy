@@ -217,7 +217,7 @@ class Constant(Expression, ast.Constant):
 
     def __mul__(self, other: Any) -> BinOp | Constant:
         if isinstance(other, Constant):
-            return Constant(self.value**other.value)
+            return Constant(self.value * other.value)
         if isinstance(other, (float, int)):
             return Constant(self.value * other)
         return super().__mul__(other)
@@ -297,19 +297,25 @@ def _get_coeff_indices(
     l_coeffs: dict[int, float] = {}
     q_coeffs: dict[tuple[int, int], float] = {}
     constant = 0.0
+    names: dict[int, str] = {}
     for var, coefficient in _get_coefficients(expr).items():
         if var is None:
             constant = coefficient
         elif isinstance(var, tuple):
-            q_coeffs[(_ensure_index(var[0]), _ensure_index(var[1]))] = coefficient
+            # distinct Variable objects may share an index, so accumulate
+            key = (_ensure_index(var[0], names), _ensure_index(var[1], names))
+            q_coeffs[key] = q_coeffs.get(key, 0) + coefficient
         elif coefficient != 0:
-            l_coeffs[_ensure_index(var)] = coefficient
+            idx = _ensure_index(var, names)
+            l_coeffs[idx] = l_coeffs.get(idx, 0) + coefficient
     return l_coeffs, q_coeffs, constant
 
 
-def _ensure_index(var: Variable) -> int:
+def _ensure_index(var: Variable, names: dict[int, str]) -> int:
     if var.index is None:
         raise ValueError("All variables in an Expression must have an index")
+    if (name := names.setdefault(var.index, var.id)) != var.id:
+        raise ValueError(f"Variables {name!r} and {var.id!r} share index {var.index}")
     return var.index
 
 
@@ -359,8 +365,9 @@ def _get_coefficients(
         current_expr, current_scale, current_var_scale = stack.pop()
 
         if isinstance(current_expr, Constant):
-            coeffs.setdefault(None, 0)
-            coeffs[None] += current_expr.value * current_scale
+            # inside a product with a variable, this is a coefficient of that var
+            coeffs.setdefault(current_var_scale, 0)
+            coeffs[current_var_scale] += current_expr.value * current_scale
 
         elif isinstance(current_expr, UnaryOp):
             new_scale = current_scale
@@ -432,6 +439,8 @@ def _process_mult_op_iterative(
 
     This is the iterative version that adds work to the stack instead of recursing.
     """
+    if isinstance(expr.op, ast.Div) and not isinstance(expr.right, Constant):
+        raise TypeError("Division is only supported by a constant.")
     if isinstance(expr.right, Constant):
         v = expr.right.value
         new_scale = scale * (1 / v if isinstance(expr.op, ast.Div) else v)

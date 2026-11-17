@@ -53,17 +53,20 @@ VTYPE_MAP: Mapping[int, bytes] = {
     VariableType.Integer: b"I",
 }
 
-# cuOpt termination_status enum values (from cuopt.linear_programming):
-#   1 = Optimal, 2 = Infeasible, 3 = Unbounded, 4 = TimeLimit, 5 = IterationLimit,
-#   6 = Numerical, 7 = PrimalFeasible (heuristic-only, no dual bound)
+# cuOpt termination_status values (CUOPT_TERMINATION_STATUS_* in cuopt's constants.h):
+#   1 = Optimal, 2 = Infeasible, 3 = Unbounded, 4 = IterationLimit, 5 = TimeLimit,
+#   6 = Numerical, 7 = PrimalFeasible (LP), 8 = FeasibleFound (MIP, gap not closed),
+#   11 = UnboundedOrInfeasible
 STATUS_MAP: Mapping[int, SolverStatus] = {
     1: SolverStatus.OPTIMAL,
     2: SolverStatus.INFEASIBLE,
     3: SolverStatus.UNBOUNDED,
-    4: SolverStatus.TIMELIMIT,
-    5: SolverStatus.NODELIMIT,
+    4: SolverStatus.NODELIMIT,
+    5: SolverStatus.TIMELIMIT,
     6: SolverStatus.OTHER,
     7: SolverStatus.SUBOPTIMAL,
+    8: SolverStatus.SUBOPTIMAL,
+    11: SolverStatus.INF_OR_UNBOUNDED,
 }
 
 INF = float("inf")
