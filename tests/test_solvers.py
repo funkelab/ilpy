@@ -360,3 +360,18 @@ def test_replace_quadratic_objective(preference: ilpy.Preference) -> None:
     solution = solver.solve()
     assert solution[0] == pytest.approx(-1, abs=1e-6)
     assert solution.get_value() == pytest.approx(-1, abs=1e-6)
+
+
+def test_scip_solution_time() -> None:
+    # solving time only grows, so the final time can't be less than any time
+    # reported during the solve (makes no assumption about how long it takes)
+    times: list[float] = []
+    x = ilpy.Variable("x", index=0)
+    solution = ilpy.solve(
+        x,
+        [x >= 1],
+        preference=ilpy.Preference.Scip,
+        on_event=lambda e: times.append(e["deterministic_time"]),
+    )
+    assert times
+    assert solution.time >= max(times)
