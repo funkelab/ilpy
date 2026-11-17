@@ -359,8 +359,9 @@ def _get_coefficients(
         current_expr, current_scale, current_var_scale = stack.pop()
 
         if isinstance(current_expr, Constant):
-            coeffs.setdefault(None, 0)
-            coeffs[None] += current_expr.value * current_scale
+            # inside a product with a variable, this is a coefficient of that var
+            coeffs.setdefault(current_var_scale, 0)
+            coeffs[current_var_scale] += current_expr.value * current_scale
 
         elif isinstance(current_expr, UnaryOp):
             new_scale = current_scale
