@@ -301,9 +301,12 @@ def _get_coeff_indices(
         if var is None:
             constant = coefficient
         elif isinstance(var, tuple):
-            q_coeffs[(_ensure_index(var[0]), _ensure_index(var[1]))] = coefficient
+            # distinct Variable objects may share an index, so accumulate
+            key = (_ensure_index(var[0]), _ensure_index(var[1]))
+            q_coeffs[key] = q_coeffs.get(key, 0) + coefficient
         elif coefficient != 0:
-            l_coeffs[_ensure_index(var)] = coefficient
+            idx = _ensure_index(var)
+            l_coeffs[idx] = l_coeffs.get(idx, 0) + coefficient
     return l_coeffs, q_coeffs, constant
 
 
