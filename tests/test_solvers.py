@@ -328,3 +328,16 @@ def test_set_constraints_replaces(preference: ilpy.Preference) -> None:
     new.add(x <= 10)
     solver.set_constraints(new)
     npt.assert_allclose(list(solver.solve()), [10])
+
+
+@pytest.mark.parametrize("name", ["scip", "Gurobi", "gurobirestricted", "cuopt"])
+def test_preference_from_string(name: str) -> None:
+    try:
+        create_solver_backend(name)
+    except RuntimeError:
+        pass  # backend unavailable here, but the name itself was recognized
+
+
+def test_unknown_preference_string() -> None:
+    with pytest.raises(ValueError, match="Unknown preference 'cplex'"):
+        create_solver_backend("cplex")
