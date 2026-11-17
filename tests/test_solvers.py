@@ -274,3 +274,22 @@ def test_solve_twice(preference: ilpy.Preference) -> None:
     solver.set_constraints(c1)
     solution = solver.solve()
     assert list(solution) != [7, 3]
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_replace_quadratic_objective(preference: ilpy.Preference) -> None:
+    if preference == ilpy.Preference.CuOpt:
+        pytest.skip("cuOpt doesn't support quadratic objectives")
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)
+    solver = ilpy.Solver(2, ilpy.Continuous, preference=preference)
+    for constraint in (x >= -10, x <= 10, y >= -10, y <= 10):
+        solver.add_constraint(constraint)
+
+    # each objective should fully replace the previous one
+    solver.set_objective((100 * y).as_objective())
+    solver.set_objective((x * x - 2 * x).as_objective())
+    solver.set_objective((x * x + 2 * x).as_objective())  # min at x=-1
+    solution = solver.solve()
+    assert solution[0] == pytest.approx(-1, abs=1e-6)
+    assert solution.get_value() == pytest.approx(-1, abs=1e-6)

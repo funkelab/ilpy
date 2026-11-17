@@ -102,14 +102,14 @@ class ScipSolver(SolverBackend):
         for (i, j), qcoef in quad_coeffs.items():
             obj_expr += qcoef * self._vars[i] * self._vars[j]
 
-        new_obj = self._model.addVar(lb=-INF, obj=1)  # Surrogate objective variable
+        new_obj = self._model.addVar(lb=-INF)  # Surrogate objective variable
 
         if sense == "minimize":
             self._model.addCons(obj_expr <= new_obj)
-            self._model.setMinimize()
         elif sense == "maximize":
             self._model.addCons(obj_expr >= new_obj)
-            self._model.setMaximize()
+        # replaces (clears) any previous objective, not just adds to it
+        self._model.setObjective(new_obj, sense=sense)
 
     def _add_quad_auxiliary_variables(
         self, quad_coeffs: Mapping[tuple[int, int], float]
