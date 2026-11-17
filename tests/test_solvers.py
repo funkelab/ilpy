@@ -305,6 +305,17 @@ def test_cuopt_status_map() -> None:
 
 
 @pytest.mark.parametrize("preference", PREFS)
+def test_variable_types(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    y = ilpy.Variable("y", index=1)
+    solver = ilpy.Solver(2, ilpy.Continuous, {0: ilpy.Binary}, preference=preference)
+    solver.set_objective((x + y).as_objective(ilpy.Maximize))
+    solver.add_constraint(x <= 5.5)
+    solver.add_constraint(y <= 5.5)
+    npt.assert_allclose(list(solver.solve()), [1, 5.5])
+
+
+@pytest.mark.parametrize("preference", PREFS)
 def test_set_constraints_replaces(preference: ilpy.Preference) -> None:
     x = ilpy.Variable("x", index=0)
     solver = ilpy.Solver(1, ilpy.Continuous, preference=preference)
