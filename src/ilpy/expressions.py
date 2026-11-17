@@ -8,6 +8,7 @@ syntax (e.g. `2 * x - y >= 0`) and convert them into the corresponding
 from __future__ import annotations
 
 import ast
+import copyreg
 import numbers
 import sys
 from contextlib import contextmanager
@@ -85,6 +86,11 @@ class Expression(ast.expr):
     def __str__(self) -> str:
         """Serialize this expression to string form."""
         return str(_ExprSerializer(self))
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        # ast.AST.__reduce__ re-calls __init__ with no (or None) args, which our
+        # subclasses don't accept, so restore from __dict__ without calling __init__
+        return copyreg.__newobj__, (type(self),), self.__dict__  # type: ignore[attr-defined]
 
     # comparisons
 
@@ -475,7 +481,7 @@ def _process_mult_op_iterative(
         )
 
 
-class _ExprSerializer(ast.NodeVisitor):
+class _ExprSerializer:
     """Serializes an :class:`Expression` into a string.
 
     Used above in `Expression.__str__`.
@@ -501,46 +507,51 @@ class _ExprSerializer(ast.NodeVisitor):
         ast.USub: "-",
     }
 
-    def __init__(self, node: Expression | None = None) -> None:
+    def __init__(self, node: Expression) -> None:
+        # iterative (not recursive), so that very large expressions work
         self._result: list[str] = []
-
-        def write(*params: ast.AST | str) -> None:
-            for item in params:
-                if isinstance(item, ast.AST):
-                    self.visit(item)
-                elif item:
-                    self._result.append(item)
-
-        self.write = write
-
-        if node is not None:
-            self.visit(node)
+        stack: list[ast.expr | str] = [node]
+        while stack:
+            item = stack.pop()
+            if isinstance(item, str):
+                self._result.append(item)
+            else:
+                stack.extend(reversed(self._parts(item)))
 
     def __str__(self) -> str:
         return "".join(self._result)
 
-    def visit_Variable(self, node: Variable) -> None:
-        self.write(node.id)
+    def _parts(self, node: ast.expr) -> list[ast.expr | str]:
+        prec = _precedence(node)
+        if isinstance(node, ast.Compare):
+            parts = _wrap(node.left, prec + 1)
+            for op, right in zip(node.ops, node.comparators, strict=False):
+                parts += [f" {self.OP_MAP[type(op)]} ", *_wrap(right, prec + 1)]
+            return parts
+        if isinstance(node, ast.BinOp):
+            # right operand needs parentheses at equal precedence: `x - (y + z)`
+            sym = f" {self.OP_MAP[type(node.op)]} "
+            return [*_wrap(node.left, prec), sym, *_wrap(node.right, prec + 1)]
+        if isinstance(node, ast.UnaryOp):
+            return [self.OP_MAP[type(node.op)], *_wrap(node.operand, prec)]
+        if isinstance(node, ast.Name):
+            return [node.id]
+        if isinstance(node, ast.Constant):
+            return [repr(node.value)]
+        raise TypeError(f"Cannot serialize {type(node).__name__}")  # pragma: no cover
 
-    def visit_Constant(self, node: ast.Constant) -> None:
-        self.write(repr(node.value))
 
-    def visit_Compare(self, node: ast.Compare) -> None:
-        self.visit(node.left)
-        for op, right in zip(node.ops, node.comparators, strict=False):
-            self.write(f" {self.OP_MAP[type(op)]} ", right)
+def _precedence(node: ast.expr) -> int:
+    """Return operator precedence of `node` (higher binds tighter)."""
+    if isinstance(node, ast.Compare):
+        return 0
+    if isinstance(node, ast.BinOp):
+        return 1 if isinstance(node.op, (ast.Add, ast.Sub)) else 2
+    if isinstance(node, ast.UnaryOp):
+        return 3
+    return 4
 
-    def visit_BinOp(self, node: ast.BinOp) -> None:
-        opstring = f" {self.OP_MAP[type(node.op)]} "
-        args: list[ast.AST | str] = [node.left, opstring, node.right]
-        # wrap in parentheses if the left or right side is a binary operation
-        if isinstance(node.op, ast.Mult):
-            if isinstance(node.left, ast.BinOp):
-                args[:1] = ["(", node.left, ")"]
-            if isinstance(node.right, ast.BinOp):
-                args[2:] = ["(", node.right, ")"]
-        self.write(*args)
 
-    def visit_UnaryOp(self, node: ast.UnaryOp) -> None:
-        sym = self.OP_MAP[type(node.op)]
-        self.write(sym, " " if sym.isalpha() else "", node.operand)
+def _wrap(node: ast.expr, min_prec: int) -> list[ast.expr | str]:
+    """Wrap `node` in parentheses if it binds less tightly than `min_prec`."""
+    return ["(", node, ")"] if _precedence(node) < min_prec else [node]

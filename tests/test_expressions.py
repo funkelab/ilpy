@@ -1,5 +1,8 @@
+import copy
 import operator
+import pickle
 import sys
+from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -185,6 +188,7 @@ def test_large_expression() -> None:
     expr = s <= SOME_MAX
 
     # Should work without raising RecursionError
+    assert str(expr).endswith(f" <= {SOME_MAX}")
     constraint = expr.as_constraint()
     assert isinstance(constraint, Constraint)
     assert constraint.get_value() == SOME_MAX
@@ -311,3 +315,23 @@ def test_numpy_scalars() -> None:
     constraint = expr.as_constraint()
     assert constraint.get_coefficients() == {0: 3}
     assert constraint.get_value() == 4
+
+
+@pytest.mark.parametrize(
+    "expr_str", ["u - (v + e)", "u - (v - e)", "-(u + v)", "(u + v) / 2", "u / (2 * v)"]
+)
+def test_str_parentheses(expr_str: str) -> None:
+    assert str(eval(expr_str, ns)) == expr_str
+
+
+@pytest.mark.parametrize(
+    "copier",
+    [copy.copy, copy.deepcopy, lambda x: pickle.loads(pickle.dumps(x))],
+    ids=["copy", "deepcopy", "pickle"],
+)
+def test_copy_and_pickle(copier: Callable[[Expression], Expression]) -> None:
+    x = Variable("x", index=0)
+    expr = 2 * x - 1 <= 3
+    copied = copier(expr)
+    assert str(copied) == str(expr)
+    assert copied.as_constraint().get_coefficients() == {0: 2}
