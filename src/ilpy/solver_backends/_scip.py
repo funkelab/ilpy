@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import weakref
 from typing import TYPE_CHECKING, Any, Literal
 
 from ilpy._constants import Relation, Sense, SolverStatus, VariableType
@@ -201,7 +202,9 @@ class ScipSolver(SolverBackend):
 class EventHandler(scip.Eventhdlr):
     def __init__(self, backend: ScipSolver):
         """event handler to capture SCIP events and pass data to the backend."""
-        self.backend = backend
+        # pyscipopt keeps the handler alive (Py_INCREF) until the model is freed,
+        # so a strong ref back to the backend (which owns the model) would leak both
+        self.backend = weakref.proxy(backend)
 
     def eventinit(self) -> None:
         """Initialize the event handler and register the desired events."""
@@ -253,4 +256,4 @@ class EventHandler(scip.Eventhdlr):
             )
 
         # Emit the processed event data
-        self.backend.emit_event_data(event_data)  # type: ignore [arg-type]
+        self.backend.emit_event_data(event_data)

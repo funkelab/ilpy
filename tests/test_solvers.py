@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import gc
 import operator
 import os
+import weakref
 from typing import TYPE_CHECKING, NamedTuple
 from unittest.mock import Mock
 
@@ -439,3 +441,15 @@ def test_variable_types_keyed_by_variable(preference: ilpy.Preference) -> None:
     solver.set_objective(-x)
     solver.add_constraint(x <= 2.5)
     assert list(solver.solve()) == [2]
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_solver_is_freed(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    solver = ilpy.Solver(1, ilpy.Binary, preference=preference)
+    solver.set_objective(x)
+    solver.solve()
+    ref = weakref.ref(solver._backend)
+    del solver
+    gc.collect()
+    assert ref() is None
