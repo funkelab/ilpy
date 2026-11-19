@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import gc
 import operator
 import os
+import weakref
 from typing import TYPE_CHECKING, NamedTuple
 from unittest.mock import Mock
 
@@ -420,3 +422,15 @@ def test_event_data_has_no_placeholders(preference: ilpy.Preference) -> None:
     ilpy.solve(x, [x >= 1], preference=preference, on_event=events.append)
     for event in events:
         assert ... not in event.values()
+
+
+@pytest.mark.parametrize("preference", PREFS)
+def test_solver_is_freed(preference: ilpy.Preference) -> None:
+    x = ilpy.Variable("x", index=0)
+    solver = ilpy.Solver(1, ilpy.Binary, preference=preference)
+    solver.set_objective(x)
+    solver.solve()
+    ref = weakref.ref(solver._backend)
+    del solver
+    gc.collect()
+    assert ref() is None
