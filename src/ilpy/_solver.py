@@ -90,7 +90,8 @@ class Solver:
         preference : Preference
             Backend preference.  `Preference.Any` picks the first available.
         """
-        vtpes: dict[int, VariableType] = dict(variable_types) if variable_types else {}
+        # int() so that `Variable` keys (which have an index) work too
+        vtpes = {int(i): vt for i, vt in (variable_types or {}).items()}
         self._backend: SolverBackend = create_solver_backend(preference)
         self._num_variables = num_variables
         self._backend.initialize(num_variables, default_variable_type, vtpes)
@@ -99,6 +100,11 @@ class Solver:
         """Set the objective, converting from an `Expression` if needed."""
         if isinstance(objective, Expression):
             objective = objective.as_objective()
+        if any(objective.get_coefficients()[self._num_variables :]):
+            raise ValueError(
+                f"Objective has coefficients for variables beyond "
+                f"num_variables={self._num_variables}"
+            )
         self._backend.set_objective(objective)
 
     def set_constraints(self, constraints: Constraints) -> None:
